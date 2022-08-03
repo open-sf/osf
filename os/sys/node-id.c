@@ -40,17 +40,50 @@
 #include "contiki.h"
 #include "sys/node-id.h"
 #include "net/linkaddr.h"
+
+#if BUILD_WITH_TESTBED
+#include "services/testbed/testbed.h"
+#endif
+#if BUILD_WITH_DEPLOYMENT
 #include "services/deployment/deployment.h"
+#endif
+
+/* Log configuration */
+#include "sys/log.h"
+#define LOG_MODULE "NODEID"
+#define LOG_LEVEL LOG_LEVEL_DBG
 
 uint16_t node_id = 0;
 
 void
 node_id_init(void) {
-#if BUILD_WITH_DEPLOYMENT
+
+#if BUILD_WITH_TESTBED && TB_PATCHING && BUILD_WITH_DEPLOYMENT
+  /* Configure through patching. Failing that, configure through deployment */
+  LOG_DBG("Init ID through patching.\n");
+  node_id = dc_cfg.node_id;
+  if(!node_id) {
+    LOG_WARN("ID is 0. Init through deployment.\n");
+    deployment_init();
+  }
+
+#elif BUILD_WITH_TESTBED && TB_PATCHING
+  /* Configure directly through testbed patching */
+  LOG_DBG("Init ID through patching.\n");
+  node_id = dc_cfg.node_id;
+
+#elif BUILD_WITH_DEPLOYMENT
+  /* Configure through deployment struct */
+  LOG_DBG("Init ID through deployment.\n");
   deployment_init();
-#else /* BUILD_WITH_DEPLOYMENT */
+
+#else
+
   /* Initialize with a default value derived from linkaddr */
+  LOG_DBG("Init ID through linkaddr.\n");
   node_id = linkaddr_node_addr.u8[LINKADDR_SIZE - 1]
             + (linkaddr_node_addr.u8[LINKADDR_SIZE - 2] << 8);
+
 #endif /* BUILD_WITH_DEPLOYMENT */
+
 }

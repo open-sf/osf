@@ -34,7 +34,7 @@ else
     $(warning "with NRF52840_NATIVE_USB=1 NRF52840_USB_DFU_TRIGGER=1")
     $(warning "This is invalid. Overriding with NRF52840_USB_DFU_TRIGGER=0")
     override NRF52840_USB_DFU_TRIGGER = 0
-  endif  
+  endif
 endif
 
 ### CPU-dependent directories
@@ -77,7 +77,14 @@ NRF52_SDK_C_SRCS += components/boards/boards.c \
   integration/nrfx/legacy/nrf_drv_clock.c \
   integration/nrfx/legacy/nrf_drv_rng.c \
   integration/nrfx/legacy/nrf_drv_power.c \
-  components/libraries/fifo/app_fifo.c \
+  integration/nrfx/legacy/nrf_drv_twi.c \
+  modules/nrfx/drivers/src/nrfx_twi.c \
+
+#  components/libraries/usbd/app_usbd.c \
+#  components/libraries/usbd/class/cdc/acm/app_usbd_cdc_acm.c \
+#  components/libraries/usbd/app_usbd_core.c \
+#  components/libraries/usbd/app_usbd_serial_num.c \
+#  components/libraries/usbd/app_usbd_string_desc.c \
 
 NRF52_SDK_ASM_SRCS = modules/nrfx/mdk/gcc_startup_nrf52840.S
 
@@ -114,7 +121,7 @@ include $(CONTIKI)/$(CONTIKI_NG_CM4_DIR)/Makefile.cm4
 
 .PHONY: nrf-upload-sequence
 
-# Upload via J-Link using nrfjprog 
+# Upload via J-Link using nrfjprog
 
 ifdef NRF52_UPLOAD_SN
   NRFJPROG_FLAGS += --snr $(NRF52_UPLOAD_SN)

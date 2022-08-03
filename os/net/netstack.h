@@ -85,7 +85,9 @@
 #elif MAC_CONF_WITH_TSCH
 #define NETSTACK_MAC     tschmac_driver
 #elif MAC_CONF_WITH_BLE
-#define NETSTACK_MAC   ble_l2cap_driver
+#define NETSTACK_MAC     ble_l2cap_driver
+#elif MAC_CONF_WITH_OSF
+#define NETSTACK_MAC     osf_driver
 #else
 #error Unknown MAC configuration
 #endif
@@ -96,6 +98,13 @@
 #define NETSTACK_RADIO NETSTACK_CONF_RADIO
 #else /* NETSTACK_CONF_RADIO */
 #define NETSTACK_RADIO   nullradio_driver
+#endif /* NETSTACK_CONF_RADIO */
+
+/* PA driver configuration. Most often set by the platform. */
+#ifdef NETSTACK_CONF_PA
+#define NETSTACK_PA NETSTACK_CONF_PA
+#else /* NETSTACK_CONF_RADIO */
+#define NETSTACK_PA nullpa_driver
 #endif /* NETSTACK_CONF_RADIO */
 
 /* Framer selection. The framer is used by the MAC implementation
@@ -109,6 +118,8 @@
 #include "net/mac/mac.h"
 #include "net/mac/framer/framer.h"
 #include "dev/radio.h"
+#include "dev/pa.h"
+#include "dev/nullpa.h"
 #include "net/linkaddr.h"
 
 /**

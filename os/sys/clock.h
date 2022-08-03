@@ -133,6 +133,14 @@ void clock_wait(clock_time_t t);
 void clock_delay_usec(uint16_t dt);
 
 /**
+ * Delay a given number of milliseconds.
+ * \param dt   How many milliseconds to delay.
+ *
+ * \note Interrupts could increase the delay by a variable amount.
+ */
+void clock_delay_msec(uint32_t volatile dt);
+
+/**
  * Deprecated platform-specific routines.
  *
  */

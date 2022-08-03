@@ -124,6 +124,14 @@ void deployment_iid_from_id(uip_ipaddr_t *ipaddr, uint16_t id);
  */
 uint16_t deployment_id_from_index(uint16_t index);
 
+/**
+ * Get node index in mapping table
+ *
+ * \param id Node ID
+ * \return The index in the deployment mapping table
+ */
+uint16_t deployment_index_from_id(uint16_t id);
+
 #endif /* DEPLOYMENT_H_ */
 /**
  * @}

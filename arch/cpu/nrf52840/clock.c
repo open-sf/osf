@@ -151,6 +151,15 @@ clock_delay_usec(uint16_t dt)
   nrf_delay_us(dt);
 }
 /*---------------------------------------------------------------------------*/
+void
+clock_delay_msec(uint32_t volatile dt)
+{
+  while(dt != 0) {
+    dt--;
+    nrf_delay_us(999);
+  }
+}
+/*---------------------------------------------------------------------------*/
 /**
  * \brief Obsolete delay function but we implement it here since some code
  * still uses it

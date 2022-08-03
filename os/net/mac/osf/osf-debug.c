@@ -1,0 +1,300 @@
+/*
+ * Copyright (c) 2022, Technology Innovation Institute
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE
+ * COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ * OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+ /**
+ * \file
+ *         OSF debug.
+ * \author
+ *         Michael Baddeley <michael.baddeley@tii.ae>
+ *         Yevgen Gyl <yevgen.gyl@unikie.com>
+ */
+ 
+#include "contiki.h"
+#include "nrf_radio.h"
+#include "nrf_ppi.h"
+
+#include "net/mac/osf/nrf52840-osf.h"
+#include "net/mac/osf/osf-debug.h"
+
+// TODO: All this needs to be moved to the nRF platform. We need a generic
+//       GPIO interface.
+/*---------------------------------------------------------------------------*/
+void
+osf_debug_gpio_init(void)
+{
+#if OSF_DEBUG_GPIO
+  /* Configure GPIOTE */
+#if RADIO_READY_EVENT_PIN
+  NRF_GPIOTE->CONFIG[RADIO_READY_EVENT_GPIOTE_CH] = (GPIOTE_CONFIG_MODE_Task << GPIOTE_CONFIG_MODE_Pos) |
+    (GPIOTE_CONFIG_POLARITY_Toggle << GPIOTE_CONFIG_POLARITY_Pos) |
+    (RADIO_READY_EVENT_PIN << GPIOTE_CONFIG_PSEL_Pos) |
+    (GPIOTE_CONFIG_OUTINIT_Low << GPIOTE_CONFIG_OUTINIT_Pos);
+#endif /* RADIO_READY_EVENT_PIN */
+
+#if RADIO_ADDRESS_EVENT_PIN
+  NRF_GPIOTE->CONFIG[RADIO_ADDRESS_EVENT_GPIOTE_CH] = (GPIOTE_CONFIG_MODE_Task << GPIOTE_CONFIG_MODE_Pos) |
+    (GPIOTE_CONFIG_POLARITY_Toggle << GPIOTE_CONFIG_POLARITY_Pos) |
+    (RADIO_ADDRESS_EVENT_PIN << GPIOTE_CONFIG_PSEL_Pos) |
+    (GPIOTE_CONFIG_OUTINIT_Low << GPIOTE_CONFIG_OUTINIT_Pos);
+#endif /* RADIO_ADDRESS_EVENT_PIN */
+
+#if RADIO_PAYLOAD_EVENT_PIN
+  NRF_GPIOTE->CONFIG[RADIO_PAYLOAD_EVENT_GPIOTE_CH] = (GPIOTE_CONFIG_MODE_Task << GPIOTE_CONFIG_MODE_Pos) |
+    (GPIOTE_CONFIG_POLARITY_Toggle << GPIOTE_CONFIG_POLARITY_Pos) |
+    (RADIO_PAYLOAD_EVENT_PIN << GPIOTE_CONFIG_PSEL_Pos) |
+    (GPIOTE_CONFIG_OUTINIT_Low << GPIOTE_CONFIG_OUTINIT_Pos);
+#endif /* RADIO_PAYLOAD_EVENT_PIN */
+
+#if RADIO_END_EVENT_PIN
+  NRF_GPIOTE->CONFIG[RADIO_END_EVENT_GPIOTE_CH] = (GPIOTE_CONFIG_MODE_Task << GPIOTE_CONFIG_MODE_Pos) |
+    (GPIOTE_CONFIG_POLARITY_Toggle << GPIOTE_CONFIG_POLARITY_Pos) |
+    (RADIO_END_EVENT_PIN << GPIOTE_CONFIG_PSEL_Pos) |
+    (GPIOTE_CONFIG_OUTINIT_Low << GPIOTE_CONFIG_OUTINIT_Pos);
+#endif /* RADIO_END_EVENT_PIN */
+
+#if RADIO_BCMATCH_EVENT_PIN
+  NRF_GPIOTE->CONFIG[RADIO_BCMATCH_EVENT_GPIOTE_CH] = (GPIOTE_CONFIG_MODE_Task << GPIOTE_CONFIG_MODE_Pos) |
+    (GPIOTE_CONFIG_POLARITY_Toggle << GPIOTE_CONFIG_POLARITY_Pos) |
+    (RADIO_BCMATCH_EVENT_PIN << GPIOTE_CONFIG_PSEL_Pos) |
+    (GPIOTE_CONFIG_OUTINIT_Low << GPIOTE_CONFIG_OUTINIT_Pos);
+#endif /* RADIO_END_EVENT_PIN */
+
+#if RADIO_TXEN_PIN
+  NRF_GPIOTE->CONFIG[RADIO_TXEN_GPIOTE_CH] = (GPIOTE_CONFIG_MODE_Task << GPIOTE_CONFIG_MODE_Pos) |
+    (GPIOTE_CONFIG_POLARITY_Toggle << GPIOTE_CONFIG_POLARITY_Pos) |
+    (RADIO_TXEN_PIN << GPIOTE_CONFIG_PSEL_Pos) |
+    (GPIOTE_CONFIG_OUTINIT_Low << GPIOTE_CONFIG_OUTINIT_Pos);
+#endif /* RADIO_TXEN_PIN */
+
+#if RADIO_RXEN_PIN
+  NRF_GPIOTE->CONFIG[RADIO_RXEN_GPIOTE_CH] = (GPIOTE_CONFIG_MODE_Task << GPIOTE_CONFIG_MODE_Pos) |
+    (GPIOTE_CONFIG_POLARITY_Toggle << GPIOTE_CONFIG_POLARITY_Pos) |
+    (RADIO_RXEN_PIN << GPIOTE_CONFIG_PSEL_Pos) |
+    (GPIOTE_CONFIG_OUTINIT_Low << GPIOTE_CONFIG_OUTINIT_Pos);
+#endif /* RADIO_TXEN_PIN */
+
+  /* Three NOPs are required to make sure configuration is written before setting tasks or getting events */
+  __NOP();
+  __NOP();
+  __NOP();
+
+  /* Clear the event that appears in some cases */
+#if RADIO_READY_EVENT_PIN
+  NRF_GPIOTE->EVENTS_IN[RADIO_READY_EVENT_GPIOTE_CH] = 0;
+#endif /* RADIO_ADDRESS_EVENT_PIN */
+
+#if RADIO_ADDRESS_EVENT_PIN
+  NRF_GPIOTE->EVENTS_IN[RADIO_ADDRESS_EVENT_GPIOTE_CH] = 0;
+#endif /* RADIO_ADDRESS_EVENT_PIN */
+
+#if RADIO_PAYLOAD_EVENT_PIN
+  NRF_GPIOTE->EVENTS_IN[RADIO_PAYLOAD_EVENT_GPIOTE_CH] = 0;
+#endif /* RADIO_PAYLOAD_EVENT_PIN */
+
+#if RADIO_END_EVENT_PIN
+  NRF_GPIOTE->EVENTS_IN[RADIO_END_EVENT_GPIOTE_CH] = 0;
+#endif /* RADIO_END_EVENT_PIN */
+
+#if RADIO_BCMATCH_EVENT_PIN
+  NRF_GPIOTE->EVENTS_IN[RADIO_BCMATCH_EVENT_GPIOTE_CH] = 0;
+#endif /* RADIO_BCMATCH_EVENT_PIN */
+
+#if RADIO_TXEN_PIN
+  NRF_GPIOTE->EVENTS_IN[RADIO_TXEN_GPIOTE_CH] = 0;
+#endif /* RADIO_TXEN_PIN */
+
+#if RADIO_RXEN_PIN
+  NRF_GPIOTE->EVENTS_IN[RADIO_RXEN_GPIOTE_CH] = 0;
+#endif /* RADIO_RXEN_PIN */
+
+  /* Link radio events to GPIOTE */
+#if RADIO_READY_EVENT_PIN
+  NRF_PPI->CH[RADIO_READY_EVENT_PPI_CH].EEP = (uint32_t)&NRF_RADIO->EVENTS_READY;
+  NRF_PPI->CH[RADIO_READY_EVENT_PPI_CH].TEP = (uint32_t)&NRF_GPIOTE->TASKS_OUT[RADIO_READY_EVENT_GPIOTE_CH];
+#endif /* RADIO_READY_EVENT_PIN */
+
+#if RADIO_ADDRESS_EVENT_PIN
+  NRF_PPI->CH[RADIO_ADDRESS_EVENT_PPI_CH].EEP = (uint32_t)&NRF_RADIO->EVENTS_ADDRESS;
+  NRF_PPI->CH[RADIO_ADDRESS_EVENT_PPI_CH].TEP = (uint32_t)&NRF_GPIOTE->TASKS_OUT[RADIO_ADDRESS_EVENT_GPIOTE_CH];
+#endif /* RADIO_ADDRESS_EVENT_PIN */
+
+#if RADIO_PAYLOAD_EVENT_PIN
+  NRF_PPI->CH[RADIO_PAYLOAD_EVENT_PPI_CH].EEP = (uint32_t)&NRF_RADIO->EVENTS_PAYLOAD;
+  NRF_PPI->CH[RADIO_PAYLOAD_EVENT_PPI_CH].TEP = (uint32_t)&NRF_GPIOTE->TASKS_OUT[RADIO_PAYLOAD_EVENT_GPIOTE_CH];
+#endif /* RADIO_PAYLOAD_EVENT_PIN */
+
+#if RADIO_END_EVENT_PIN
+  NRF_PPI->CH[RADIO_END_EVENT_PPI_CH].EEP = (uint32_t)&NRF_RADIO->EVENTS_END;
+  NRF_PPI->CH[RADIO_END_EVENT_PPI_CH].TEP = (uint32_t)&NRF_GPIOTE->TASKS_OUT[RADIO_END_EVENT_GPIOTE_CH];
+#endif /* RADIO_END_EVENT_PIN */
+
+#if RADIO_BCMATCH_EVENT_PIN
+  NRF_PPI->CH[RADIO_BCMATCH_EVENT_PPI_CH].EEP = (uint32_t)&NRF_RADIO->EVENTS_BCMATCH;
+  NRF_PPI->CH[RADIO_BCMATCH_EVENT_PPI_CH].TEP = (uint32_t)&NRF_GPIOTE->TASKS_OUT[RADIO_BCMATCH_EVENT_GPIOTE_CH];
+#endif /* RADIO_END_EVENT_PIN */
+
+#if RADIO_TXEN_PIN
+  NRF_PPI->CH[RADIO_T0_TX_EVENT_PPI_CH].EEP = (uint32_t)&NRF_TIMERX->EVENTS_COMPARE[SCHEDULE_REG];
+  NRF_PPI->CH[RADIO_T0_TX_EVENT_PPI_CH].TEP = (uint32_t)&NRF_GPIOTE->TASKS_OUT[RADIO_TXEN_GPIOTE_CH];
+#endif /* RADIO_TXEN_PIN */
+
+#if RADIO_RXEN_PIN
+  NRF_PPI->CH[RADIO_T0_RX_EVENT_PPI_CH].EEP = (uint32_t)&NRF_TIMERX->EVENTS_COMPARE[SCHEDULE_REG];
+  NRF_PPI->CH[RADIO_T0_RX_EVENT_PPI_CH].TEP = (uint32_t)&NRF_GPIOTE->TASKS_OUT[RADIO_RXEN_GPIOTE_CH];
+#endif /* RADIO_RXEN_PIN */
+
+  /* Enable PPI channel */
+#if RADIO_READY_EVENT_PIN
+  NRF_PPI->CHENSET = (1UL << RADIO_READY_EVENT_PPI_CH);
+#endif /* RADIO_READY_EVENT_PIN */
+
+#if RADIO_ADDRESS_EVENT_PIN
+  NRF_PPI->CHENSET = (1UL << RADIO_ADDRESS_EVENT_PPI_CH);
+#endif /* RADIO_ADDRESS_EVENT_PIN */
+/* */
+#if RADIO_PAYLOAD_EVENT_PIN
+  NRF_PPI->CHENSET = (1UL << RADIO_PAYLOAD_EVENT_PPI_CH);
+#endif /* RADIO_END_EVENT_PIN */
+
+#if RADIO_END_EVENT_PIN
+  NRF_PPI->CHENSET = (1UL << RADIO_END_EVENT_PPI_CH);
+#endif /* RADIO_END_EVENT_PIN */
+
+#if RADIO_BCMATCH_EVENT_PIN
+  NRF_PPI->CHENSET = (1UL << RADIO_BCMATCH_EVENT_PPI_CH);
+#endif /* RADIO_END_EVENT_PIN */
+
+  /* Do it all in one for TXRX, just because... */
+#if RADIO_TXRX_PIN
+  NRF_GPIOTE->CONFIG[RADIO_TXRX_GPIOTE_CH] = (GPIOTE_CONFIG_MODE_Task << GPIOTE_CONFIG_MODE_Pos) | (RADIO_TXRX_PIN << GPIOTE_CONFIG_PSEL_Pos);
+  NRF_PPI->CH[RADIO_TXRX_PPI_CH0].EEP = (uint32_t)(&NRF_RADIO->EVENTS_READY);  /* READY */
+  NRF_PPI->CH[RADIO_TXRX_PPI_CH0].TEP = (uint32_t)(&NRF_GPIOTE->TASKS_SET[RADIO_TXRX_GPIOTE_CH]);
+  NRF_PPI->CH[RADIO_TXRX_PPI_CH1].EEP = (uint32_t)(&NRF_RADIO->EVENTS_END);
+  NRF_PPI->CH[RADIO_TXRX_PPI_CH1].TEP = (uint32_t)(&NRF_GPIOTE->TASKS_CLR[RADIO_TXRX_GPIOTE_CH]);
+  NRF_PPI->CHENSET = (1 << RADIO_TXRX_PPI_CH0) | (1 << RADIO_TXRX_PPI_CH1);
+#endif
+#endif /* OSF_DEBUG_GPIO */
+}
+/*--------------------------------------------------------------------------*/
+/* Debug */
+/*--------------------------------------------------------------------------*/
+void
+osf_debug_configure_pins()
+{
+#ifdef RADIO_TXRX_PIN
+  nrf_gpio_cfg_output(RADIO_TXRX_PIN);
+#endif /* RADIO_TXRX_PIN */
+
+#ifdef RADIO_IRQ_EVENT_PIN
+  nrf_gpio_cfg_output(RADIO_IRQ_EVENT_PIN);
+#endif /* RADIO_IRQ_EVENT_PIN */
+
+#ifdef DBG_PIN1
+  nrf_gpio_cfg_output(DBG_PIN1);
+#endif /* DBG_PIN1 */
+#ifdef DBG_PIN2
+  nrf_gpio_cfg_output(DBG_PIN2);
+#endif /* DBG_PIN2 */
+#ifdef DBG_PIN3
+  nrf_gpio_cfg_output(DBG_PIN3);
+#endif /* DBG_PIN3 */
+#ifdef DBG_PIN4
+  nrf_gpio_cfg_output(DBG_PIN4);
+#endif /* DBG_PIN4 */
+
+#ifdef RADIO_READY_EVENT_PIN
+  nrf_gpio_cfg_output(RADIO_READY_EVENT_PIN);
+#endif /* RADIO_READY_EVENT_PIN */
+
+#ifdef RADIO_ADDRESS_EVENT_PIN
+  nrf_gpio_cfg_output(RADIO_ADDRESS_EVENT_PIN);
+#endif /* RADIO_ADDRESS_EVENT_PIN */
+
+#ifdef RADIO_PAYLOAD_EVENT_PIN
+  nrf_gpio_cfg_output(RADIO_PAYLOAD_EVENT_PIN);
+#endif /* RADIO_PAYLOAD_EVENT_PIN */
+
+#ifdef RADIO_END_EVENT_PIN
+  nrf_gpio_cfg_output(RADIO_END_EVENT_PIN);
+#endif /* RADIO_END_EVENT_PIN */
+
+#ifdef RADIO_BCMATCH_EVENT_PIN
+  nrf_gpio_cfg_output(RADIO_BCMATCH_EVENT_PIN);
+#endif /* RADIO_END_EVENT_PIN */
+
+#ifdef RADIO_TXEN_PIN
+  nrf_gpio_cfg_output(RADIO_TXEN_PIN);
+#endif /* RADIO_TXEN_PIN */
+
+#ifdef RADIO_RXEN_PIN
+  nrf_gpio_cfg_output(RADIO_RXEN_PIN);
+#endif /* RADIO_RXEN_PIN */
+}
+
+void
+osf_debug_clear_pins()
+{
+  /* Clear the other gpio pins */
+#ifdef RADIO_READY_EVENT_PIN
+  nrf_gpio_pin_clear(RADIO_READY_EVENT_PIN);
+#endif /* RADIO_READY_EVENT_PIN */
+
+#ifdef RADIO_ADDRESS_EVENT_PIN
+  nrf_gpio_pin_clear(RADIO_ADDRESS_EVENT_PIN);
+#endif /* RADIO_ADDRESS_EVENT_PIN */
+
+#ifdef RADIO_PAYLOAD_EVENT_PIN
+  nrf_gpio_pin_clear(RADIO_PAYLOAD_EVENT_PIN);
+#endif /* RADIO_PAYLOAD_PIN */
+
+#ifdef RADIO_END_EVENT_PIN
+  nrf_gpio_pin_clear(RADIO_END_EVENT_PIN);
+#endif /* RADIO_END_EVENT_PIN */
+
+#ifdef RADIO_BCMATCH_EVENT_PIN
+  nrf_gpio_pin_clear(RADIO_BCMATCH_EVENT_PIN);
+#endif /* RADIO_END_EVENT_PIN */
+
+#ifdef RADIO_TXRX_PIN
+  nrf_gpio_pin_clear(RADIO_TXRX_PIN);
+#endif /* RADIO_TXRX_PIN */
+
+#ifdef RADIO_TXEN_PIN
+  nrf_gpio_pin_clear(RADIO_TXEN_PIN);
+#endif /* RADIO_TXEN_PIN */
+
+#ifdef RADIO_RXEN_PIN
+  nrf_gpio_pin_clear(RADIO_RXEN_PIN);
+#endif /* RADIO_RXEN_PIN */
+
+#ifdef RADIO_IRQ_EVENT_PIN
+  nrf_gpio_pin_clear(RADIO_IRQ_EVENT_PIN);
+#endif /* RADIO_IRQ_EVENT_PIN */
+}

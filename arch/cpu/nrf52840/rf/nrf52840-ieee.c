@@ -56,6 +56,8 @@
 #include "nrf_timer.h"
 #include "nrf_clock.h"
 
+#include "nrf52840-ieee.h"
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
@@ -73,7 +75,7 @@
 #include "sys/log.h"
 
 #define LOG_MODULE "nRF52840 IEEE"
-#define LOG_LEVEL LOG_LEVEL_ERR
+#define LOG_LEVEL LOG_LEVEL_NONE
 /*---------------------------------------------------------------------------*/
 #define NRF52840_CCA_BUSY      0
 #define NRF52840_CCA_CLEAR     1
@@ -197,6 +199,14 @@ static volatile rf_cfg_t rf_config = {
   .cca_corr_count = NRF52840_CCA_CORR_COUNT,
   .ed_threshold = NRF52840_CCA_ED_THRESHOLD,
 };
+/*---------------------------------------------------------------------------*/
+static nrf52840_radioirq_callback_t irq_handler = NULL;
+/*---------------------------------------------------------------------------*/
+void
+nrf52840_radioirq_register_handler(nrf52840_radioirq_callback_t handler)
+{
+  irq_handler = handler;
+}
 /*---------------------------------------------------------------------------*/
 static bool
 phr_is_valid(uint8_t phr)
@@ -410,6 +420,9 @@ enter_rx(void)
   nrf_radio_shorts_enable(NRF_RADIO_SHORT_ADDRESS_RSSISTART_MASK);
   nrf_radio_shorts_enable(NRF_RADIO_SHORT_RXREADY_START_MASK);
 
+  /* Turn on power amplifier */
+  NETSTACK_PA.rx_on();
+
   if(curr_state != NRF_RADIO_STATE_RXIDLE) {
     /* Clear EVENTS_RXREADY and trigger RXEN (which will trigger START) */
     nrf_radio_event_clear(NRF_RADIO_EVENT_RXREADY);
@@ -529,6 +542,9 @@ init(void)
   /* Prepare the RX buffer */
   rx_buf_clear();
 
+  /* Set up the PA driver */
+  NETSTACK_PA.init();
+
   /* Power on the radio */
   power_on_and_configure();
 
@@ -603,6 +619,9 @@ transmit(unsigned short transmit_len)
   /* Start the transmission */
   ENERGEST_SWITCH(ENERGEST_TYPE_LISTEN, ENERGEST_TYPE_TRANSMIT);
 
+  /* Turn ON power amplifier */
+  NETSTACK_PA.tx_on();
+
   /* Enable the SHORT between TXREADY and START before triggering TXRU */
   nrf_radio_shorts_enable(NRF_RADIO_SHORT_TXREADY_START_MASK);
   nrf_radio_task_trigger(NRF_RADIO_TASK_TXEN);
@@ -618,6 +637,9 @@ transmit(unsigned short transmit_len)
 
   /* Wait for TX to complete */
   while(nrf_radio_state_get() == NRF_RADIO_STATE_TX);
+
+  /* Turn OFF power amplifier */
+  NETSTACK_PA.off();
 
   LOG_DBG("TX: Done\n");
 
@@ -758,6 +780,9 @@ pending_packet(void)
 static int
 off(void)
 {
+  /* Turn OFF power amplifier */
+  NETSTACK_PA.off();
+  
   nrf_radio_power_set(false);
 
   ENERGEST_OFF(ENERGEST_TYPE_LISTEN);
@@ -995,15 +1020,19 @@ PROCESS_THREAD(nrf52840_ieee_rf_process, ev, data)
 void
 RADIO_IRQHandler(void)
 {
-  if(!rf_config.poll_mode) {
-    if(nrf_radio_event_check(NRF_RADIO_EVENT_CRCOK)) {
-      nrf_radio_event_clear(NRF_RADIO_EVENT_CRCOK);
-      rx_buf.full = true;
-      process_poll(&nrf52840_ieee_rf_process);
-    } else if(nrf_radio_event_check(NRF_RADIO_EVENT_CRCERROR)) {
-      nrf_radio_event_clear(NRF_RADIO_EVENT_CRCERROR);
-      rx_buf_clear();
-      enter_rx();
+  if(irq_handler) {
+    irq_handler();
+  } else {
+    if(!rf_config.poll_mode) {
+      if(nrf_radio_event_check(NRF_RADIO_EVENT_CRCOK)) {
+        nrf_radio_event_clear(NRF_RADIO_EVENT_CRCOK);
+        rx_buf.full = true;
+        process_poll(&nrf52840_ieee_rf_process);
+      } else if(nrf_radio_event_check(NRF_RADIO_EVENT_CRCERROR)) {
+        nrf_radio_event_clear(NRF_RADIO_EVENT_CRCERROR);
+        rx_buf_clear();
+        enter_rx();
+      }
     }
   }
 }

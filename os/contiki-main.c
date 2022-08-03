@@ -51,7 +51,11 @@
 #include "net/queuebuf.h"
 #include "net/app-layer/coap/coap-engine.h"
 #include "net/app-layer/snmp/snmp.h"
+#if BUILD_WITH_RPL_BORDER_ROUTER
 #include "services/rpl-border-router/rpl-border-router.h"
+#elif BUILD_WITH_NULL_BORDER_ROUTER
+#include "services/null-border-router/null-border-router.h"
+#endif
 #include "services/orchestra/orchestra.h"
 #include "services/shell/serial-shell.h"
 #include "services/simple-energest/simple-energest.h"
@@ -133,10 +137,15 @@ main(void)
 
   platform_init_stage_three();
 
+#if !BUILD_WITH_TESTBED
 #if BUILD_WITH_RPL_BORDER_ROUTER
   rpl_border_router_init();
   LOG_DBG("With RPL Border Router\n");
+#elif BUILD_WITH_NULL_BORDER_ROUTER
+  null_border_router_init();
+  LOG_DBG("With NULL Border Router\n");
 #endif /* BUILD_WITH_RPL_BORDER_ROUTER */
+#endif /* !BUILD_WITH_TESTBED */
 
 #if BUILD_WITH_ORCHESTRA
   orchestra_init();

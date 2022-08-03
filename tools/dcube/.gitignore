@@ -1,0 +1,5 @@
+*.pub
+*.csv
+*.conf
+batch.sh
+results/*

@@ -1,0 +1,32 @@
+CFLAGS += -DBUILD_WITH_TESTBED=1
+
+#----------------------------------------------------------------------------#
+# NULLTB
+#----------------------------------------------------------------------------#
+ifeq ($(TESTBED), nulltb)
+	MODULES += os/services/testbed/nulltb
+  CFLAGS += -DCONF_TESTBED=1
+endif
+
+#----------------------------------------------------------------------------#
+# D-CUBE
+#----------------------------------------------------------------------------#
+ifeq ($(TESTBED), dcube)
+  ifneq ($(PATCHING),)
+      CFLAGS += -DTB_CONF_PATCHING=$(PATCHING)
+  endif
+
+  MODULES += os/services/testbed/dcube/$(TARGET)
+  CFLAGS += -DCONF_TESTBED=2
+
+  ifeq ($(TARGET), sky)
+  	LDFLAGS += -Wl,--section-start -Wl,.testbedConfigSection=0xd400
+    #LDFLAGS += -Wl,--section-start -Wl,.customConfigSection=0xd300
+  else ifeq ($(TARGET), nrf52840)
+    # D-CUBE works with 1B node ids
+    LDFLAGS += -Wl,--section-start -Wl,.testbedConfigSection=0x99000
+    LDFLAGS += -Wl,--section-start -Wl,.customConfigSection=0x98900
+	else
+    $(error ERROR: Unknown TESTBED target!)
+  endif
+endif

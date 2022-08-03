@@ -137,5 +137,17 @@ deployment_id_from_index(uint16_t index)
   }
 }
 /*---------------------------------------------------------------------------*/
+uint16_t
+deployment_index_from_id(uint16_t id)
+{
+  uint8_t i;
+  for(i = 0; i < node_count; i++) {
+    if(DEPLOYMENT_MAPPING[i].id == id) {
+      return DEPLOYMENT_MAPPING[i].id;
+    }
+  }
+  return 0;
+}
+/*---------------------------------------------------------------------------*/
 
 /** @} */
