@@ -66,12 +66,20 @@ typedef struct osf_driver_ext {
 #define OSF_EXT_RNTX              0
 #endif
 
+#ifdef OSF_CONF_EXT_BV
+#define OSF_EXT_BV                OSF_CONF_EXT_BV
+#else
+#define OSF_EXT_BV                0
+#endif
+
 /*---------------------------------------------------------------------------*/
 
 #if OSF_EXT_RNTX
 extern osf_ext_d_t                osf_ext_d_rntx;
 #define OSF_DRIVER_EXTENSION      &osf_ext_d_rntx
-
+#elif OSF_EXT_BV
+extern osf_ext_d_t                osf_ext_d_bv;
+#define OSF_DRIVER_EXTENSION      &osf_ext_d_bv
 #else
 #define OSF_DRIVER_EXTENSION      NULL
 #endif

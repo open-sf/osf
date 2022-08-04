@@ -161,6 +161,10 @@ endif
 ifneq ($(RNTX),)
     CFLAGS += -DRNTX=$(RNTX)
 endif
+ifneq ($(BV),)
+    CFLAGS += -DBV=$(BV)
+endif
+
 
 #----------------------------------------------------------------------------#
 # TEST Configuration

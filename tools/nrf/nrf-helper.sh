@@ -83,7 +83,7 @@ if [[ -v INFO ]]; then
   echo "> Print board info..."
 
   if [[ -v DEPLOYMENT ]]; then
-    DEPLOYMENT_FOLDER=../../os/services/deployment/nulltb/
+    DEPLOYMENT_FOLDER=../../os/services/deployment/nulltb
     DEPLOYMENT_FILE=$DEPLOYMENT_FOLDER/deployment-map-nulltb.c
     mkdir -p $DEPLOYMENT_FOLDER
     if [[ -f "$DEPLOYMENT_FILE" ]]; then
