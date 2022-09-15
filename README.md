@@ -114,12 +114,12 @@ make clean TARGET=nrf52840 && make -j16 node.upload-all TARGET=nrf52840 BOARD=dk
 #### Random NTX
 
 ```
-make clean TARGET=nrf52840 && make -j16 node.upload-all TARGET=nrf52840 BOARD=dk DEPLOYMENT=nulltb DST=1 SRC=2,3,4 TESTBED=nulltb DEPLOYMENT=nulltb LENGTH=64 PERIOD=1000 CHN=1 LOGGING=1 GPIO=1 LEDS=1 NTX=6 NSLOTS=6 NTA=4 PWR=ZerodBm PROTO=OSF_PROTO_STA DCUBE=1 PHY=PHY_BLE_2M RNTX=1
+make clean TARGET=nrf52840 && make -j16 node.upload-all TARGET=nrf52840 BOARD=dk DEPLOYMENT=nulltb DST=1 SRC=2,3,4 TESTBED=nulltb DEPLOYMENT=nulltb LENGTH=64 PERIOD=1000 CHN=1 LOGGING=1 GPIO=1 LEDS=1 NTX=6 NSLOTS=12 PWR=ZerodBm PROTO=OSF_PROTO_BCAST DCUBE=1 PHY=PHY_BLE_2M RNTX=1
 ```
 
 ### Multi-PHY
 
-OSF supports the development of multi-PHY protocols, allowing exploitation of multiple PHYS *in the same protocol*, as well as dynamic selection and (re)configuration of the PHY *at runtime*. OSF provides a naieve implmentation of such a protocol, the details of which can be found in the [paper](https://michaelbaddeley.files.wordpress.com/2022/07/baddeley2022osf.pdf).
+OSF supports the development of multi-PHY protocols, allowing exploitation of multiple PHYS *in the same protocol*, as well as dynamic selection and (re)configuration of the PHY *at runtime*. OSF provides a naïve implementation of such a protocol, the details of which can be found in the [paper](https://michaelbaddeley.files.wordpress.com/2022/07/baddeley2022osf.pdf).
 
 ```
 make clean TARGET=nrf52840 && make -j16 node.upload-all TARGET=nrf52840 BOARD=dk DEPLOYMENT=nulltb DST=1 SRC=2,3,4 TESTBED=nulltb DEPLOYMENT=nulltb LENGTH=64 PERIOD=1000 CHN=1 LOGGING=1 GPIO=1 LEDS=1 NTX=6 NSLOTS=6 NTA=4 PWR=ZerodBm PROTO=OSF_PROTO_STA DCUBE=1 PHY=PHY_BLE_2M MPHY=1
@@ -135,7 +135,7 @@ OSF has the following make options. Default options are in **bold**.
 | ARG                     | Description |
 |-------------------------| ----------- |
 | HELLO_WORLD=1/0 | Hello World application |
-| DEPLOYEMENT=nulltb/dube | D-Cube testbed integration OR dummy testbed integration |
+| DEPLOYEMENT=nulltb/dcube | D-Cube testbed integration OR dummy testbed integration |
 | TESTBED=nulltb/dcube | D-Cube testbed deployment IDs OR dummy testbed deployment IDs (using *nrf-helper.sh*) |
 | SRC=1,2, ... * | ID's (as per deployment mapping) of source nodes |
 | DST=1,2, ... * | ID's (as per deployment mapping) of destination nodes |
@@ -166,7 +166,7 @@ OSF has the following make options. Default options are in **bold**.
 | EMPTY=* (**0**) | Signal an early exit from STA protocol after *N* empty rounds (to make STA more like Crystal) |
 | TOG=**0**/1 | Bit toggling to indicate reception on the ACK round in STA |
 | ALWAYS_ACK=**0**/1 | **Always** ACK  (i.e., every epoch). To be used in conjunction with TOG=0/1 |
-| MPHY=**0**/1 | Naieve [EWSN '22 multi-PHY protocol](https://michaelbaddeley.files.wordpress.com/2022/07/baddeley2022osf.pdf) (in conjunction with STA protocol) |
+| MPHY=**0**/1 | Naïve [EWSN '22 multi-PHY protocol](https://michaelbaddeley.files.wordpress.com/2022/07/baddeley2022osf.pdf) (in conjunction with STA protocol) |
 
 #### Protocol Extensions
 | ARG                     | Description |

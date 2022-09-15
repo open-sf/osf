@@ -57,15 +57,19 @@ init()
 }
 
 /*---------------------------------------------------------------------------*/
+/* This will add between 0-OSF_NTX transmission slots to the statically 
+   configured OSF_ROUND_<S/T/A>_NTX. See osf_round_configure() in 
+   osf-proto-bcast.c and osf-proto-sta.c to see where it is added. E.g. if 
+   your OSF_NTX=6, then this will add between 0-6, so make your NSLOTS=12. */
 static void
 configure(osf_proto_t *proto)
 {
-  uint8_t i, rand_ntx;
-  OSF_RAND(rand_ntx, OSF_NTX);
+  uint8_t i, rand;
   osf_round_conf_t *rconf;
+  OSF_RAND(rand, OSF_NTX);
   for (i = 0; i < proto->len; i++) {
-    slot = &proto->sched[i];
-    rconf->ntx = rand_ntx;
+    rconf = &proto->sched[i];
+    rconf->ntx = rand;
   }
 }
 
@@ -79,6 +83,13 @@ start(uint8_t rnd_type, uint8_t initiator, uint8_t data_len)
 /*---------------------------------------------------------------------------*/
 static void
 tx_ok()
+{
+
+}
+
+/*---------------------------------------------------------------------------*/
+static void
+hop()
 {
 
 }
@@ -113,6 +124,7 @@ osf_ext_d_t osf_ext_d_rntx = {
     &configure,
     &start,
     &tx_ok,
+    &hop,
     &rx_ok,
     &rx_error,
     &stop,
