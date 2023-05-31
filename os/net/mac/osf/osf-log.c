@@ -250,7 +250,7 @@ print_msg_log()
   osf_log_msg_t *l;
   while ((l = queue_dequeue(osf_log_msg_queue)) != NULL) {
       printf("[%-4s: %-10s] ", l->prefix, l->module);
-      printf("{%u|ep-%u|r-%u|s-%u} ", node_id, l->epoch, l->index, l->slot);
+      // printf("{%u|ep-%u|r-%u|s-%u} ", node_id, l->epoch, l->index, l->slot);
       switch(l->type) {
         case OSF_LOG_MSG_S:
           /* With %s no need for # of bytes (len) */

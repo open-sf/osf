@@ -23,6 +23,9 @@ static uint16_t bv_crc;
 static uint16_t last_id = 0;
 static uint8_t  new_id = 1;
 
+/* Logging: Error Isolation - AP, BR */
+static uint8_t  pkt_buf[255] = {0};
+
 /*---------------------------------------------------------------------------*/
 static const uint16_t crc16_ccitt_table[256] = {
     0x0000U, 0x1021U, 0x2042U, 0x3063U, 0x4084U, 0x50A5U, 0x60C6U, 0x70E7U,
@@ -96,9 +99,9 @@ start(uint8_t rnd_type, uint8_t initiator, uint8_t data_len)
     // Create a crc and add to end of packet
     uint8_t *bv_hdr = &osf_buf[0];
     bv_crc = crc16_ccitt(bv_hdr, len - sizeof(bv_crc), 0xFFFF);
-    osf_log_x("TX", bv_hdr, len);
+    // osf_log_x("TX", bv_hdr, len);
     memcpy(&rnd_pkt->bv_crc, &bv_crc, sizeof(bv_crc));
-    osf_log_x("CRC", &rnd_pkt->bv_crc, 2);
+    // osf_log_x("CRC", &rnd_pkt->bv_crc, 2);
     // Put the slot relay count back in
     osf_buf_hdr->slot = slot_tmp;
     rnd_pkt->epoch = ep_tmp;
@@ -116,6 +119,14 @@ rx_ok(uint8_t rnd_type, uint8_t *data, uint8_t data_len)
     new_id = 1;
     osf_log_u("nid", &last_id, 2);
   }
+  
+  /* Logging: Error Isolation -AP, BR */
+  memcpy(pkt_buf, osf_buf, osf_buf_len);
+  osf_pkt_hdr_t *pkt_hdr = (osf_pkt_hdr_t *)&pkt_buf[0];
+  osf_pkt_s_round_t *pkt_pkt = (osf_pkt_s_round_t *)&pkt_buf[OSF_PKT_HDR_LEN];
+  pkt_hdr->slot = 0;
+  pkt_pkt->epoch = 0;
+  osf_log_x("PKT", pkt_buf, osf_buf_len);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -178,31 +189,34 @@ stop()
       bv_hdr->slot = 0;
       bv_pkt->epoch = 0;
       bv_crc = crc16_ccitt(&bv_buf[0], packet_len - sizeof(bv_crc), 0xFFFF);
-      osf_log_x("PKT", &bv_buf, packet_len);
+      // osf_log_x("PKT", &bv_buf, packet_len);
       bv_hdr->slot = slot_tmp;
       bv_pkt->epoch = ep_tmp;
-      osf_log_x("EXP", &bv_crc, 2);
+      // osf_log_x("EXP", &bv_crc, 2);
       // Check to see if the packet id is new. Even this is due to corruption,
       // we can't be sure that this isn't actually a new packet, so next flood
       // we will reset the bit voting.
-      osf_log_x("RCV",&bv_pkt->bv_crc, 2);
-      osf_log_x("rid",&bv_pkt->id, 2);
-      osf_log_x("lid",&last_id, 2);
+      // osf_log_x("RCV",&bv_pkt->bv_crc, 2);
+      // osf_log_x("rid",&bv_pkt->id, 2);
+      // osf_log_x("lid",&last_id, 2);
       if(bv_pkt->id != last_id) {
         last_id = bv_pkt->id;
         new_id = 1;
-        osf_log_u("nid",&last_id,2);
+        osf_log_u("nid", &last_id, 2);
       }
       if(bv_crc == (*(uint16_t *)(&bv_buf[packet_len - sizeof(bv_crc)]))) {
         bv_success = 1;
         bv_ok_cnt++;
+        osf_log_x("PKT", &bv_buf, packet_len);
         osf_log_u("OK!", &bv_ok_cnt, 1);
+        osf_log_u("BV_COUNT", &bv_count, 1);
         // copy the application data from the bv stack
         osf.n_rx_ok++;
         memcpy(osf_buf, &bv_buf, packet_len);
       } else {
         bv_fail_cnt++;
         osf_log_u("FAIL!", &bv_fail_cnt, 1);
+        osf_log_u("BV_COUNT", &bv_count, 1);
       }
       // osf_log_d("bits", &bv_arr, packet_len_bits);
     }
