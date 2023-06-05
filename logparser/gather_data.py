@@ -90,7 +90,7 @@ class Parser:
                             # Track the positions of the differing bits
                             for bit_pos in range(8):
                                 if diff_bits & (1 << bit_pos):
-                                    error_pos = i * 8 + bit_pos
+                                    error_pos = i * 8 + (bit_pos - 7)
                                     if error_pos not in err_bit_pos:
                                         err_bit_pos[error_pos] = 1
                                     else:
@@ -214,21 +214,22 @@ class Parser:
                         self.update_dataframe()
                         print('--------------- ',data,' : ', self.num_rounds, ' ---------------')
                 print('--------------------------------------------------')    
+        self.write_to_csv_file()
 
 if __name__ =='__main__':
     log_parser = Parser()
     directory = './Logoutput/'
-    file_names = os.listdir(directory)
+    # file_names = os.listdir(directory)
 
-    # Sort the file names based on modification time
-    sorted_file_names = sorted(file_names, key=lambda x: os.path.getmtime(os.path.join(directory, x)))
+    # # Sort the file names based on modification time
+    # sorted_file_names = sorted(file_names, key=lambda x: os.path.getmtime(os.path.join(directory, x)))
 
-    # Read the files in the sorted order
-    for filename in sorted_file_names:
-        # Construct the full file path
-        file_path = os.path.join(directory, filename)
-        print('------------Opening file: ', file_path, ' ------------')
-        # Check if the path is a file
-        if os.path.isfile(file_path):
-            log_strings = log_parser.read_complete_file(file_path)
-            log_parser.parsing_logic(log_strings)
+    # # Read the files in the sorted order
+    # # for filename in sorted_file_names:
+    #     # Construct the full file path
+    #     file_path = os.path.join(directory, filename)
+    #     print('------------Opening file: ', file_path, ' ------------')
+    #     # Check if the path is a file
+        # if os.path.isfile(file_path):
+    log_strings = log_parser.read_complete_file("./temp_log_file.txt")
+    log_parser.parsing_logic(log_strings)
