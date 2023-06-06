@@ -15,7 +15,37 @@ class Parser:
         self.num_rounds = 0
         self.data_frame = pd.DataFrame(columns=['Round Number','Total Errors', 'ERR', 'OK!', 'FAIL!', 'BV_COUNT', 'ERR_POSITIONS'])
         self.dataframe_number = 0
+        self.subdirectory = ''
     
+    def get_directory_path(self):
+        # Specify the directory path
+        directory_path = "./Logoutput/"
+
+        # Iterate over the subdirectories
+        for root, dirs, files in os.walk(directory_path):
+            for directory in dirs:
+                # Print the absolute path of each subdirectory
+                subdirectory_path = os.path.join(root, directory)
+                self.subdirectory = subdirectory_path
+                yield subdirectory_path
+
+    def read_files(self):
+        directory_path = self.get_directory_path()
+        for path in directory_path:
+            file_names = os.listdir(path)
+
+            # Sort the file names based on modification time
+            sorted_file_names = sorted(file_names, key=lambda x: os.path.getmtime(os.path.join(path, x)))
+
+            # Read the files in the sorted order
+            for filename in sorted_file_names:
+                # Construct the full file path
+                file_path = os.path.join(path, filename)
+                print('------------Opening file: ', file_path, ' ------------')
+                # Check if the path is a file
+                if os.path.isfile(file_path):
+                        yield file_path
+
     def initalize_round(self):
         """
         This function initializes the data dictionary for a new round
@@ -57,7 +87,9 @@ class Parser:
         :return: None
 
         """
-        fl_nm = './CSVFiles/data'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+str(self.num_rounds)+'.csv'
+        if not os.path.exists(self.subdirectory+'/CSVFiles'):
+            os.makedirs(self.subdirectory+'/CSVFiles')
+        fl_nm = self.subdirectory+'/CSVFiles/data'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+str(self.num_rounds)+'.csv'
         print('---------Writing to file: ', fl_nm,' ----------')
         print(self.data_frame.head(5))
         print(self.data_frame.tail(5))
@@ -90,7 +122,7 @@ class Parser:
                             # Track the positions of the differing bits
                             for bit_pos in range(8):
                                 if diff_bits & (1 << bit_pos):
-                                    error_pos = i * 8 + bit_pos
+                                    error_pos = i * 8 + (bit_pos - 7)
                                     if error_pos not in err_bit_pos:
                                         err_bit_pos[error_pos] = 1
                                     else:
@@ -113,7 +145,8 @@ class Parser:
             self.data_dict['ERR_POSITIONS'] = positions
         else:
             if len(positions) > 0:
-                self.data_dict['ERR_POSITIONS'].append(positions)
+                for index in positions:
+                    self.data_dict['ERR_POSITIONS'].append(index)
 
         #For the case when there is no correct reception at the end of the round
         #At that time, the error packets should be preserved till a correct reception is received or error correction is performed
@@ -199,7 +232,7 @@ class Parser:
                         #This part limits the size of the data frame to 1000 rows and writes it to a csv file
                         #Reset the data frame and start appending data to it again
                         print('Length of dataframe till now: ', len(self.data_frame))
-                        if len(self.data_frame) == 1000:
+                        if len(self.data_frame) == 200:
                             self.write_to_csv_file()
                             self.reset_dataframe()
                         self.initalize_round()
@@ -214,21 +247,11 @@ class Parser:
                         self.update_dataframe()
                         print('--------------- ',data,' : ', self.num_rounds, ' ---------------')
                 print('--------------------------------------------------')    
+        # self.write_to_csv_file()
 
 if __name__ =='__main__':
     log_parser = Parser()
-    directory = './Logoutput/'
-    file_names = os.listdir(directory)
-
-    # Sort the file names based on modification time
-    sorted_file_names = sorted(file_names, key=lambda x: os.path.getmtime(os.path.join(directory, x)))
-
-    # Read the files in the sorted order
-    for filename in sorted_file_names:
-        # Construct the full file path
-        file_path = os.path.join(directory, filename)
-        print('------------Opening file: ', file_path, ' ------------')
-        # Check if the path is a file
-        if os.path.isfile(file_path):
-            log_strings = log_parser.read_complete_file(file_path)
-            log_parser.parsing_logic(log_strings)
+    file_path = log_parser.read_files()
+    for path in file_path:
+        log_strings = log_parser.read_complete_file(path)
+        log_parser.parsing_logic(log_strings)
