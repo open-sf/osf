@@ -4,6 +4,7 @@
 #include "net/mac/osf/osf-packet.h"
 #include "net/mac/osf/osf-log.h"
 #include "net/mac/osf/extensions/osf-ext.h"
+#include "services/testbed/testbed-rand.h"
 
 #if OSF_CONF_EXT_BV
 #include "sys/log.h"
@@ -151,6 +152,7 @@ rx_error()
     bv_hdr->slot = 0;
     bv_pkt->epoch = 0;
     osf_log_x("ERR", &bv_buf, packet_len);
+    osf_log_x("GENERATED", &tb_rand_buf, TB_RAND_BUF_MAX)
     for (i = 0; i < packet_len_bits; i++) {
       if(OSF_CHK_BIT_BYTE(bv_buf, i)) {
         bv_arr[i]++;
