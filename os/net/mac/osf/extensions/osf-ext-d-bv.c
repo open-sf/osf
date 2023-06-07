@@ -4,7 +4,7 @@
 #include "net/mac/osf/osf-packet.h"
 #include "net/mac/osf/osf-log.h"
 #include "net/mac/osf/extensions/osf-ext.h"
-#include "services/testbed/testbed-rand.h"
+#include "os/services/testbed/testbed-rand.h"
 
 #if OSF_CONF_EXT_BV
 #include "sys/log.h"
@@ -24,8 +24,11 @@ static uint16_t bv_crc;
 static uint16_t last_id = 0;
 static uint8_t  new_id = 1;
 
-/* Logging: Error Isolation - AP, BR */
-static uint8_t  pkt_buf[255] = {0};
+/* Error Isolation - AP */
+static void isolate_errors();
+static void create_expected_packet();
+static void update_payload();
+static uint8_t exp_buf[255] = {0};
 
 /*---------------------------------------------------------------------------*/
 static const uint16_t crc16_ccitt_table[256] = {
@@ -119,15 +122,14 @@ rx_ok(uint8_t rnd_type, uint8_t *data, uint8_t data_len)
     last_id = rnd_pkt->id;
     new_id = 1;
     osf_log_u("nid", &last_id, 2);
+
+    uint8_t i;
+    for(i = 0; i < tb_msg_len; i++)
+    {
+      tb_rand_buf_index++;
+      tb_rand_buf_index = tb_rand_buf_index % 255;
+    }
   }
-  
-  /* Logging: Error Isolation -AP, BR */
-  memcpy(pkt_buf, osf_buf, osf_buf_len);
-  osf_pkt_hdr_t *pkt_hdr = (osf_pkt_hdr_t *)&pkt_buf[0];
-  osf_pkt_s_round_t *pkt_pkt = (osf_pkt_s_round_t *)&pkt_buf[OSF_PKT_HDR_LEN];
-  pkt_hdr->slot = 0;
-  pkt_pkt->epoch = 0;
-  osf_log_x("PKT", pkt_buf, osf_buf_len);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -152,7 +154,6 @@ rx_error()
     bv_hdr->slot = 0;
     bv_pkt->epoch = 0;
     osf_log_x("ERR", &bv_buf, packet_len);
-    osf_log_x("GENERATED", &tb_rand_buf, TB_RAND_BUF_MAX)
     for (i = 0; i < packet_len_bits; i++) {
       if(OSF_CHK_BIT_BYTE(bv_buf, i)) {
         bv_arr[i]++;
@@ -223,6 +224,67 @@ stop()
       // osf_log_d("bits", &bv_arr, packet_len_bits);
     }
   }
+  create_expected_packet();
+  isolate_errors();
+}
+
+/*---------------------------------------------------------------------------*/
+/* Error Isolation */
+/*---------------------------------------------------------------------------*/
+static void
+isolate_errors()
+{
+  int err_count = 0;
+  int err_positions[255] = {0}; // find MAX msg length
+
+  /* Debugging */
+  osf_log_x("Packet Calculated", exp_buf, osf_buf_len);
+  osf_log_x("Packet Received", osf_buf, osf_buf_len);
+  /* --------- */
+
+//   uint8_t i;
+//   for(i = 0; i < osf_buf_len; i++) {
+//     // add indeces to err_positions
+//   }
+
+//   osf_log_u("Error Positions", err_positions, osf_buf_len);
+}
+
+/*---------------------------------------------------------------------------*/
+static void
+create_expected_packet() {
+  osf_pkt_hdr_t *exp_hdr = (osf_pkt_hdr_t *)&exp_buf[0];
+  osf_pkt_s_round_t *exp_pkt = (osf_pkt_s_round_t *)&exp_buf[OSF_PKT_HDR_LEN];
+  exp_hdr->src = osf.sources[0];      // known source
+  exp_hdr->dst = osf.destinations[0]; // known dst
+  // exp_pkt->id = packet ID
+
+  update_payload();
+
+  // Find & add bv_crc
+  exp_hdr->slot = 0;
+  exp_pkt->epoch = 0;
+  // uint16_t exp_bv_crc = crc16_ccitt(&exp_buf[0], packet_len - sizeof(exp_bv_crc), 0xFFFF);
+  // memcpy(exp_pkt->bv_crc, &exp_bv_crc, sizeof(exp_bv_crc));
+
+  exp_hdr->slot = osf.slot;           // current slot
+  exp_pkt->epoch = osf.epoch;         // current epoch
+}
+
+/*---------------------------------------------------------------------------*/
+static void
+update_payload() {
+  uint8_t i;
+  uint8_t j = 7; // payload start (fix)
+  // fix this, 8 = msg length
+  for(i = tb_rand_buf_index - tb_msg_len; i < tb_rand_buf_index; i++)
+  {
+    exp_buf[j] = tb_rand_buf[i];
+    j++;
+  }
+
+  // osf_log_x("TB rand buf", tb_rand_buf, TB_RAND_BUF_MAX);
+  osf_log_u("TB rand buf index", &tb_rand_buf_index, 1);
 }
 
 /*---------------------------------------------------------------------------*/

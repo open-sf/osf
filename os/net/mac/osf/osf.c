@@ -68,7 +68,6 @@
 #include "net/mac/osf/osf-debug.h"
 #include "net/mac/osf/osf-log.h"
 #include "net/mac/osf/osf-stat.h"
-#include "services/testbed/testbed-rand.h"
 
 #include "nrf52840-ieee.h"
 static void RADIO_IRQHandler_callback();
@@ -302,7 +301,6 @@ schedule_epoch()
     osf.proto->configure();
     t_epoch_end = osf.t_epoch_ref + osf.proto->duration;
     osf.rconf = osf.proto->next_round();
-    tb_rand_init(osf.epoch);
     start_round();
   }
 }

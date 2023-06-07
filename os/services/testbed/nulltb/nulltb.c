@@ -66,7 +66,8 @@ config(void)
 static void
 init(void)
 {
-  tb_rand_init(node_id);
+  /* Use static num so all nodes can know expected pkt -AP */
+  tb_rand_init(1234);
 #if TB_CONF_PERIOD
   /* Setup a periodic send timer. */
   LOG_INFO("NULLTB PERIOD - %us\n", TB_PERIOD/CLOCK_SECOND);
