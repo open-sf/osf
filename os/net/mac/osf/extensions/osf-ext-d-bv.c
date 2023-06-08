@@ -28,9 +28,13 @@ static uint8_t  new_id = 1;
 static void isolate_errors();
 static void create_expected_packet();
 static void update_payload();
+// static void update_payload_index();
+static void print_round_summary();
 static uint8_t exp_buf[255] = {0};
+uint8_t err_arr[255] = {0};
 static uint16_t exp_id = 0;
 static uint16_t exp_bv_crc;
+static uint8_t round_num = 0;
 
 /*---------------------------------------------------------------------------*/
 static const uint16_t crc16_ccitt_table[256] = {
@@ -86,8 +90,9 @@ crc16_ccitt(const uint8_t block[], uint32_t blockLength, uint16_t crc)
 static void
 start(uint8_t rnd_type, uint8_t initiator, uint8_t data_len)
 {
+  round_num++;
   if(node_is_synced && new_id) {
-    osf_log_u("new_id", &new_id, 1);
+    // osf_log_u("new_id", &new_id, 1);
     memset(&bv_arr, 0, sizeof(bv_arr));
     memset(&bv_buf, 0, sizeof(bv_buf));
     bv_count        = 0;
@@ -123,15 +128,12 @@ rx_ok(uint8_t rnd_type, uint8_t *data, uint8_t data_len)
   if(node_is_synced && (rnd_type == OSF_ROUND_S) && rnd_pkt->id != last_id) {
     last_id = rnd_pkt->id;
     new_id = 1;
-    osf_log_u("nid", &last_id, 2);
+    // osf_log_u("nid", &last_id, 2);
 
-    uint8_t i;
-    for(i = 0; i < tb_msg_len; i++)
-    {
-      tb_rand_buf_index++;
-      tb_rand_buf_index = tb_rand_buf_index % 255;
-    }
+    // Point to new payload (fix me)
+    // update_payload_index();
 
+    // Increment expected ID (fix me)
     exp_id++;
   }
 }
@@ -209,59 +211,67 @@ stop()
       if(bv_pkt->id != last_id) {
         last_id = bv_pkt->id;
         new_id = 1;
-        osf_log_u("nid", &last_id, 2);
+        // osf_log_u("nid", &last_id, 2);
       }
       if(bv_crc == (*(uint16_t *)(&bv_buf[packet_len - sizeof(bv_crc)]))) {
         bv_success = 1;
         bv_ok_cnt++;
-        osf_log_x("PKT", &bv_buf, packet_len);
-        osf_log_u("OK!", &bv_ok_cnt, 1);
-        osf_log_u("BV_COUNT", &bv_count, 1);
+        // osf_log_x("PKT", &bv_buf, packet_len);
+        // osf_log_u("OK!", &bv_ok_cnt, 1);
+        // osf_log_u("BV_COUNT", &bv_count, 1);
         // copy the application data from the bv stack
         osf.n_rx_ok++;
         memcpy(osf_buf, &bv_buf, packet_len);
       } else {
         bv_fail_cnt++;
-        osf_log_u("FAIL!", &bv_fail_cnt, 1);
-        osf_log_u("BV_COUNT", &bv_count, 1);
+        // osf_log_u("FAIL!", &bv_fail_cnt, 1);
+        // osf_log_u("BV_COUNT", &bv_count, 1);
       }
       // osf_log_d("bits", &bv_arr, packet_len_bits);
     }
   }
   create_expected_packet();
   isolate_errors();
+  print_round_summary();
+  
+  // clear errors for next round
+  memset(err_arr, 0, sizeof(err_arr));
 }
 
 /*---------------------------------------------------------------------------*/
-/* Error Isolation */
+/* Error Isolation 
+   Needs to check all error packets, rather than just the packet at the end
+   of the round. Checking between two buffers this way works though.
+   Little-endian packets.
+*/
 /*---------------------------------------------------------------------------*/
 static void
 isolate_errors()
 {
-  int err_count = 0;
-  int err_positions[255] = {0}; // find MAX msg length
+  packet_len_bits = osf_buf_len * 8;
 
   /* Debugging */
   osf_log_x("Packet Calculated", exp_buf, osf_buf_len);
   osf_log_x("Packet Received", osf_buf, osf_buf_len);
   /* --------- */
 
-//   uint8_t i;
-//   for(i = 0; i < osf_buf_len; i++) {
-//     // add indeces to err_positions
-//   }
-
-//   osf_log_u("Error Positions", err_positions, osf_buf_len);
+  uint8_t i;
+  for (i = 0; i < packet_len_bits; i++) {
+    if(OSF_CHK_BIT_BYTE(exp_buf, i) ^ OSF_CHK_BIT_BYTE(osf_buf, i)) {
+      err_arr[i]++;
+    }
+  }
 }
 
 /*---------------------------------------------------------------------------*/
 static void
-create_expected_packet() {
+create_expected_packet()
+{
   osf_pkt_hdr_t *exp_hdr = (osf_pkt_hdr_t *)&exp_buf[0];
   osf_pkt_s_round_t *exp_pkt = (osf_pkt_s_round_t *)&exp_buf[OSF_PKT_HDR_LEN];
   exp_hdr->src = osf.sources[0];      // known source
   exp_hdr->dst = osf.destinations[0]; // known dst
-  exp_pkt->id = exp_id;               // ID based on rx_ok
+  exp_pkt->id = exp_id;               // ID based on rx_ok (fix me, gets out of sync easily)
   exp_hdr->slot = 0;                  // 0 slot for bv_crc
   exp_pkt->epoch = 0;                 // 0 epoch for bv_crc
 
@@ -279,7 +289,8 @@ create_expected_packet() {
 
 /*---------------------------------------------------------------------------*/
 static void
-update_payload() {
+update_payload()
+{
   uint8_t i;
   uint8_t j = 7; // payload start (is there a better way to do this)
   for(i = tb_rand_buf_index - tb_msg_len; i < tb_rand_buf_index; i++)
@@ -287,6 +298,31 @@ update_payload() {
     exp_buf[j] = tb_rand_buf[i];
     j++;
   }
+}
+
+/*---------------------------------------------------------------------------*/
+// Moving elsewhere
+// static void
+// update_payload_index()
+// {
+//   uint8_t i;
+//   for(i = 0; i < tb_msg_len; i++)
+//   {
+//     tb_rand_buf_index++;
+//     tb_rand_buf_index = tb_rand_buf_index % 255;
+//   }
+// }
+
+/*---------------------------------------------------------------------------*/
+static void
+print_round_summary()
+{
+  LOG_INFO("EPOCH: %d, ROUND: %d, TX_PWR: %s, PKT_LEN: %d\n", 
+          osf.epoch, round_num, OSF_TXPOWER_TO_STR(OSF_TXPOWER), packet_len);
+  LOG_INFO("N_RX: %d, ERR COUNT: %d, N_BV_OK: %d, N_BV_FAIL: %d\n", 
+          (osf.n_rx_ok + osf.n_rx_crc), osf.n_rx_crc, bv_ok_cnt, bv_fail_cnt);
+  LOG_INFO("BV_COUNT: %d\n", bv_count);
+  osf_log_u("ERRS PER INDEX", err_arr, packet_len_bits);
 }
 
 /*---------------------------------------------------------------------------*/

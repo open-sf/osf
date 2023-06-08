@@ -360,7 +360,7 @@ schedule_ch_timeout(rtimer_clock_t now)
       }
     } else {
       /* We never received, so return to the round process */
-      LOG_INFO("ROUND END\n");
+      // LOG_INFO("ROUND END\n");
       osf_stop();
       end_round();
       return 0;
@@ -387,7 +387,7 @@ schedule_rx_timeout(rtimer_clock_t now)
   if (r != RTIMER_OK) {
     osf_stop();
     LOG_WARN("RX timeout MISS\n");
-    LOG_INFO("ROUND END\n");
+    // LOG_INFO("ROUND END\n");
     end_round();
     osf_stat.osf_rt_miss_timeout_total++;/* Statistics */
     return 0;
@@ -415,7 +415,7 @@ schedule_slot_timeout(rtimer_clock_t now)
   if (r != RTIMER_OK) {
     osf_stop();
     LOG_WARN("GLOSSY timeout MISS\n");
-    LOG_INFO("ROUND END\n");
+    // LOG_INFO("ROUND END\n");
     end_round();
     osf_stat.osf_rt_miss_glossy_total++;/* Statistics */
     return 0;
@@ -695,7 +695,7 @@ do_slot()
           node_id, osf.epoch, OSF_ROUND_TO_STR(osf.round->type),
           RTIMERTICKS_TO_USX(now - t_ref), RTIMERTICKS_TO_USX(now - t_epoch_end));
         osf.proto->index = osf.proto->len; // we exit the round process after we reach len
-        LOG_INFO("ROUND END\n");
+        // LOG_INFO("ROUND END\n");
         osf_stop();
         end_round();
         osf_stat.osf_rt_miss_epoch_total++; /* Statictics */
@@ -707,7 +707,7 @@ do_slot()
         LOG_DBG("{%u|ep-%-4u} rt miss ROUND %s | t_ref:+%lu us eor:+%lu us\n",
           node_id, osf.epoch, OSF_ROUND_TO_STR(osf.round->type),
           RTIMERTICKS_TO_USX(now - t_ref), RTIMERTICKS_TO_USX(now - t_round_end));
-        LOG_INFO("ROUND END\n");
+        // LOG_INFO("ROUND END\n");
         osf_stop();
         end_round();
         osf_stat.osf_rt_miss_round_total++;/* Statictics */
@@ -723,7 +723,7 @@ do_slot()
       }
     }
   } else {
-    LOG_INFO("ROUND END\n");
+    // LOG_INFO("ROUND END\n");
     osf_stop();
     end_round();
   }
@@ -733,7 +733,7 @@ do_slot()
 /*---------------------------------------------------------------------------*/
 static void
 start_round() {
-  LOG_INFO("ROUND START\n");
+  // LOG_INFO("ROUND START\n");
 
   /* Round indicator */
   DEBUG_LEDS_ON(ROUND_LED);
@@ -822,7 +822,7 @@ start_round() {
     do_slot();
   } else {
     LOG_ERR("osf_buf_len (%u) > OSF_MAXLEN (%u)!\n", osf_buf_len, OSF_MAXLEN(osf.rconf->phy->mode));
-    LOG_INFO("ROUND END\n");
+    // LOG_INFO("ROUND END\n");
     end_round();
   }
 }
