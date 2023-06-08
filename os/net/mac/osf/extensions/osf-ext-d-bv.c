@@ -24,11 +24,13 @@ static uint16_t bv_crc;
 static uint16_t last_id = 0;
 static uint8_t  new_id = 1;
 
-/* Error Isolation - AP */
+/* Error Isolation */
 static void isolate_errors();
 static void create_expected_packet();
 static void update_payload();
 static uint8_t exp_buf[255] = {0};
+static uint16_t exp_id = 0;
+static uint16_t exp_bv_crc;
 
 /*---------------------------------------------------------------------------*/
 static const uint16_t crc16_ccitt_table[256] = {
@@ -129,6 +131,8 @@ rx_ok(uint8_t rnd_type, uint8_t *data, uint8_t data_len)
       tb_rand_buf_index++;
       tb_rand_buf_index = tb_rand_buf_index % 255;
     }
+
+    exp_id++;
   }
 }
 
@@ -257,17 +261,19 @@ create_expected_packet() {
   osf_pkt_s_round_t *exp_pkt = (osf_pkt_s_round_t *)&exp_buf[OSF_PKT_HDR_LEN];
   exp_hdr->src = osf.sources[0];      // known source
   exp_hdr->dst = osf.destinations[0]; // known dst
-  // exp_pkt->id = packet ID
+  exp_pkt->id = exp_id;               // ID based on rx_ok
+  exp_hdr->slot = 0;                  // 0 slot for bv_crc
+  exp_pkt->epoch = 0;                 // 0 epoch for bv_crc
 
   update_payload();
 
   // Find & add bv_crc
-  exp_hdr->slot = 0;
-  exp_pkt->epoch = 0;
-  // uint16_t exp_bv_crc = crc16_ccitt(&exp_buf[0], packet_len - sizeof(exp_bv_crc), 0xFFFF);
-  // memcpy(exp_pkt->bv_crc, &exp_bv_crc, sizeof(exp_bv_crc));
+  if(packet_len > 0) {
+    exp_bv_crc = crc16_ccitt(&exp_buf[0], packet_len - sizeof(exp_bv_crc), 0xFFFF);
+    memcpy(exp_pkt->bv_crc, &exp_bv_crc, sizeof(exp_bv_crc));
+  }
 
-  exp_hdr->slot = osf.slot;           // current slot
+  exp_hdr->slot = osf.slot;           // current slot, fix me (not accurate to Rx slot)
   exp_pkt->epoch = osf.epoch;         // current epoch
 }
 
@@ -275,16 +281,12 @@ create_expected_packet() {
 static void
 update_payload() {
   uint8_t i;
-  uint8_t j = 7; // payload start (fix)
-  // fix this, 8 = msg length
+  uint8_t j = 7; // payload start (is there a better way to do this)
   for(i = tb_rand_buf_index - tb_msg_len; i < tb_rand_buf_index; i++)
   {
     exp_buf[j] = tb_rand_buf[i];
     j++;
   }
-
-  // osf_log_x("TB rand buf", tb_rand_buf, TB_RAND_BUF_MAX);
-  osf_log_u("TB rand buf index", &tb_rand_buf_index, 1);
 }
 
 /*---------------------------------------------------------------------------*/
