@@ -92,7 +92,7 @@ start(uint8_t rnd_type, uint8_t initiator, uint8_t data_len)
   create_expected_packet();
   
   /* Debugging */
-  osf_log_x("Packet Calclatd", exp_buf, osf_buf_len);
+  // osf_log_x("Packet Calclatd", exp_buf, osf_buf_len);
   /* --------- */
 
   round_num++;
@@ -135,7 +135,7 @@ rx_ok(uint8_t rnd_type, uint8_t *data, uint8_t data_len)
     new_id = 1;
     // osf_log_u("nid", &last_id, 2);
 
-    osf_log_x("Packet Received", osf_buf, osf_buf_len);
+    // osf_log_x("Packet Received", osf_buf, osf_buf_len);
 
     // Increment expected ID (fix me)
     exp_id++;
@@ -163,7 +163,7 @@ rx_error()
     uint16_t ep_tmp = bv_pkt->epoch;
     bv_hdr->slot = 0;
     bv_pkt->epoch = 0;
-    osf_log_x("ERR", &bv_buf, packet_len);
+    // osf_log_x("ERR", &bv_buf, packet_len);
     for (i = 0; i < packet_len_bits; i++) {
       if(OSF_CHK_BIT_BYTE(bv_buf, i)) {
         bv_arr[i]++;
@@ -300,11 +300,11 @@ update_payload()
 static void
 print_round_summary()
 {
-  PRINT("[EPOCH: %d] ROUND: %d, TX_PWR: %s, PKT_LEN: %d, "
+  PRINT("[EPOCH: %d] ROUND: %d, TX_PWR: %s, PAYLOAD_LEN: %d, "
             "N_RX: %d, N_ERR_PKTS: %d, N_BV_OK: %d, N_BV_FAIL: %d, "
             "BV_COUNT: %d, "
             "ERRORS: ",
-            osf.epoch, round_num, OSF_TXPOWER_TO_STR(OSF_TXPOWER), packet_len,
+            osf.epoch, round_num, OSF_TXPOWER_TO_STR(OSF_TXPOWER), tb_msg_len,
             osf.n_rx_ok + osf.n_rx_crc, osf.n_rx_crc, bv_ok_cnt, bv_fail_cnt, 
             bv_count);
 
@@ -314,7 +314,7 @@ print_round_summary()
       PRINT("[%d : %d], ", i, err_arr[i]);
     }
   }
-  PRINT("\n");
+  PRINT("SLOTS: ");
   // osf_log_u("ERR_ARR", err_arr, packet_len_bits);
 }
 

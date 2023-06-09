@@ -299,7 +299,7 @@ print_slots_state()
 {
 #if OSF_LOG_SLOTS_STATE
   uint8_t i, j;
-  LOG_INFO("{%u|ep-%-4u} ", node_id, osf.epoch);
+  // LOG_INFO("{%u|ep-%-4u} ", node_id, osf.epoch);
   for (i = 0; i < osf.proto->len; i++) {
     for(j = 0; j < osf.proto->sched[i].max_slots; j++) {
 #if OSF_LOG_SLOTS_NODE | OSF_LOG_SLOTS_CH
@@ -310,7 +310,7 @@ print_slots_state()
       LOG_INFO_("%c", slots[i].state[j]);
 #endif
     }
-    LOG_INFO_("|");
+    // LOG_INFO_("|");
   }
   LOG_INFO_("\n");
 #endif
