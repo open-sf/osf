@@ -94,12 +94,12 @@ input_callback(uint8_t *data, uint8_t len)
 #elif BUILD_WITH_TESTBED
   testbed.push(data, len);
   testbed.poll_write();
-  LOG_INFO("RX: ");
-  uint8_t i;
-  for(i = 0; i < MIN(len,PRINT_DATA_LEN); i++) {
-    LOG_INFO_("%02x ", data[i]);
-  }
-  LOG_INFO_("\n");
+  // LOG_INFO("RX: ");
+  // uint8_t i;
+  // for(i = 0; i < MIN(len,PRINT_DATA_LEN); i++) {
+  //   LOG_INFO_("%02x ", data[i]);
+  // }
+  // LOG_INFO_("\n");
 #endif
 }
 /*---------------------------------------------------------------------------*/

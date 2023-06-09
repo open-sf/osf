@@ -167,7 +167,6 @@ osf_led_off_t osf_led_off = NULL;
 //        Although I think we do something similar for the TESTBED calls?
 PROCESS(osf_post_round_process, "OSF Post Round Process");
 PROCESS(osf_post_epoch_process, "OSF Post Epoch Process");
-
 /*---------------------------------------------------------------------------*/
 // TODO: Replace with osf_off()
 static void

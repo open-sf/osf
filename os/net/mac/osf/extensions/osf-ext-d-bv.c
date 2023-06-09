@@ -90,6 +90,7 @@ crc16_ccitt(const uint8_t block[], uint32_t blockLength, uint16_t crc)
 static void
 start(uint8_t rnd_type, uint8_t initiator, uint8_t data_len)
 {
+  create_expected_packet();
   round_num++;
   if(node_is_synced && new_id) {
     // osf_log_u("new_id", &new_id, 1);
@@ -230,9 +231,8 @@ stop()
       // osf_log_d("bits", &bv_arr, packet_len_bits);
     }
   }
-  create_expected_packet();
   isolate_errors();
-  print_round_summary();
+  // print_round_summary();
   
   // clear errors for next round
   memset(err_arr, 0, sizeof(err_arr));
@@ -251,7 +251,7 @@ isolate_errors()
   packet_len_bits = osf_buf_len * 8;
 
   /* Debugging */
-  osf_log_x("Packet Calculated", exp_buf, osf_buf_len);
+  osf_log_x("Packet Calclatd", exp_buf, osf_buf_len);
   osf_log_x("Packet Received", osf_buf, osf_buf_len);
   /* --------- */
 
@@ -267,6 +267,8 @@ isolate_errors()
 static void
 create_expected_packet()
 {
+  packet_len = osf_buf_len;
+  
   osf_pkt_hdr_t *exp_hdr = (osf_pkt_hdr_t *)&exp_buf[0];
   osf_pkt_s_round_t *exp_pkt = (osf_pkt_s_round_t *)&exp_buf[OSF_PKT_HDR_LEN];
   exp_hdr->src = osf.sources[0];      // known source
@@ -283,7 +285,7 @@ create_expected_packet()
     memcpy(exp_pkt->bv_crc, &exp_bv_crc, sizeof(exp_bv_crc));
   }
 
-  exp_hdr->slot = osf.slot;           // current slot, fix me (not accurate to Rx slot)
+  exp_hdr->slot = osf.slot;           // current slot (not accurate to Tx slot)
   exp_pkt->epoch = osf.epoch;         // current epoch
 }
 
@@ -301,27 +303,15 @@ update_payload()
 }
 
 /*---------------------------------------------------------------------------*/
-// Moving elsewhere
-// static void
-// update_payload_index()
-// {
-//   uint8_t i;
-//   for(i = 0; i < tb_msg_len; i++)
-//   {
-//     tb_rand_buf_index++;
-//     tb_rand_buf_index = tb_rand_buf_index % 255;
-//   }
-// }
-
-/*---------------------------------------------------------------------------*/
 static void
 print_round_summary()
 {
-  LOG_INFO("EPOCH: %d, ROUND: %d, TX_PWR: %s, PKT_LEN: %d\n", 
-          osf.epoch, round_num, OSF_TXPOWER_TO_STR(OSF_TXPOWER), packet_len);
-  LOG_INFO("N_RX: %d, ERR COUNT: %d, N_BV_OK: %d, N_BV_FAIL: %d\n", 
-          (osf.n_rx_ok + osf.n_rx_crc), osf.n_rx_crc, bv_ok_cnt, bv_fail_cnt);
-  LOG_INFO("BV_COUNT: %d\n", bv_count);
+  LOG_INFO("EPOCH: %d, ROUND: %d, TX_PWR: %s, PKT_LEN: %d "
+            "N_RX: %d, ERR COUNT: %d, N_BV_OK: %d, N_BV_FAIL: %d "
+            "BV_COUNT: %d\n",
+            osf.epoch, round_num, OSF_TXPOWER_TO_STR(OSF_TXPOWER), packet_len,
+            osf.n_rx_ok + osf.n_rx_crc, osf.n_rx_crc, bv_ok_cnt, bv_fail_cnt, 
+            bv_count);
   osf_log_u("ERRS PER INDEX", err_arr, packet_len_bits);
 }
 
