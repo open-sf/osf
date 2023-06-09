@@ -300,11 +300,11 @@ update_payload()
 static void
 print_round_summary()
 {
-  PRINT("[EPOCH: %d] ROUND: %d, TX_PWR: %s, PAYLOAD_LEN: %d, "
+  PRINT("[EPOCH: %d] ROUND: %d, TX_PWR: %s, PAYLOAD_LEN: %d, PERIOD: %ld, "
             "N_RX: %d, N_ERR_PKTS: %d, N_BV_OK: %d, N_BV_FAIL: %d, "
             "BV_COUNT: %d, "
             "ERRORS: ",
-            osf.epoch, round_num, OSF_TXPOWER_TO_STR(OSF_TXPOWER), tb_msg_len,
+            osf.epoch, round_num, OSF_TXPOWER_TO_STR(OSF_TXPOWER), tb_msg_len, osf.period,
             osf.n_rx_ok + osf.n_rx_crc, osf.n_rx_crc, bv_ok_cnt, bv_fail_cnt, 
             bv_count);
 
