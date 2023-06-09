@@ -28,7 +28,6 @@ static uint8_t  new_id = 1;
 static void isolate_errors();
 static void create_expected_packet();
 static void update_payload();
-// static void update_payload_index();
 static void print_round_summary();
 static uint8_t exp_buf[255] = {0};
 uint8_t err_arr[255] = {0};
@@ -91,6 +90,11 @@ static void
 start(uint8_t rnd_type, uint8_t initiator, uint8_t data_len)
 {
   create_expected_packet();
+  
+  /* Debugging */
+  osf_log_x("Packet Calclatd", exp_buf, osf_buf_len);
+  /* --------- */
+
   round_num++;
   if(node_is_synced && new_id) {
     // osf_log_u("new_id", &new_id, 1);
@@ -131,8 +135,7 @@ rx_ok(uint8_t rnd_type, uint8_t *data, uint8_t data_len)
     new_id = 1;
     // osf_log_u("nid", &last_id, 2);
 
-    // Point to new payload (fix me)
-    // update_payload_index();
+    osf_log_x("Packet Received", osf_buf, osf_buf_len);
 
     // Increment expected ID (fix me)
     exp_id++;
@@ -171,6 +174,8 @@ rx_error()
     bv_hdr->slot = slot_tmp;
     bv_pkt->epoch = ep_tmp;
   }
+
+  isolate_errors();
 }
 
 /*---------------------------------------------------------------------------*/
@@ -231,30 +236,19 @@ stop()
       // osf_log_d("bits", &bv_arr, packet_len_bits);
     }
   }
-  isolate_errors();
-  // print_round_summary();
-  
+  print_round_summary();
   // clear errors for next round
   memset(err_arr, 0, sizeof(err_arr));
 }
 
 /*---------------------------------------------------------------------------*/
 /* Error Isolation 
-   Needs to check all error packets, rather than just the packet at the end
-   of the round. Checking between two buffers this way works though.
-   Little-endian packets.
-*/
+   Little-endian packets. */
 /*---------------------------------------------------------------------------*/
 static void
 isolate_errors()
 {
   packet_len_bits = osf_buf_len * 8;
-
-  /* Debugging */
-  osf_log_x("Packet Calclatd", exp_buf, osf_buf_len);
-  osf_log_x("Packet Received", osf_buf, osf_buf_len);
-  /* --------- */
-
   uint8_t i;
   for (i = 0; i < packet_len_bits; i++) {
     if(OSF_CHK_BIT_BYTE(exp_buf, i) ^ OSF_CHK_BIT_BYTE(osf_buf, i)) {
@@ -306,13 +300,22 @@ update_payload()
 static void
 print_round_summary()
 {
-  LOG_INFO("EPOCH: %d, ROUND: %d, TX_PWR: %s, PKT_LEN: %d "
-            "N_RX: %d, ERR COUNT: %d, N_BV_OK: %d, N_BV_FAIL: %d "
-            "BV_COUNT: %d\n",
+  LOG_INFO("EPOCH: %d, ROUND: %d, TX_PWR: %s, PKT_LEN: %d, "
+            "N_RX: %d, N_ERR_PKTS: %d, N_BV_OK: %d, N_BV_FAIL: %d, "
+            "BV_COUNT: %d, "
+            "ERRORS: ",
             osf.epoch, round_num, OSF_TXPOWER_TO_STR(OSF_TXPOWER), packet_len,
             osf.n_rx_ok + osf.n_rx_crc, osf.n_rx_crc, bv_ok_cnt, bv_fail_cnt, 
             bv_count);
-  osf_log_u("ERRS PER INDEX", err_arr, packet_len_bits);
+
+  uint8_t i;
+  for(i = 0; i < sizeof(err_arr); i++) {
+    if(err_arr[i] != 0) {
+      PRINT("[%d : %d], ", i, err_arr[i]);
+    }
+  }
+  PRINT("\n");
+  // osf_log_u("ERR_ARR", err_arr, packet_len_bits);
 }
 
 /*---------------------------------------------------------------------------*/

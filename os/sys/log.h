@@ -134,6 +134,12 @@ extern struct log_module all_modules[];
 #define LOG_LEVEL_LWM2M                       MIN((LOG_CONF_LEVEL_LWM2M), curr_log_level_lwm2m)
 #define LOG_LEVEL_MAIN                        MIN((LOG_CONF_LEVEL_MAIN), curr_log_level_main)
 
+/* Simple print function -AP */
+#define PRINT(...) do {  \
+                    LOG_OUTPUT(__VA_ARGS__); \
+                    \
+                  } while (0)
+
 /* Main log function */
 
 #define LOG(newline, level, levelstr, levelcolor, ...) do {  \
