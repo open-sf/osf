@@ -300,7 +300,7 @@ update_payload()
 static void
 print_round_summary()
 {
-  LOG_INFO("EPOCH: %d, ROUND: %d, TX_PWR: %s, PKT_LEN: %d, "
+  PRINT("[EPOCH: %d] ROUND: %d, TX_PWR: %s, PKT_LEN: %d, "
             "N_RX: %d, N_ERR_PKTS: %d, N_BV_OK: %d, N_BV_FAIL: %d, "
             "BV_COUNT: %d, "
             "ERRORS: ",
