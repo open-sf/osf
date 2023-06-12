@@ -2,6 +2,8 @@ import re
 import datetime
 import pandas as pd
 import os
+import csv
+import sys
 
 class Parser:
     """
@@ -13,7 +15,8 @@ class Parser:
         self.correct_pkts = []
         self.correct_pkt_received = False
         self.num_rounds = 0
-        self.data_frame = pd.DataFrame(columns=['Round Number','Total Errors', 'ERR', 'OK!', 'FAIL!', 'BV_COUNT', 'ERR_POSITIONS'])
+        # self.data_frame = pd.DataFrame(columns=['Round Number','Total Errors', 'ERR', 'OK!', 'FAIL!', 'BV_COUNT', 'ERR_POSITIONS'])
+        self.data_frame = pd.DataFrame(columns=["ROUND", "TX_PWR", "PAYLOAD_LEN", "N_RX", "N_ERR_PKTS", "N_BV_OK", "N_BV_FAIL", "BV_COUNT", "ERRORS", "SLOTS"])
         self.dataframe_number = 0
         self.subdirectory = ''
     
@@ -59,8 +62,8 @@ class Parser:
         This function resets the data frame
         :return: None
         """
-        
-        self.data_frame = pd.DataFrame(columns=['Round Number','Total Errors', 'ERR', 'OK!', 'FAIL!', 'BV_COUNT', 'ERR_POSITIONS'])
+        # self.data_frame = pd.DataFrame(columns=['Round Number','Total Errors', 'ERR', 'OK!', 'FAIL!', 'BV_COUNT', 'ERR_POSITIONS'])
+        self.data_frame = pd.DataFrame(columns=["ROUND", "TX_PWR", "PAYLOAD_LEN", "N_RX", "N_ERR_PKTS", "N_BV_OK", "N_BV_FAIL", "BV_COUNT", "ERRORS", "SLOTS"])
     
     def update_dataframe(self):
         """ 
@@ -248,10 +251,75 @@ class Parser:
                         print('--------------- ',data,' : ', self.num_rounds, ' ---------------')
                 print('--------------------------------------------------')    
         # self.write_to_csv_file()
+    # def parsing_logic_new(self, log_strings):
+    #     print(len(log_strings))
+    #     i=0
+    #     for log_string in log_strings:
+    #         log_string = log_string.strip()
+
+    #         # Removing the ANSI escape characters
+    #         ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    #         log_string = ansi_escape.sub('', log_string)
+            
+    #         # Regular expression pattern to extract information from the log string
+            
+    #         # log_pattern = r'\[EPOCH: (\d+)\] ROUND: (\d+), TX_PWR: (-\d+)dBm, PAYLOAD_LEN: (\d+), N_RX: (\d+), N_ERR_PKTS: (\d+), N_BV_OK: (\d+), N_BV_FAIL: (\d+), BV_COUNT: (\d+), ERRORS: (.*), SLOTS: ([A-Z]+)'
+    #         log_pattern = r'\[EPOCH: (\d+)\] ROUND: (\d+), TX_PWR: (-\d+)dBm, PAYLOAD_LEN: (\d+), PERIOD: (\d+), N_RX: (\d+), N_ERR_PKTS: (\d+), N_BV_OK: (\d+), N_BV_FAIL: (\d+), BV_COUNT: (\d+), ERRORS: (.*), SLOTS: ([A-Z]+)'
+    #         # Extracting information using regex pattern
+    #         match = re.match(log_pattern, log_string)
+    #         print(match)
+    #         if match:
+    #             print("Match Successful")
+    #             print(log_string)
+    #             print(i)
+    #         i += 1
+
+    def parsing_logic_new(self, log_strings):
+        # Extract the data from each log line
+        data = []
+        for line in log_strings:
+            log_data = line.split(", ")
+            print(log_data)
+            # sys.exit()
+            round_num = log_data[0].split(": ")[-1]
+            print(round_num)
+            tx_pwr = log_data[1].split(": ")[1]
+            print(tx_pwr)
+            payload_len = log_data[2].split(": ")[1]
+            print(payload_len)
+            period = log_data[3].split(": ")[1]
+            print(period)
+            n_rx = log_data[4].split(": ")[1]
+            print(n_rx)
+            n_err_pkts = log_data[5].split(": ")[1]
+            print(n_err_pkts)
+            n_bv_ok = log_data[6].split(": ")[1]
+            print(n_bv_ok)
+            n_bv_fail = log_data[7].split(": ")[1]
+            print(n_bv_fail)
+            bv_count = log_data[8].split(": ")[1].strip(", ")
+            print(bv_count)
+            errors = log_data[9].split(": ")[1].strip()
+            print(errors)
+            slots = log_data[10].split(": ")[1].strip("\n")
+            print(slots)
+            # Append the extracted data to the list
+            data.append([round_num, tx_pwr, payload_len, n_rx, n_err_pkts, n_bv_ok, n_bv_fail, bv_count, errors, slots])
+            print(data)
+            # sys.exit()
+            print('--------------------------------------------------')
+        # Write the data to a CSV file
+        # with open(csv_filename, "w", newline="") as csv_file:
+        #     writer = csv.writer(csv_file)
+        #     writer.writerow(fields)  # Write the header row
+        #     writer.writerows(data)  # Write the data rows
+        self.write_to_csv_file()
 
 if __name__ =='__main__':
     log_parser = Parser()
-    file_path = log_parser.read_files()
-    for path in file_path:
-        log_strings = log_parser.read_complete_file(path)
-        log_parser.parsing_logic(log_strings)
+    # file_path = log_parser.read_files()
+    # for path in file_path:
+    path = './newest_logs.txt'
+    log_strings = log_parser.read_complete_file(path)
+    # print(len(log_strings))
+    log_parser.parsing_logic_new(log_strings)
