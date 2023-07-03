@@ -15,7 +15,7 @@
 static uint8_t packet_len;
 static uint32_t packet_len_bits;
 #define BV_MAX_LEN 2040
-static int8_t   bv_arr[BV_MAX_LEN] = {0};
+static int8_t  bv_arr[BV_MAX_LEN] = {0};
 static uint8_t  bv_buf[255] = {0};
 static uint8_t  bv_count = 0;
 static uint8_t  bv_success;
@@ -25,15 +25,17 @@ static uint16_t last_id = 0;
 static uint8_t  new_id = 1;
 
 /* Error Isolation */
-static void isolate_errors();
 static void create_expected_packet();
-static void update_payload();
+static void isolate_errors();
+static void update_pkt_payload();
 static void print_round_summary();
-static uint8_t exp_buf[255] = {0};
-uint8_t err_arr[255] = {0};
-static uint16_t exp_id = 0;
+static void resync(uint16_t, uint16_t);
+static uint8_t exp_pkt_buf[255] = {0};
+static uint8_t err_arr[BV_MAX_LEN] = {0};
+static uint8_t err_flag = 0;
 static uint16_t exp_bv_crc;
-static uint8_t round_num = 0;
+static uint16_t round_num = 0;
+static int bv_success_flag = -1;
 
 /*---------------------------------------------------------------------------*/
 static const uint16_t crc16_ccitt_table[256] = {
@@ -89,13 +91,11 @@ crc16_ccitt(const uint8_t block[], uint32_t blockLength, uint16_t crc)
 static void
 start(uint8_t rnd_type, uint8_t initiator, uint8_t data_len)
 {
+  // Create packet to use for error isolation
+  memset(&exp_pkt_buf, 0, sizeof(exp_pkt_buf));
   create_expected_packet();
-  
-  /* Debugging */
-  // osf_log_x("Packet Calclatd", exp_buf, osf_buf_len);
-  /* --------- */
-
-  round_num++;
+  // osf_log_x("Packet Calclatd in start", exp_pkt_buf, osf_buf_len);
+  round_num++;  
   if(node_is_synced && new_id) {
     // osf_log_u("new_id", &new_id, 1);
     memset(&bv_arr, 0, sizeof(bv_arr));
@@ -134,12 +134,22 @@ rx_ok(uint8_t rnd_type, uint8_t *data, uint8_t data_len)
     last_id = rnd_pkt->id;
     new_id = 1;
     // osf_log_u("nid", &last_id, 2);
-
-    // osf_log_x("Packet Received", osf_buf, osf_buf_len);
-
-    // Increment expected ID (fix me)
-    exp_id++;
   }
+  
+  osf_pkt_hdr_t *exp_hdr = (osf_pkt_hdr_t *)&exp_pkt_buf[0];
+  exp_hdr->slot = osf.slot;
+
+  if (was_out_of_sync == 1 && pkt_flag == 1) {
+    PRINT("resync\n");
+    uint16_t tmp = (osf.epoch-1) % 3;
+    tmp = (osf.epoch-1) - tmp;
+    resync(rnd_pkt->id, tmp);
+
+    // tb_exp_id = rnd_pkt->id;
+    was_out_of_sync = 0;
+  }
+  // osf_log_x("Packet Calclatd in rx_ok", exp_pkt_buf, osf_buf_len);
+  // osf_log_x("Packet Received in rx_ok", osf_buf, osf_buf_len);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -174,8 +184,18 @@ rx_error()
     bv_hdr->slot = slot_tmp;
     bv_pkt->epoch = ep_tmp;
   }
+  // Make sure slot is updated then perform error isolation
+  osf_pkt_hdr_t *exp_hdr = (osf_pkt_hdr_t *)&exp_pkt_buf[0];
+  exp_hdr->slot = osf.slot;
 
-  isolate_errors();
+  // osf_log_x("Packet Calclatd in rx_er", exp_pkt_buf, osf_buf_len);
+  // osf_log_x("Packet Received in rx_er", osf_buf, osf_buf_len);
+
+  // only perform error isolation if we know the generated packet is correct
+  if (was_out_of_sync == 0) {
+    isolate_errors();
+    err_flag = 1;
+  }
 }
 
 /*---------------------------------------------------------------------------*/
@@ -222,6 +242,16 @@ stop()
       if(bv_crc == (*(uint16_t *)(&bv_buf[packet_len - sizeof(bv_crc)]))) {
         bv_success = 1;
         bv_ok_cnt++;
+        bv_success_flag = 1;
+
+        if (was_out_of_sync == 1 && pkt_flag == 1) {
+          uint16_t tmp = (osf.epoch-1) % 3;
+          tmp = (osf.epoch-1) - tmp;
+          resync(bv_pkt->id, tmp);
+          
+          // tb_exp_id = bv_pkt->id;
+          was_out_of_sync = 0;
+        }
         // osf_log_x("PKT", &bv_buf, packet_len);
         // osf_log_u("OK!", &bv_ok_cnt, 1);
         // osf_log_u("BV_COUNT", &bv_count, 1);
@@ -230,6 +260,7 @@ stop()
         memcpy(osf_buf, &bv_buf, packet_len);
       } else {
         bv_fail_cnt++;
+        bv_success_flag = 0;
         // osf_log_u("FAIL!", &bv_fail_cnt, 1);
         // osf_log_u("BV_COUNT", &bv_count, 1);
       }
@@ -238,7 +269,9 @@ stop()
   }
   print_round_summary();
   // clear errors for next round
-  memset(err_arr, 0, sizeof(err_arr));
+  memset(&err_arr, 0, sizeof(err_arr));
+  bv_success_flag = -1;
+  err_flag = 0;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -249,9 +282,9 @@ static void
 isolate_errors()
 {
   packet_len_bits = osf_buf_len * 8;
-  uint8_t i;
+  uint16_t i;
   for (i = 0; i < packet_len_bits; i++) {
-    if(OSF_CHK_BIT_BYTE(exp_buf, i) ^ OSF_CHK_BIT_BYTE(osf_buf, i)) {
+    if(OSF_CHK_BIT_BYTE(exp_pkt_buf, i) ^ OSF_CHK_BIT_BYTE(osf_buf, i)) {
       err_arr[i]++;
     }
   }
@@ -263,36 +296,49 @@ create_expected_packet()
 {
   packet_len = osf_buf_len;
   
-  osf_pkt_hdr_t *exp_hdr = (osf_pkt_hdr_t *)&exp_buf[0];
-  osf_pkt_s_round_t *exp_pkt = (osf_pkt_s_round_t *)&exp_buf[OSF_PKT_HDR_LEN];
-  exp_hdr->src = osf.sources[0];      // known source
-  exp_hdr->dst = osf.destinations[0]; // known dst
-  exp_pkt->id = exp_id;               // ID based on rx_ok (fix me, gets out of sync easily)
-  exp_hdr->slot = 0;                  // 0 slot for bv_crc
-  exp_pkt->epoch = 0;                 // 0 epoch for bv_crc
-
-  update_payload();
+  osf_pkt_hdr_t *exp_hdr = (osf_pkt_hdr_t *)&exp_pkt_buf[0];
+  osf_pkt_s_round_t *exp_pkt = (osf_pkt_s_round_t *)&exp_pkt_buf[OSF_PKT_HDR_LEN];
+  exp_hdr->src = osf.sources[0];        // known source
+  if (!pkt_flag) {
+    exp_hdr->dst = 0xff;                // known dst
+    exp_pkt->id = 0;
+  }
+  else {
+    exp_hdr->dst = osf.destinations[0]; // known dst
+    update_pkt_payload(&exp_pkt->payload[0]);
+    exp_pkt->id = tb_exp_id;
+  }
+  exp_hdr->slot = 0;                    // 0 slot for bv_crc
+  exp_pkt->epoch = 0;                   // 0 epoch for bv_crc
 
   // Find & add bv_crc
-  if(packet_len > 0) {
-    exp_bv_crc = crc16_ccitt(&exp_buf[0], packet_len - sizeof(exp_bv_crc), 0xFFFF);
-    memcpy(exp_pkt->bv_crc, &exp_bv_crc, sizeof(exp_bv_crc));
-  }
+  exp_bv_crc = crc16_ccitt(&exp_pkt_buf[0], packet_len - sizeof(exp_bv_crc), 0xFFFF);
+  memcpy(exp_pkt->bv_crc, &exp_bv_crc, sizeof(exp_bv_crc));
 
-  exp_hdr->slot = osf.slot;           // current slot (not accurate to Tx slot)
-  exp_pkt->epoch = osf.epoch;         // current epoch
+  exp_hdr->slot = osf.slot;             // current slot
+  exp_pkt->epoch = osf.epoch;           // current epoch
 }
 
 /*---------------------------------------------------------------------------*/
 static void
-update_payload()
-{
+update_pkt_payload(uint8_t *dst_buf){
   uint8_t i;
-  uint8_t j = 7; // payload start (is there a better way to do this)
-  for(i = tb_rand_buf_index - tb_msg_len; i < tb_rand_buf_index; i++)
+  for(i = 0; i < tb_msg_len; i++) {
+    dst_buf[i] = exp_buf[i];
+  }
+}
+
+/*---------------------------------------------------------------------------*/
+static void
+resync(uint16_t id, uint16_t seed) {
+  tb_exp_id = id;
+  tb_rand_init(seed);
+
+  // update buffer
+  uint8_t i;
+  for(i = 0; i < tb_msg_len; i++)
   {
-    exp_buf[j] = tb_rand_buf[i];
-    j++;
+    TB_RAND(exp_buf[i], TB_RAND_BUF_MAX);
   }
 }
 
@@ -300,22 +346,22 @@ update_payload()
 static void
 print_round_summary()
 {
-  PRINT("[EPOCH: %d] ROUND: %d, TX_PWR: %s, PAYLOAD_LEN: %d, PERIOD: %ld, "
-            "N_RX: %d, N_ERR_PKTS: %d, N_BV_OK: %d, N_BV_FAIL: %d, "
-            "BV_COUNT: %d, "
-            "ERRORS: ",
-            osf.epoch, round_num, OSF_TXPOWER_TO_STR(OSF_TXPOWER), tb_msg_len, osf.period,
-            osf.n_rx_ok + osf.n_rx_crc, osf.n_rx_crc, bv_ok_cnt, bv_fail_cnt, 
-            bv_count);
+  packet_len_bits = osf_buf_len*8;
 
-  uint8_t i;
-  for(i = 0; i < sizeof(err_arr); i++) {
-    if(err_arr[i] != 0) {
-      PRINT("[%d : %d], ", i, err_arr[i]);
+  PRINT("EP:%d,RND:%d,N_RX:%d,N_ERR_PKTS:%d,"
+        "BV_CNT:%d,BV_SCS_FLAG:%d,ERRS:{",
+        osf.epoch, round_num, osf.n_rx_ok + osf.n_rx_crc, osf.n_rx_crc,
+        bv_count, bv_success_flag);
+  
+  if (err_flag){
+    uint32_t i;
+    for(i = 0; i < packet_len_bits; i++) {
+      if(err_arr[i] != 0) {
+        PRINT("%ld:%d;", i, err_arr[i]);
+      }
     }
   }
-  PRINT("SLOTS: ");
-  // osf_log_u("ERR_ARR", err_arr, packet_len_bits);
+  PRINT("},SLTS:");
 }
 
 /*---------------------------------------------------------------------------*/

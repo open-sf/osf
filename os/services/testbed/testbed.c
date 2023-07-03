@@ -59,11 +59,15 @@ uint8_t tb_pattern_id, tb_node_type, tb_node_is_br, tb_msg_len, tb_traffic_patte
 uint8_t tb_num_src, tb_num_dst, tb_num_fwd, tb_num_br;
 
 /* Buffers */
-static uint8_t tb_rx_fifo[TB_RX_FIFO_LEN][MAX_TB_PACKET_LEN] = {{0}};
-static uint8_t tb_rx_fifo_pos = 0;
+uint8_t tb_rx_fifo[TB_RX_FIFO_LEN][MAX_TB_PACKET_LEN] = {{0}};
+uint8_t tb_rx_fifo_pos = 0;
 static uint8_t tb_tx_fifo[TB_TX_FIFO_LEN][MAX_TB_PACKET_LEN] = {{0}};
 static uint8_t tb_tx_fifo_head = 0;
 static uint8_t tb_tx_fifo_tail = 0;
+
+/* Error Isolation */
+uint16_t tb_exp_id = 0;
+uint8_t pkt_flag = 0;
 
 // Each source node is connected via software I2C to an EEPROM that contains the raw
 // sensor values to be transmitted to one or multiple (at most eight) destination nodes.
@@ -75,6 +79,7 @@ volatile uint8_t gpio_event = 0;
 /*---------------------------------------------------------------------------*/
 PROCESS(tb_eeprom_reader_process, "DCUBE EEPROM reader");
 PROCESS(tb_eeprom_writer_process, "DCUBE EEPROM writer");
+PROCESS(tb_update_pkt_flag, "Update Pkt Flag");
 PROCESS(tb_br_process, "DCUBE border router");
 
 static void print_traffic_pattern(volatile tb_pattern_t* p);
@@ -337,6 +342,7 @@ init()
   } else if(tb_node_type == NODE_TYPE_DESTINATION) {
     // destinations need to write received packets
     process_start(&tb_eeprom_writer_process, NULL);
+    process_start(&tb_update_pkt_flag, NULL);
   } else {
     // else we are a forwarder
   }
@@ -409,6 +415,13 @@ poll_write()
 }
 
 /*---------------------------------------------------------------------------*/
+static void
+poll_pkt_flag()
+{
+  process_poll(&tb_update_pkt_flag);
+}
+
+/*---------------------------------------------------------------------------*/
 void
 tb_register_read_callback(tb_read_callback cb)
 {
@@ -422,6 +435,7 @@ struct testbed_driver testbed = {
   pop,
   poll_read,
   poll_write,
+  poll_pkt_flag,
   NULL
 };
 
@@ -450,7 +464,7 @@ PROCESS_THREAD(tb_eeprom_reader_process, ev, data)
 
     DEBUG_GPIO_ON(DBG_PIN4);
     // we have been polled by the GPIO and need to read data from the EEPROM
-    eeprom.read(tb_rx_fifo[tb_rx_fifo_pos++]);
+    // eeprom.read(tb_rx_fifo[tb_rx_fifo_pos++]);
     LOG_DBG("E2-R++ %u\n", tb_rx_fifo_pos);
 
     uint8_t *rx_data;
@@ -522,6 +536,34 @@ PROCESS_THREAD(tb_eeprom_writer_process, ev, data)
 
   }
 
+  PROCESS_END();
+}
+
+/*---------------------------------------------------------------------------*/
+/* Updating Pkt Flag for DST */
+/*---------------------------------------------------------------------------*/
+PROCESS_THREAD(tb_update_pkt_flag, ev, data)
+{
+  PROCESS_BEGIN();
+
+  LOG_INFO("- Started E2-U tb_update_pkt_flag_process\n");
+  // we have been polled by the GPIO and need to update pkt_flag
+
+  while(1) {
+    PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
+    if(!eeprom.event()) {
+      continue;
+    }
+
+    // set flag
+    pkt_flag = 1;
+    
+    // init ID
+    tb_exp_id = 1;
+
+    // only needs to happen once
+    PROCESS_EXIT();
+  }
   PROCESS_END();
 }
 

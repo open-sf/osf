@@ -28,7 +28,6 @@ static volatile uint8_t read_event = 0;
 static struct etimer timer;
 
 PROCESS(tb_nulltb_process, "Null Testbed Process");
-PROCESS(update_rand_buf_index_process, "Update Rand Buf Index Process");
 /*---------------------------------------------------------------------------*/
 static inline void
 print_division(unsigned long x, unsigned long y)
@@ -46,18 +45,6 @@ static void
 spoof_isr()
 {
   read_event = 1; // spoof the ISR
-}
-
-/*---------------------------------------------------------------------------*/
-static void 
-update_payload_index()
-{
-    uint8_t i;
-    for(i = 0; i < tb_msg_len; i++)
-    {
-      tb_rand_buf_index++;
-      tb_rand_buf_index = tb_rand_buf_index % 255;
-    }
 }
 
 /*---------------------------------------------------------------------------*/
@@ -90,7 +77,6 @@ init(void)
   LOG_INFO("NULLTB MAX PERIOD - %us\n", TB_PERIOD_MAX/CLOCK_SECOND);
 #endif
   process_start(&tb_nulltb_process, NULL);
-  process_start(&update_rand_buf_index_process, NULL);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -103,11 +89,12 @@ event() {
 static void
 eeprom_read(uint8_t* dst_buf)
 {
-  uint8_t i;
-  for(i = 0; i < tb_msg_len; i++)
-  {
-    TB_RAND_QUICK(dst_buf[i]);
-  }
+  // maybe uncomment this
+  // uint8_t i;
+  // for(i = 0; i < tb_msg_len; i++)
+  // {
+  //   TB_RAND_QUICK(dst_buf[i]);
+  // }
   read_event = 0;
   rtimer_clock_t t_end_read = RTIMER_NOW() + TB_EEPROM_READ_TIME;
   do {} while(RTIMER_CLOCK_LT(RTIMER_NOW(), t_end_read));
@@ -142,29 +129,13 @@ schedule_read() {
     etimer_set(&timer, next_send);
 }
 
-/*------------------------------------------------------------------------------*/
-static void schedule_update() {
-  #if TB_PERIOD
-      /* Periodic send timer. */
-      clock_time_t next_update = TB_PERIOD;
-  #else
-      /* Aperiodic send timer. */
-      clock_time_t next_update = TB_PERIOD_MIN + RAND_UP_TO(TB_PERIOD_MAX - TB_PERIOD_MIN);
-  #endif
-  #if LOG_LEVEL >= LOG_LEVEL_DBG
-      LOG_DBG("Update in... ");
-      print_division(next_update, CLOCK_SECOND);
-      LOG_DBG_("s  %lu\n", next_update);
-  #endif
-    etimer_set(&timer, next_update);
-}
-
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(tb_nulltb_process, ev, data)
 {
   PROCESS_BEGIN();
 
-  if(tb_node_type != NODE_TYPE_SOURCE) {
+  // try to remove pkt_flag here
+  if(tb_node_type != NODE_TYPE_SOURCE && pkt_flag == 1) {
     LOG_WARN("Node type is (%s). Is not source, exiting nulltb reading process!\n", NODE_TYPE_TO_STR(tb_node_type));
     PROCESS_EXIT();
   }
@@ -176,28 +147,6 @@ PROCESS_THREAD(tb_nulltb_process, ev, data)
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));
     spoof_isr(); // spoof the ISR
     schedule_read();
-  }
-
-  PROCESS_END();
-}
-
-/*---------------------------------------------------------------------------*/
-PROCESS_THREAD(update_rand_buf_index_process, ev, data)
-{
-  PROCESS_BEGIN();
-
-  if(tb_node_type != NODE_TYPE_DESTINATION) {
-    LOG_WARN("Node type is (%s). Is not dst, exiting nulltb reading process!\n", NODE_TYPE_TO_STR(tb_node_type));
-    PROCESS_EXIT();
-  }
-
-  schedule_update();
-
-  while(1) {
-    /* Wait for the periodic timer to expire and then restart the timer. */
-    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));
-    update_payload_index();
-    schedule_update();
   }
 
   PROCESS_END();

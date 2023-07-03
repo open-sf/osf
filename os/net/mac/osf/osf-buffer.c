@@ -193,7 +193,12 @@ osf_buf_tx_put(uint8_t *data, uint8_t len, uint8_t dst)
   if ((el != NULL))  {
     if(len <= OSF_DATA_LEN_MAX) {
       /* Packet specific stuff */
-      el->id = ++current_data_id;
+      if(osf.epoch % 3 == 0 || current_data_id == 0) {
+        el->id = ++current_data_id;
+      } 
+      else {
+        el->id = current_data_id;
+      }
       el->src = node_id;
       el->dst = dst;
       /* Needed for this buf */

@@ -152,6 +152,7 @@ no_rx()
       node_is_joined = 0;
       osf.proto->index = osf.proto->len;
       LOG_WARN("{ep-%u} Resync! Failed epochs %u\n", osf.epoch, osf.failed_epochs);
+      was_out_of_sync = 1;
     }
   }
 }

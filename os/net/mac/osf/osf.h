@@ -488,6 +488,9 @@ extern uint8_t node_is_source;
 extern uint8_t node_is_destination;
 extern uint8_t node_is_br;
 
+extern uint8_t was_out_of_sync;
+extern uint8_t exp_buf[TB_CONF_NULLTB_DATA_LEN];
+
 /*---------------------------------------------------------------------------*/
 /* Callback for notifying other processes of received data */
 typedef void (*osf_input_callback_t)(uint8_t *data, uint8_t len);

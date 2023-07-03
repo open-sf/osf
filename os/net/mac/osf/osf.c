@@ -48,6 +48,7 @@
 
 #if BUILD_WITH_TESTBED
 #include "services/testbed/testbed.h"
+#include "services/testbed/testbed-rand.h"
 #endif
 
 #include "nrf_timer.h"
@@ -113,6 +114,9 @@ uint8_t osf_timesync = 0;
 uint8_t node_is_source = 0;
 uint8_t node_is_destination = 0;
 uint8_t node_is_br = 0;
+
+uint8_t was_out_of_sync = 0;
+uint8_t exp_buf[TB_CONF_NULLTB_DATA_LEN] = {0};
 
 /* Timings */
 rtimer_clock_t t_ref = 0;          // ref time for start of each slot
@@ -199,6 +203,7 @@ osf_sync(void)
   /* Calculate drift if already synced */
   if(node_is_synced) {
     osf.t_epoch_drift = t_epoch_ref_tmp - osf.t_epoch_ref;
+    was_out_of_sync = 0;
   }
   /* Sync */
   osf_pkt_s_round_t *rnd_pkt = (osf_pkt_s_round_t *)osf_buf_rnd_pkt;
@@ -272,6 +277,45 @@ set_timesync()
 /* Round scheduling */
 /*---------------------------------------------------------------------------*/
 static void
+update_id(uint16_t ep) {
+  if(ep % 3 == 0) {
+    // set id
+  if(pkt_flag == 1) {
+    tb_exp_id++;
+  }
+  if (tb_exp_id == 0 && pkt_flag == 1){
+    tb_exp_id = 1;
+  }
+  }
+}
+
+static void
+update_msg(uint16_t seed, uint8_t *dst_buf)
+{
+  // set seed relative to epoch
+  if(tb_node_type == NODE_TYPE_SOURCE) {
+    tb_rand_init(seed);
+  }
+  else if (tb_node_type == NODE_TYPE_DESTINATION) {
+    tb_rand_init(seed-1);
+  }
+
+  // update buffer
+  uint8_t i;
+  for(i = 0; i < tb_msg_len; i++)
+  {
+    TB_RAND(dst_buf[i], TB_RAND_BUF_MAX);
+  }
+
+  if(tb_node_type == NODE_TYPE_SOURCE) {
+    update_id(osf.epoch);
+  }
+  else {
+    update_id(osf.epoch-1);
+  }
+}
+
+static void
 schedule_epoch()
 {
   /* Increment the epoch counter */
@@ -286,7 +330,18 @@ schedule_epoch()
   } else {
 #if BUILD_WITH_TESTBED
     if (tb_node_type == NODE_TYPE_SOURCE && node_is_synced) {
+      /* Update packet payload */
+      uint16_t src_seed = osf.epoch % 3;
+      src_seed = osf.epoch - src_seed;
+      update_msg(src_seed, tb_rx_fifo[tb_rx_fifo_pos++]);
       testbed.poll_read();
+    }
+    else if (tb_node_type == NODE_TYPE_DESTINATION && node_is_synced) {
+      /* Update packet payload */
+      uint16_t dst_seed = (osf.epoch - 1) % 3;
+      dst_seed = osf.epoch - dst_seed;
+      update_msg(dst_seed, exp_buf);
+      testbed.poll_pkt_flag();
     }
 #endif
     /* Clear protocol schedule */
@@ -329,6 +384,7 @@ schedule_ch_timeout(rtimer_clock_t now)
     /* Print so we know we are still alive */
     if(n_ch_timeouts && !(n_ch_timeouts % 20)) {
       LOG_INFO("{%u|syn-%-4u} <3\n", node_id, n_ch_timeouts);
+      was_out_of_sync = 1;
     }
   /* If we are synced, we want to try and hop with the initiator(s) */
   } else {
