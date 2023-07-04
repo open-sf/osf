@@ -207,7 +207,8 @@ stop()
       uint16_t i;
       memset(bv_buf, 0, sizeof(bv_buf));
       // convert bv_arr to ones and zeros
-      packet_len_bits = (osf_buf_len + sizeof(bv_crc)) * 8;
+      // packet_len_bits = (osf_buf_len + sizeof(bv_crc)) * 8;
+      packet_len_bits = (osf_buf_len) * 8;
       for (i = 0; i < packet_len_bits; i++) {
         if((bv_arr[i] >= 0) ? 1 : 0) {
           OSF_SET_BIT_BYTE(bv_buf, i);
@@ -267,7 +268,9 @@ stop()
       // osf_log_d("bits", &bv_arr, packet_len_bits);
     }
   }
-  print_round_summary();
+  if(tb_node_type == NODE_TYPE_DESTINATION) {
+    print_round_summary();
+  }
   // clear errors for next round
   memset(&err_arr, 0, sizeof(err_arr));
   bv_success_flag = -1;
@@ -282,8 +285,8 @@ static void
 isolate_errors()
 {
   packet_len_bits = osf_buf_len * 8;
-  uint16_t i;
-  for (i = 0; i < packet_len_bits; i++) {
+  uint32_t i;
+  for (i = 8; i < packet_len_bits; i++) {
     if(OSF_CHK_BIT_BYTE(exp_pkt_buf, i) ^ OSF_CHK_BIT_BYTE(osf_buf, i)) {
       err_arr[i]++;
     }

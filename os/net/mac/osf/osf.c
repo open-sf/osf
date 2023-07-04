@@ -280,12 +280,12 @@ static void
 update_id(uint16_t ep) {
   if(ep % 3 == 0) {
     // set id
-  if(pkt_flag == 1) {
-    tb_exp_id++;
-  }
-  if (tb_exp_id == 0 && pkt_flag == 1){
-    tb_exp_id = 1;
-  }
+    if(pkt_flag == 1) {
+      tb_exp_id++;
+    }
+    if (tb_exp_id == 0 && pkt_flag == 1) {
+      tb_exp_id = 1;
+    }
   }
 }
 
