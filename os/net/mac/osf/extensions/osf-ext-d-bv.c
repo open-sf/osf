@@ -92,9 +92,11 @@ static void
 start(uint8_t rnd_type, uint8_t initiator, uint8_t data_len)
 {
   // Create packet to use for error isolation
-  memset(&exp_pkt_buf, 0, sizeof(exp_pkt_buf));
-  create_expected_packet();
-  // osf_log_x("Packet Calclatd in start", exp_pkt_buf, osf_buf_len);
+  if(tb_node_type == NODE_TYPE_DESTINATION) {
+    memset(&exp_pkt_buf, 0, sizeof(exp_pkt_buf));
+    create_expected_packet();
+    osf_log_x("Packet Calclatd in start", exp_pkt_buf, osf_buf_len);
+  }
   round_num++;  
   if(node_is_synced && new_id) {
     // osf_log_u("new_id", &new_id, 1);
@@ -140,7 +142,7 @@ rx_ok(uint8_t rnd_type, uint8_t *data, uint8_t data_len)
   exp_hdr->slot = osf.slot;
 
   if (was_out_of_sync == 1 && pkt_flag == 1) {
-    PRINT("resync\n");
+    // PRINT("resync\n");
     uint16_t tmp = (osf.epoch-1) % 3;
     tmp = (osf.epoch-1) - tmp;
     resync(rnd_pkt->id, tmp);
@@ -149,7 +151,7 @@ rx_ok(uint8_t rnd_type, uint8_t *data, uint8_t data_len)
     was_out_of_sync = 0;
   }
   // osf_log_x("Packet Calclatd in rx_ok", exp_pkt_buf, osf_buf_len);
-  // osf_log_x("Packet Received in rx_ok", osf_buf, osf_buf_len);
+  osf_log_x("Packet Received in rx_ok", osf_buf, osf_buf_len);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -159,7 +161,7 @@ rx_error()
   // Try bit voting if we haven't already been successful. We can then use
   // the packet at the END of the flood (we might still get a correct pkt)
   if(node_is_synced && !bv_success) {
-    uint16_t i;
+    uint32_t i;
     packet_len = osf_buf_len;
     packet_len_bits = packet_len * 8;
 
@@ -204,8 +206,8 @@ stop()
 {
   if (node_is_synced && osf.proto->role == OSF_ROLE_DST) {
     if(!osf.n_rx_ok && bv_count > 2) {
-      uint16_t i;
-      memset(bv_buf, 0, sizeof(bv_buf));
+      uint32_t i;
+      memset(&bv_buf, 0, sizeof(bv_buf));
       // convert bv_arr to ones and zeros
       // packet_len_bits = (osf_buf_len + sizeof(bv_crc)) * 8;
       packet_len_bits = (osf_buf_len) * 8;
