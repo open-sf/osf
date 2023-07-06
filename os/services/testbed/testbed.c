@@ -559,7 +559,7 @@ PROCESS_THREAD(tb_update_pkt_flag, ev, data)
     pkt_flag = 1;
     
     // init ID
-    tb_exp_id = 0;
+    tb_exp_id = 1;
 
     // only needs to happen once
     PROCESS_EXIT();

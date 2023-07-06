@@ -203,14 +203,25 @@ class DataPlotter:
             for filename in filenames:
                 data = pd.read_csv(filename)
                 # Extract the error positions
-                for (err_poses, ok) in zip(data["ERRORS"], data["BV_SUCCESS_FLAG"]):
+                for (err_poses, ok, rnd) in zip(data["ERRORS"], data["BV_SUCCESS_FLAG"], data["ROUND"]):
                     indices = err_poses.strip("\{\}").split(";")
                     if len(indices) > 0:
                         for index in indices:
                             pair = index.split(":")
                             if len(pair) > 1:
                                 i = int(pair[0])
-                                freq = int(pair[1])
+
+                                # stop in case of errors
+                                try:
+                                    freq = int(pair[1])
+                                except:
+                                    print("err in rnd ", rnd, " index ", i)
+                                    exit()
+
+                                if(i > 2040 or freq > 6):
+                                    print("err in rnd ", rnd, " index ", i)
+                                    exit()
+
                                 if i not in self.error_positions:
                                     self.error_positions[i] = freq
                                 else:
