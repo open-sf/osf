@@ -69,7 +69,7 @@ class AddTS:
                 
             # Write the line to the output file
             to_be_written = '['+datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')+']'+" "+ line
-            print('-----------------------------')
+            # print('-----------------------------')
             print(to_be_written)
             print('-----------------------------')
             output_file.write(to_be_written + '\n')

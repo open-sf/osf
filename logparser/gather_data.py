@@ -163,11 +163,11 @@ def main(argv):
     log_parser = Parser()
 
     if len(argv) < 1:
-        print("usage: python3 gather_data_2.py <log_dir>")
+        print("usage: python3 gather_data.py <log_dir>")
         exit(1)
     elif not os.path.exists(argv[0]):
         print("please enter a valid directory")
-        print("usage: python3 gather_data_2.py <log_dir>")
+        print("usage: python3 gather_data.py <log_dir>")
         exit(1)
 
     tot_paths = log_parser.get_all_path(argv[0])
