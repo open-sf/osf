@@ -8,10 +8,11 @@ import subprocess
 
 class AddTS:
 
-    def __init__(self, window_length) -> None:
+    def __init__(self, window_length,lg_dir) -> None:
         self.window_length = window_length
         self.current_time = datetime.datetime.now()
         self.time_delta = self.current_time + datetime.timedelta(minutes=self.window_length)
+        self.logs_dir = lg_dir
 
     def create_log_folder(self):
         """
@@ -21,7 +22,7 @@ class AddTS:
         curr_time = datetime.datetime.now()
         folder_name = curr_time.strftime("%Y%m%d_%H%M")
 
-        log_folder_path = os.path.join(os.getcwd(), "logs", folder_name)
+        log_folder_path = os.path.join(self.logs_dir, folder_name)
 
         if not os.path.exists(log_folder_path):
             print('Creating log folder: ', log_folder_path)
@@ -47,8 +48,6 @@ class AddTS:
         :param file_path: path of the log file
         :return: None
         """    
-        line_number = 0
-
         #(For Windows)
         # powershell_command = f'Get-Content -Wait -Tail 1 "{file_path}"'
         # input_process = subprocess.Popen(['powershell.exe', '-Command', powershell_command], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
@@ -58,14 +57,13 @@ class AddTS:
 
         # Open the output file for writing
         log_folder = self.create_log_folder()
-        output_file = open(log_folder+'/output_log'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'.txt', 'w')
+        output_file_name = log_folder+'/output_log'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'.txt'
+        output_file = open(output_file_name, 'w')   
         ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-        
         # Read and write the continuously updating input file
         while True:
             line = input_process.stdout.readline().decode().strip()
             line = ansi_escape.sub('', line)
-            line_number += 1
                 
             # Write the line to the output file
             to_be_written = '['+datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')+']'+" "+ line
@@ -75,16 +73,13 @@ class AddTS:
             output_file.write(to_be_written + '\n')
             output_file.flush()
             
-            # if line_number == 1000:
-            #     output_file.close()
-            #     output_file = open(log_folder+'output_log'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'.txt', 'w')
-            #     line_number = 0
             if self.is_next_window():
                 output_file.close()
-                log_folder = self.create_log_folder()
-                output_file = open(log_folder+'/output_log'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'.txt', 'w')
-                line_number = 0
-                self.reset_time_delta()
+                print('-----------------------------Experiment Finished-----------------------------')
+                input_process.terminate()
+                # input_process.wait()
+                return True
+        return None
 
 def main(argv):
     if len(argv) != 2:
@@ -93,7 +88,7 @@ def main(argv):
         exit(1)
 
     try:
-        int(argv[0])
+        float(argv[0])
     except:
         print("window length must be a number")
         print("usage: python3 add_timestamp.py <window_length> <file_name>")
@@ -104,8 +99,8 @@ def main(argv):
         print("usage: python3 add_timestamp.py <window_length> <file_name>")
         exit(1)
 
-    ats_proc = AddTS(int(argv[0]))
+    ats_proc = AddTS(float(argv[0]))
     ats_proc.add_timestamp(argv[1])
 
-if __name__ == '__main__':
-    main(sys.argv[1:])
+# if __name__ == '__main__':
+#     main(sys.argv[1:])
