@@ -3,6 +3,7 @@
 #include "net/mac/osf/osf.h"
 #include "net/mac/osf/osf-packet.h"
 #include "net/mac/osf/osf-log.h"
+#include "net/mac/osf/osf-stat.h"
 #include "net/mac/osf/extensions/osf-ext.h"
 #include "os/services/testbed/testbed-rand.h"
 
@@ -95,7 +96,7 @@ start(uint8_t rnd_type, uint8_t initiator, uint8_t data_len)
   if(tb_node_type == NODE_TYPE_DESTINATION) {
     memset(&exp_pkt_buf, 0, sizeof(exp_pkt_buf));
     create_expected_packet();
-    osf_log_x("Packet Calclatd in start", exp_pkt_buf, osf_buf_len);
+    // osf_log_x("Packet Calclatd in start", exp_pkt_buf, osf_buf_len);
   }
   round_num++;  
   if(node_is_synced && new_id) {
@@ -151,7 +152,7 @@ rx_ok(uint8_t rnd_type, uint8_t *data, uint8_t data_len)
     was_out_of_sync = 0;
   }
   // osf_log_x("Packet Calclatd in rx_ok", exp_pkt_buf, osf_buf_len);
-  osf_log_x("Packet Received in rx_ok", osf_buf, osf_buf_len);
+  // osf_log_x("Packet Received in rx_ok", osf_buf, osf_buf_len);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -354,9 +355,9 @@ print_round_summary()
   packet_len_bits = osf_buf_len*8;
 
   PRINT("EP:%d,RND:%d,N_RX:%d,N_ERR_PKTS:%d,"
-        "BV_CNT:%d,BV_SCS_FLAG:%d,ERRS:{",
+        "BV_CNT:%d,BV_SCS_FLAG:%d,BV_OK:%d,ERRS:{",
         osf.epoch, round_num, osf.n_rx_ok + osf.n_rx_crc, osf.n_rx_crc,
-        bv_count, bv_success_flag);
+        bv_count, bv_success_flag,bv_ok_cnt);
   
   if (err_flag){
     uint32_t i;
