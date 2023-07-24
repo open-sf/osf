@@ -78,7 +78,7 @@ class AddTS:
                 print('-----------------------------Experiment Finished-----------------------------')
                 input_process.terminate()
                 # input_process.wait()
-                return True
+                return True,log_folder
         return None
 
 def main(argv):

@@ -49,6 +49,7 @@ class ExperimentStructure:
     def make_physical_layer_subdirs(self, pl_name):
         """
         This function creates the subdirectories (Graphs, CSVFiles) for each physical layer used in the experiment
+        :param pl_name: Name of the physical layer
         :return: None
         """
 
@@ -87,6 +88,7 @@ class ExperimentStructure:
     def get_physical_layer_directory(self, pl_name):
         """
         This function returns the directory path of the physical layer
+        :param pl_name: Name of the physical layer
         :return: directory path
         """
 

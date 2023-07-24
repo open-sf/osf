@@ -6,7 +6,7 @@ class FileReader:
     """
     def __init__(self, dp) -> None:
         self.directory_path = dp
-        self.filedirectory = {}
+        self.filedirectory = []
     
     def get_log_file_directories(self):
         """
@@ -28,19 +28,19 @@ class FileReader:
         This function reads the log files in the directory and stores the file paths in a dictionary
         :return: None
         """
-        self.get_log_file_directories()
-        for dir in self.filedirectory.keys():
-            file_names = os.listdir(dir)
-            # Sort the file names based on modification time
-            sorted_file_names = sorted(file_names, key=lambda x: os.path.getmtime(os.path.join(dir+'/'+x)))
-            # Read the files in the sorted order
-            for filename in sorted_file_names:
-                # Construct the full file path
-                file_path = os.path.join(dir+'/'+filename)
-                print('------------Adding file: ', file_path, ' ------------')
-                # Check if the path is a file
-                if os.path.isfile(file_path):
-                    self.filedirectory[dir].append(file_path)
+        # self.get_log_file_directories()
+        # for dir in self.filedirectory.keys():
+        file_names = os.listdir(self.directory_path)
+        # Sort the file names based on modification time
+        sorted_file_names = sorted(file_names, key=lambda x: os.path.getmtime(os.path.join(self.directory_path+'/'+x)))
+        # Read the files in the sorted order
+        for filename in sorted_file_names:
+            # Construct the full file path
+            file_path = os.path.join(self.directory_path+'/'+filename)
+            print('------------Adding file: ', file_path, ' ------------')
+            # Check if the path is a file
+            if os.path.isfile(file_path):
+                self.filedirectory.append(file_path)
         return self.filedirectory
     
     def get_csv_file_paths(self):
@@ -48,20 +48,20 @@ class FileReader:
         This function reads the CSV files in the directory and stores the file paths in a dictionary
         :return: None
         """
-        self.get_log_file_directories()
-        for dir in self.filedirectory.keys():
-            if os.path.isdir(dir+'/CSVFiles'):
-                file_names = os.listdir(dir+'/CSVFiles')
+        # self.get_log_file_directories()
+        # for dir in self.filedirectory.keys():
+        if os.path.isdir(self.directory_path+'/CSVFiles'):
+            file_names = os.listdir(self.directory_path+'/CSVFiles')
 
-                # Sort the file names based on modification time
-                sorted_file_names = sorted(file_names, key=lambda x: os.path.getmtime(os.path.join(dir+'/CSVFiles/', x)))
-                # Read the files in the sorted order
-                for filename in sorted_file_names:
-                    # Construct the full file path
-                    file_path = os.path.join(dir+'/CSVFiles/', filename)
-                    print('------------Adding file: ', file_path, ' ------------')
-                    # Check if the path is a file
-                    if os.path.isfile(file_path):
-                        self.filedirectory[dir].append(file_path)
+            # Sort the file names based on modification time
+            sorted_file_names = sorted(file_names, key=lambda x: os.path.getmtime(os.path.join(self.directory_path+'/CSVFiles/', x)))
+            # Read the files in the sorted order
+            for filename in sorted_file_names:
+                # Construct the full file path
+                file_path = os.path.join(self.directory_path+'/CSVFiles/', filename)
+                print('------------Adding file: ', file_path, ' ------------')
+                # Check if the path is a file
+                if os.path.isfile(file_path):
+                    self.filedirectory.append(file_path)
 
         return self.filedirectory

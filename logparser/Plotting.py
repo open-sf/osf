@@ -12,7 +12,7 @@ class DataPlotter:
     """ 
     This class plots different properties of data from the CSV files
     """
-    def __init__(self, dp):
+    def __init__(self, main_dp, dp):
         self.error_positions = {}
         self.corrected_error_positions = {}
         self.tot_errs = {}
@@ -20,8 +20,8 @@ class DataPlotter:
         self.window_number = 0
         self.phys_lyr = ''
         self.fr = FileReader(dp)
-        self.logs_dir = dp
-        self.file_paths = {}
+        self.logs_dir = main_dp
+        self.file_paths = []
         # Colour-blind cycle by thriveth: https://gist.github.com/thriveth
         self.CB_color_cycle = ['#377eb8', '#ff7f00', '#4daf4a',
                                 '#f781bf', '#a65628', '#984ea3',
@@ -57,17 +57,16 @@ class DataPlotter:
         as the key and the total errors as the value
         :return: None
         """
-        for filenames in self.file_paths.values():
-            for filename in filenames:
-                data = pd.read_csv(filename)
-                for err in data['N_ERR_PKTS']:
-                    err = int(err)
-                    if self.window_number not in self.tot_errs:
-                        self.tot_errs[self.window_number] = err
-                    else:
-                        self.tot_errs[self.window_number] += err
-                print('Total errors: ', self.tot_errs[self.window_number])
-                self.window_number += 1
+        for filename in self.file_paths:
+            data = pd.read_csv(filename)
+            for err in data['N_ERR_PKTS']:
+                err = int(err)
+                if self.window_number not in self.tot_errs:
+                    self.tot_errs[self.window_number] = err
+                else:
+                    self.tot_errs[self.window_number] += err
+            print('Total errors: ', self.tot_errs[self.window_number])
+            self.window_number += 1
 
     def get_total_errors_time(self):
         """
@@ -139,38 +138,37 @@ class DataPlotter:
         :return: None
         """
         # Read the data from the csv file
-        for filenames in self.file_paths.values():
-            for filename in filenames:
-                data = pd.read_csv(filename)
-                # Extract the error positions
-                for (err_poses, ok, rnd) in zip(data["ERRORS"], data["BV_SUCCESS_FLAG"], data["ROUND"]):
-                    indices = err_poses.strip("\{\}").split(";")
-                    if len(indices) > 0:
-                        for index in indices:
-                            pair = index.split(":")
-                            if len(pair) > 1:
-                                i = int(pair[0])
+        for filename in self.file_paths:
+            data = pd.read_csv(filename)
+            # Extract the error positions
+            for (err_poses, ok, rnd) in zip(data["ERRORS"], data["BV_SUCCESS_FLAG"], data["ROUND"]):
+                indices = err_poses.strip("\{\}").split(";")
+                if len(indices) > 0:
+                    for index in indices:
+                        pair = index.split(":")
+                        if len(pair) > 1:
+                            i = int(pair[0])
 
-                                # stop in case of errors
-                                try:
-                                    freq = int(pair[1])
-                                except:
-                                    print("err in rnd ", rnd, " index ", i)
-                                    exit()
+                            # stop in case of errors
+                            try:
+                                freq = int(pair[1])
+                            except:
+                                print("err in rnd ", rnd, " index ", i)
+                                exit()
 
-                                if(i > 2040 or freq > 6):
-                                    print("err in rnd ", rnd, " index ", i)
-                                    exit()
+                            if(i > 2040 or freq > 6):
+                                print("err in rnd ", rnd, " index ", i)
+                                exit()
 
-                                if i not in self.error_positions:
-                                    self.error_positions[i] = freq
-                                else:
-                                    self.error_positions[i] += freq
+                            if i not in self.error_positions:
+                                self.error_positions[i] = freq
+                            else:
+                                self.error_positions[i] += freq
 
-                                if ok == 1 and i not in self.corrected_error_positions:
-                                    self.corrected_error_positions[i] = freq
-                                elif ok == 1 and i in self.corrected_error_positions:
-                                    self.corrected_error_positions[i] += freq
+                            if ok == 1 and i not in self.corrected_error_positions:
+                                self.corrected_error_positions[i] = freq
+                            elif ok == 1 and i in self.corrected_error_positions:
+                                self.corrected_error_positions[i] += freq
 
     def plot_error_positions(self):
         """
@@ -215,6 +213,9 @@ class DataPlotter:
 
             # Display the plot
             # plt.show()
+            # if len(os.listdir(self.logs_dir+"/Graphs")) > 0:
+            #     print("Graph already present")
+            #     return 
             plt.savefig(name_of_fig)
             print('Saved plot to ', name_of_fig)
         else:
