@@ -355,9 +355,9 @@ print_round_summary()
   packet_len_bits = osf_buf_len*8;
 
   PRINT("EP:%d,RND:%d,N_RX:%d,N_ERR_PKTS:%d,"
-        "BV_CNT:%d,BV_SCS_FLAG:%d,BV_OK:%d,ERRS:{",
+        "BV_CNT:%d,BV_SCS_FLAG:%d,ERRS:{",
         osf.epoch, round_num, osf.n_rx_ok + osf.n_rx_crc, osf.n_rx_crc,
-        bv_count, bv_success_flag,bv_ok_cnt);
+        bv_count, bv_success_flag);
   
   if (err_flag){
     uint32_t i;

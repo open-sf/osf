@@ -117,7 +117,8 @@ uint8_t node_is_br = 0;
 
 uint8_t was_out_of_sync = 0;
 uint8_t exp_buf[TB_CONF_NULLTB_DATA_LEN] = {0};
-
+uint8_t pkt_number = 0;
+uint16_t prev_seed = 0;
 /* Timings */
 rtimer_clock_t t_ref = 0;          // ref time for start of each slot
 static rtimer_clock_t t_ev_ready_ts = 0;  // end event timestamp
@@ -309,6 +310,11 @@ update_msg(uint16_t seed, uint8_t *dst_buf)
 
   if(tb_node_type == NODE_TYPE_SOURCE) {
     update_id(osf.epoch);
+    if(prev_seed != seed){
+      pkt_number++;
+      LOG_INFO("Packet_number: %u\n", pkt_number);
+      prev_seed = seed;
+    }
   }
   else {
     update_id(osf.epoch-1);
