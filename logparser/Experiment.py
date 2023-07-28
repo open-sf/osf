@@ -195,14 +195,14 @@ class Experiment:
         print('Calculating statistics...')
         stats = StatsCalculator(self.logs_dir,logs_dir)
 
+        # Logs are different depending on BV enabled
         if not self.is_bv:
             stats.calc_rx_prr_no_bv()
-            # stats.calc_rx_pdr_no_bv()
+            stats.calc_rx_pdr_no_bv()
         else:
-
             stats.calc_avg_rx_before_correction()
-            stats.calc_err_pkts_correct_pkt()
-            stats.calc_suc_fail_bv_count()
+            # stats.calc_err_pkts_correct_pkt()
+            # stats.calc_suc_fail_bv_count()
             stats.calc_rx_prr()
             stats.calc_rx_pdr()
             stats.calc_total_nrxs()
