@@ -192,7 +192,7 @@ class StatsCalculator:
         self.add_line('\nThis statistics is without bit voting\n')
         self.add_line(f'Total correct receptions: {tot_correct_rx}\n')
         self.add_line(f'Total failed receptions: {tot_failed_rx}\n')
-        self.add_line(f'Total missed packets: {tot_missed_pkts}\n')
+        self.add_line(f'Total missed packets: {tot_missed_rx}\n')
         # self.add_line(f'Packet reception rate:  {(tot_correct_rx/max(1, (tot_correct_rx+tot_failed_rx)))*100}\n')
         # Added missed slots to calculation
         self.add_line(f'Packet reception rate:  {(tot_correct_rx/max(1, (tot_correct_rx+tot_failed_rx+tot_missed_rx)))*100}\n')
