@@ -6,9 +6,11 @@ Open-SF (OSF) is an open-source stack for the development of multi-PHY Synchrono
 
 OSF *completely* replaces BlueFlood's polling-based radio driver with an interrupt-based driver, allowing fine-grained timer control of the state machine. Furthermore OSF supports a number of easy-to-use tools for benchmarking and testing with the [D-Cube](https://iti-testbed.tugraz.at/wiki/index.php/Main_Page) low-power wireless testbed.
 
-## OSFv6 (IPv6 Support)
+## OSFv6 (IPv6 Support) and Demo Paper
 
 We have recently added IPv6 support as part of OSF, and will present this in the demo sessions at [EWSN '23](https://events.dimes.unical.it/ewsn2023/). While this has not yet been fully integrated with the original OSF (and so has not yet been merged to main), you can check out the branch [here](https://github.com/open-sf/osf/tree/osfv6).
+
+The OSFv6 demo paper can be found [here](http://www.carloalbertoboano.com/documents/baddeley23osfv6.pdf).
 
 ## Features
 
