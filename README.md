@@ -2,9 +2,13 @@
 
 ## Intro
 
-Open-SF (OSF) is an open-source stack for the development of multi-PHY Synchronous Flooding (SF) protocols, presented at EWSN '22. Based on the [Contiki-NG](https://github.com/contiki-ng/contiki-ng) low-power operating system, OSF was originally forked from [BlueFlood](https://github.com/iot-chalmers/BlueFlood). Currently OSF only supports the [Nordic nRF52840](https://www.nordicsemi.com/Products/Development-hardware/nrf52840-dk) (Contiki-NG has support for both the nRF52840-DK and the nRF52840-dongle).
+Open-SF (OSF) is an open-source stack for the development of multi-PHY Synchronous Flooding (SF) protocols, presented at [EWSN '22](https://ewsn2022.jku.at/). Based on the [Contiki-NG](https://github.com/contiki-ng/contiki-ng) low-power operating system, OSF was originally forked from [BlueFlood](https://github.com/iot-chalmers/BlueFlood). Currently OSF only supports the [Nordic nRF52840](https://www.nordicsemi.com/Products/Development-hardware/nrf52840-dk) (Contiki-NG has support for both the nRF52840-DK and the nRF52840-dongle).
 
 OSF *completely* replaces BlueFlood's polling-based radio driver with an interrupt-based driver, allowing fine-grained timer control of the state machine. Furthermore OSF supports a number of easy-to-use tools for benchmarking and testing with the [D-Cube](https://iti-testbed.tugraz.at/wiki/index.php/Main_Page) low-power wireless testbed.
+
+## OSFv6 (IPv6 Support)
+
+We have recently added IPv6 support as part of OSF, and will present this in the demo sessions at [EWSN '23](https://events.dimes.unical.it/ewsn2023/). While this has not yet been fully integrated with the original OSF (and so has not yet been merged to main), you can check out the branch [here](https://github.com/open-sf/osf/tree/osfv6).
 
 ## Features
 
@@ -28,11 +32,19 @@ Full details of the OSF architecture, along with extensive benchmarking results,
 
 ```
 @inproceedings{baddeley2022osf,
-  author= {Baddeley, Michael and Gyl, Yevgen and Schuss, Markus and Ma, Xiaoyuan and Boano, Carlo Alberto},
+  author= {Baddeley, Michael and Gyl, Yevgen and Schu{\ss}, Markus and Ma, Xiaoyuan and Boano, Carlo Alberto},
   title= {{OSF: An Open-Source Framework for Synchronous Flooding over Multiple Physical Layers}},
   booktitle= {Proceedings of the $19^{th}$ International Conference on Embedded Wireless Systems and Networks ({EWSN})},
   month= oct,
   year=2022,
+};
+
+@inproceedings{baddeley23osfv6,
+  author = {Michael Baddeley and Markus Schu{\ss} and Yevgen Gyl and Monika Prakash and Xiaoyuan Ma and Carlo Alberto Boano},
+  title = {{Video over Synchronous Flooding with OSFv6}},
+  booktitle = {Proceedings of the $20^{th}$ International Conference on Embedded Wireless Systems and Networks ({EWSN}), demo session},
+  month = sep,	
+  year = 2023,
 };
 ```
 
