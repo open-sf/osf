@@ -90,7 +90,12 @@ void
 platform_init_stage_one(void)
 {
   gpio_hal_init();
+  /* LEDS is SF application specific flag.
+   * Need for avoid initialization of led's gpio lines.
+   */
+#if LEDS == 1
   leds_init();
+#endif
 }
 /*---------------------------------------------------------------------------*/
 void

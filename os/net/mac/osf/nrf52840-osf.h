@@ -124,10 +124,6 @@
    rtimer_clock_t           tx_rx_end_offset_ticks;
    rtimer_clock_t           packet_air_ticks;
    rtimer_clock_t           slot_duration;
-#if OSF_EXT_ND
-   /* Noise Detection */
-   int8_t                   noise_threshold;
-#endif
  } osf_phy_conf_t;
 
 
@@ -171,7 +167,7 @@ extern osf_phy_conf_t osf_phy_conf_2M_LF;
 /*---------------------------------------------------------------------------*/
 osf_phy_conf_t* my_radio_get_phy_conf(uint8_t mode);
 rtimer_clock_t my_radio_set_phy_airtime(osf_phy_conf_t *phy, uint8_t len, uint8_t statlen);
-void my_radio_init(osf_phy_conf_t *phy_conf, void *my_tx_buffer, uint8_t len, uint8_t statlen, uint8_t addr);
+void my_radio_init(osf_phy_conf_t *phy_conf, void *my_tx_buffer, uint8_t len, uint8_t statlen, uint8_t round_type);
 void my_radio_set_tx_power(uint8_t p);
 void my_radio_rx_hop_channel(uint8_t channel);
 uint8_t schedule_rx_abs(uint8_t *buf, uint8_t channel, rtimer_clock_t t_abs);

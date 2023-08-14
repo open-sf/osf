@@ -39,9 +39,6 @@
 #ifndef OSF_BUF_H_
 #define OSF_BUF_H_
 
-/* D-Cube tests need a LIFO */
-#define OSF_BUF_LIFO                      1
-
 /*---------------------------------------------------------------------------*/
 /* Bit manipulation */
 /*---------------------------------------------------------------------------*/
@@ -124,6 +121,13 @@ typedef struct osf_buf_element {
 /*---------------------------------------------------------------------------*/
 /* Queue */
 /*---------------------------------------------------------------------------*/
+/* Use a stack rather than a queue. */
+#ifdef OSF_CONF_BUF_FIFO
+#define OSF_BUF_LIFO                     0
+#else
+#define OSF_BUF_LIFO                     1
+#endif
+
 /* Size of buffer */
 #ifdef OSF_CONF_BUF_MAX_SIZE
 #define OSF_BUF_MAX_SIZE                 OSF_CONF_BUF_MAX_SIZE

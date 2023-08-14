@@ -397,6 +397,10 @@ PT_THREAD(cmd_rpl_set_root(struct pt *pt, shell_output_func output, char *args))
 
   PT_BEGIN(pt);
 
+  if (args==0) {
+    PT_EXIT(pt);
+  }
+
   SHELL_ARGS_INIT(args, next_args);
 
   /* Get first arg (0/1) */

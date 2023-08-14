@@ -74,7 +74,7 @@ static osf_log_slots_t slots[OSF_SCHEDULE_LEN_MAX];
 
 /* Radio buffer logs */
 #if OSF_LOG_LAST_PACKET
-static radio_buffer_t  radio_buf[OST_PBUF_N_MAX * OSF_SCHEDULE_LEN_MAX] = {0};
+static radio_buffer_t  radio_buf[OSF_PBUF_N_MAX * OSF_SCHEDULE_LEN_MAX] = {0}; // (OSF_PBUF_N_MAX * OSF_SCHEDULE_LEN_MAX) == 25
 static uint8_t         radio_buf_index = 0;
 #endif
 
@@ -211,18 +211,19 @@ osf_log_slot_ch()
 /*---------------------------------------------------------------------------*/
 #if OSF_LOG_LAST_PACKET
 void
-osf_log_radio_buffer(uint8_t *buf, uint8_t len, uint8_t is_tx, uint8_t rnd_pkt_len, uint8_t statlen, uint8_t round)
+osf_log_radio_buffer(uint8_t *buf, uint16_t len, uint8_t is_tx, uint8_t rnd_pkt_len, uint8_t statlen, uint8_t round)
 {
   if(radio_buf_index == osf.proto->index) {
-    memcpy(&radio_buf[radio_buf_index].buf, buf, len);
-    radio_buf[radio_buf_index].len = len;
-    radio_buf[radio_buf_index].is_tx = is_tx;
-    radio_buf[radio_buf_index].rnd_pkt_len = rnd_pkt_len;
-    radio_buf[radio_buf_index].print_phy = !statlen;
-    radio_buf[radio_buf_index].round = round;
-    radio_buf[radio_buf_index].crc = NRF_RADIO->RXCRC;
-    radio_buf[radio_buf_index].round_idx = osf.proto->index;
-    radio_buf[radio_buf_index].slot = osf.slot;
+    radio_buffer_t *rb = &radio_buf[radio_buf_index];
+    memcpy(&rb->buf, buf, len);
+    rb->len = len;
+    rb->is_tx = is_tx;
+    rb->rnd_pkt_len = rnd_pkt_len;
+    rb->print_phy = !statlen;
+    rb->round = round;
+    rb->crc = NRF_RADIO->RXCRC;
+    rb->round_idx = osf.proto->index;
+    rb->slot = osf.slot;
     radio_buf_index++;
   }
 }
@@ -428,9 +429,10 @@ print_last_packet()
     radio_buffer_t *rb = &radio_buf[j];
     LOG_INFO_("{%d, %u, %u} %s (%c): %3u ", osf.epoch, rb->round_idx, rb->slot,
       OSF_ROUND_TO_STR(rb->round), (rb->is_tx ? 'T' : 'R'), rb->len);
+    uint8_t phy_len = 0;
     /* Print PHY if not using statlen */
-    uint8_t phy_len = OSF_PKT_PHY_LEN(osf.rconf->phy->mode, !rb->print_phy);
-    if(phy_len) {
+    if(rb->print_phy) {
+      phy_len = OSF_PKT_PHY_LEN(osf.rconf->phy->mode);
       LOG_INFO_("| (%u) ", phy_len);
       for(i = 0; i < phy_len; i++) {
         LOG_INFO_("%02x ", rb->buf[i]);
@@ -445,18 +447,12 @@ print_last_packet()
       LOG_INFO_("%02x ", rb->buf[i]);
     }
     offset += OSF_PKT_HDR_LEN;
-    /* Print round header */
+    /* Print round */
     LOG_INFO_("| (%3u) ", rb->rnd_pkt_len);
     for(i = offset; i < (offset + MIN(rb->rnd_pkt_len, OSF_LOG_PRINT_LEN_MAX)); i++) {
       LOG_INFO_("%02x ", rb->buf[i]);
     }
     offset += rb->rnd_pkt_len;
-    // /* Print payload */
-    // LOG_INFO_("| (%u) ", rb->len - offset);
-    // uint8_t printlen = ((rb->len - offset) > OSF_LOG_PRINT_LEN_MAX ? OSF_LOG_PRINT_LEN_MAX : rb->len);
-    // for(i = offset; i < printlen; i++) {
-    //   LOG_INFO_("%02x ", rb->buf[i]);
-    // }
     if ((rb->len - offset) > OSF_LOG_PRINT_LEN_MAX) {
       LOG_INFO_("... %02x ",  rb->buf[rb->len - 1]);
     }

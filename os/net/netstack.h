@@ -103,9 +103,11 @@
 /* PA driver configuration. Most often set by the platform. */
 #ifdef NETSTACK_CONF_PA
 #define NETSTACK_PA NETSTACK_CONF_PA
-#else /* NETSTACK_CONF_RADIO */
+#elif PA_CONF_WITH_NRF21540
+#define NETSTACK_PA nrf21540pa_driver
+#else
 #define NETSTACK_PA nullpa_driver
-#endif /* NETSTACK_CONF_RADIO */
+#endif /* NETSTACK_CONF_PA */
 
 /* Framer selection. The framer is used by the MAC implementation
    to build and parse frames. */
@@ -143,6 +145,7 @@ extern const struct network_driver NETSTACK_NETWORK;
 extern const struct mac_driver NETSTACK_MAC;
 extern const struct radio_driver NETSTACK_RADIO;
 extern const struct framer NETSTACK_FRAMER;
+extern const struct pa_driver NETSTACK_PA;
 
 void netstack_init(void);
 

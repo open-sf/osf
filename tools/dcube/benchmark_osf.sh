@@ -1,89 +1,80 @@
-declare -a phy_arr=('BLE_2M' 'BLE_1M' 'BLE_500K' 'BLE_125K' 'IEEE')
-declare -a jam_arr=(0 1 3)
-declare -a pwr_arr=(ZerodBm)
-declare -a data_arr=(8 64 118)
-declare -a layout_arr=(3 4 6)
+# declare -a phy_arr=('BLE_2M' 'BLE_1M' 'BLE_500K' 'BLE_125K' 'IEEE')
+# declare -a jam_arr=(0 1 3)
+declare -a phy_arr=('BLE_1M')
+declare -a jam_arr=(0)
 
-
-DATA=64
-LOGGING=0
+LOGGING=1
 GPIO=0
-NTX=6
-NSLOTS=12
-PWR=ZerodBm
 
-KEY="michael"
-# KEY="ssrc"
+# Use AD site (default is Graz)
+# SITE="http://172.31.107.18"
 
-if [[ $KEY == "ssrc" ]]; then
-  DIS_PROTO=6804
-  COL_PROTO=6825
+if [[ $SITE == "http://172.31.107.18" ]]; then
+  KEY="adadmin"
+  if [[ $KEY == "adadmin" ]]; then
+    ADMIN_PROTO=1
+    DIS_PROTO=1
+    COL_PROTO=5
+  fi
 else
-  DIS_PROTO=6808
-  COL_PROTO=6846
+  # KEY="ssrc"
+  KEY="michael"
+  if [[ $KEY == "ssrc" ]]; then
+    DIS_PROTO=6804
+    COL_PROTO=6825
+  else
+    DIS_PROTO=6808
+    COL_PROTO=6846
+  fi
 fi
 
 # --------------------------------------------------------------------------- #
-# Dissemination
-# DUR=600
-# PERIOD=200
-# LAYOUT=4
-#
-# for d in "${data_arr[@]}"; do
-#   for j in "${jam_arr[@]}"; do
-#     for p in "${phy_arr[@]}"; do
-#       ./dcube.sh -POST KEY=$KEY TARGET=nrf52840 BOARD=dk -e osf -n "OSF" -p $DIS_PROTO --dur=$DUR --j=${j} --s=0 --layout=$LAYOUT --data=${d} -d "${d}B" LENGTH=${d} PHY=PHY_"${p}" PWR=$PWR PERIOD=$PERIOD CHN=1 LOGGING=$LOGGING GPIO=$GPIO NTX=$NTX NSLOTS=$NSLOTS RNTX=0 PROTO=OSF_PROTO_BCAST DCUBE=1 -sha
-#     done
-#   done
-# done
+# IPv6
+DATA=8
+DUR=120
+PERIOD=1
 
+for j in "${jam_arr[@]}"; do
+  for p in "${phy_arr[@]}"; do
+    ./dcube.sh -POST KEY=$KEY TARGET=nrf52840 BOARD=dk -e osf -n "OSF" -p $DIS_PROTO --dur=$DUR --j=${j} --layout=4 --data=$DATA -d "IPv6" PHY=PHY_"${p}" PWR=ZerodBm PERIOD=$PERIOD CHN=1 LOGGING=$LOGGING GPIO=$GPIO IPV6=1 NTA=6 NTX=3 RTX=0 WITH_BORDER_ROUTER=1 ISN=1 PROTO=OSF_PROTO_STA DCUBE=1 -sha -pri
+  done
+done
 
 # --------------------------------------------------------------------------- #
-# BACKOFF
-# DUR=600
-# LAYOUT=6
+# Dissemination
+# DUR=120
 # PERIOD=1000
-# NTA=12
 
-# NSLOTS=24
-# ./dcube.sh -POST KEY=$KEY TARGET=nrf52840 BOARD=dk -e osf -n "OSF" -p $COL_PROTO --dur=$DUR --period=5000 --j=0 --s=1 --layout=$LAYOUT --data=$DATA -d "PERIODIC_2M_24" LENGTH=$DATA PHY=PHY_BLE_2M PWR=$PWR PERIOD=$PERIOD CHN=1 LOGGING=$LOGGING GPIO=$GPIO NTX=$NTX NSLOTS=$NSLOTS NTA=$NTA PROTO=OSF_PROTO_STA DCUBE=1 EMPTY=4 RNTX=0 -sha
-# ./dcube.sh -POST KEY=$KEY TARGET=nrf52840 BOARD=dk -e osf -n "OSF" -p $COL_PROTO --dur=$DUR --period=5000 --j=0 --s=0 --layout=$LAYOUT --data=$DATA -d "PERIODIC_2M_RNTX" LENGTH=$DATA PHY=PHY_BLE_2M PWR=$PWR PERIOD=$PERIOD CHN=1 LOGGING=$LOGGING GPIO=$GPIO NTX=$NTX NSLOTS=$NSLOTS NTA=$NTA PROTO=OSF_PROTO_STA DCUBE=1 EMPTY=4 RNTX=1 -sha -pri
-# NSLOTS=12
-# ./dcube.sh -POST KEY=$KEY TARGET=nrf52840 BOARD=dk -e osf -n "OSF" -p $COL_PROTO --dur=$DUR --period=5000 --j=0 --s=0 --layout=$LAYOUT --data=$DATA -d "PERIODIC_2M_12" LENGTH=$DATA PHY=PHY_BLE_2M PWR=$PWR PERIOD=$PERIOD CHN=1 LOGGING=$LOGGING GPIO=$GPIO NTX=$NTX NSLOTS=$NSLOTS NTA=$NTA PROTO=OSF_PROTO_STA DCUBE=1 EMPTY=4 RNTX=0 -sha
-# ./dcube.sh -POST KEY=$KEY TARGET=nrf52840 BOARD=dk -e osf -n "OSF" -p $COL_PROTO --dur=$DUR --period=5000 --j=0 --s=0 --layout=$LAYOUT --data=$DATA -d "PERIODIC_2M_BACKOFF" LENGTH=$DATA PHY=PHY_BLE_2M PWR=$PWR PERIOD=$PERIOD CHN=1 LOGGING=$LOGGING GPIO=$GPIO NTX=$NTX NSLOTS=$NSLOTS NTA=$NTA PROTO=OSF_PROTO_STA DCUBE=1 EMPTY=4 BACKOFF=1 THRESHOLD=80 -sha -pri
+# for j in "${jam_arr[@]}"; do
+#   for p in "${phy_arr[@]}"; do
+#     ./dcube.sh -POST KEY=$KEY TARGET=nrf52840 BOARD=dk -e osf -n "OSF" -p $DIS_PROTO --dur=$DUR --j=${j} --layout=4 --data=$DATA -d "DISSEMINATION" PHY=PHY_"${p}" PWR=ZerodBm PERIOD=$PERIOD CHN=1 LOGGING=$LOGGING GPIO=$GPIO NTX=$NTX PROTO=OSF_PROTO_BCAST DCUBE=1 -sha
+#   done
+# done
 
 # --------------------------------------------------------------------------- #
 # Collection
-# DUR=600
+# DUR=1200
+# LAYOUT=4
 # PERIOD=1000
 # NTA=12
-# LAYOUT=3
-#
-# for d in "${data_arr[@]}"; do
-#   for j in "${jam_arr[@]}"; do
-#     for p in "${phy_arr[@]}"; do
-#       ./dcube.sh -POST KEY=$KEY TARGET=nrf52840 BOARD=dk -e osf -n "OSF" -p $COL_PROTO --dur=$DUR --j=${j} --s=0 --layout=$LAYOUT --data=${d} -d "COL_${d}B" LENGTH=${d} PHY=PHY_${p} PWR=$PWR PERIOD=$PERIOD CHN=1 LOGGING=$LOGGING GPIO=$GPIO NTX=$NTX NSLOTS=$NSLOTS NTA=$NTA PROTO=OSF_PROTO_STA DCUBE=1 EMPTY=4 -sha
-#     done
+
+# for j in "${jam_arr[@]}"; do
+#   for p in "${phy_arr[@]}"; do
+#     ./dcube.sh -POST KEY=$KEY TARGET=nrf52840 BOARD=dk -e osf -n "OSF" -p $COL_PROTO --dur=$DUR --j=${j} --layout=$LAYOUT --data=$DATA -d "NOTOG" PHY=PHY_"${p}" PWR=ZerodBm PERIOD=$PERIOD CHN=1 LOGGING=$LOGGING GPIO=$GPIO NTX=$NTX NSLOTS=$NSLOTS NTA=$NTA PROTO=OSF_PROTO_STA DCUBE=1 EMPTY=0 TOG=0 ALWAYS_ACK=0 -sha
+#   done
+#   for p in "${phy_arr[@]}"; do
+#     ./dcube.sh -POST KEY=$KEY TARGET=nrf52840 BOARD=dk -e osf -n "OSF" -p $COL_PROTO --dur=$DUR --j=${j} --layout=$LAYOUT --data=$DATA -d "ACK" PHY=PHY_"${p}" PWR=ZerodBm PERIOD=$PERIOD CHN=1 LOGGING=$LOGGING GPIO=$GPIO NTX=$NTX NSLOTS=$NSLOTS NTA=$NTA PROTO=OSF_PROTO_STA DCUBE=1 EMPTY=0 TOG=1 ALWAYS_ACK=1 -sha
 #   done
 # done
 
-# --------------------------------------------------------------------------- #
-# MPHY
-DUR=600
-PERIOD=1000
-NTA=12
+# # --------------------------------------------------------------------------- #
+# # Collection - MPHY
+# for j in "${jam_arr[@]}"; do
+# ./dcube.sh -POST KEY=$KEY TARGET=nrf52840 BOARD=dk -e osf -n "OSF" -p $COL_PROTO --dur=$DUR --j=${j} --layout=$LAYOUT --data=$DATA -d "MPHY_125_IEEE_500" PWR=ZerodBm PERIOD=$PERIOD CHN=1 LOGGING=$LOGGING GPIO=$GPIO NTX=$NTX NSLOTS=$NSLOTS NTA=$NTA PROTO=OSF_PROTO_STA DCUBE=1 EMPTY=0 TOG=1 ALWAYS_ACK=1 -sha
+# done
 
-for p in "${pwr_arr[@]}"; do
-  for l in "${layout_arr[@]}"; do
-    ./dcube.sh -POST KEY=$KEY TARGET=nrf52840 BOARD=dk -e osf -n "OSF" -p $COL_PROTO --dur=$DUR --j=MB01 --s=0 --layout=${l} --data=$DATA -d "FINAL_SPHY_2M" LENGTH=$DATA PHY=PHY_BLE_2M PWR=${p} PERIOD=$PERIOD CHN=1 LOGGING=$LOGGING GPIO=$GPIO NTX=$NTX NSLOTS=$NSLOTS NTA=$NTA PROTO=OSF_PROTO_STA DCUBE=1 EMPTY=0 -sha -pri
-  done
-  for l in "${layout_arr[@]}"; do
-    ./dcube.sh -POST KEY=$KEY TARGET=nrf52840 BOARD=dk -e osf -n "OSF" -p $COL_PROTO --dur=$DUR --j=MB01 --s=0 --layout=${l} --data=$DATA -d "FINAL_SPHY_500K" LENGTH=$DATA PHY=PHY_BLE_500K PWR=${p} PERIOD=$PERIOD CHN=1 LOGGING=$LOGGING GPIO=$GPIO NTX=$NTX NSLOTS=$NSLOTS NTA=$NTA PROTO=OSF_PROTO_STA DCUBE=1 EMPTY=0 -sha -pri
-  done
-  for l in "${layout_arr[@]}"; do
-    ./dcube.sh -POST KEY=$KEY TARGET=nrf52840 BOARD=dk -e osf -n "OSF" -p $COL_PROTO --dur=$DUR --j=MB01 --s=0 --layout=${l} --data=$DATA -d "FINAL_MPHY" LENGTH=$DATA PWR=${p} PERIOD=$PERIOD CHN=1 LOGGING=$LOGGING GPIO=$GPIO NTX=$NTX NSLOTS=$NSLOTS NTA=$NTA PROTO=OSF_PROTO_STA DCUBE=1 EMPTY=0 MPHY=1 -sha -pri
-  done
-  for l in "${layout_arr[@]}"; do
-    ./dcube.sh -POST KEY=$KEY TARGET=nrf52840 BOARD=dk -e osf -n "OSF" -p $COL_PROTO --dur=$DUR --j=MB01 --s=0 --layout=${l} --data=$DATA -d "FINAL_MPHY_SERIAL" LENGTH=$DATA PWR=${p} PERIOD=$PERIOD CHN=1 LOGGING=$LOGGING GPIO=$GPIO NTX=$NTX NSLOTS=$NSLOTS NTA=$NTA PROTO=OSF_PROTO_STA DCUBE=1 EMPTY=0 MPHY=1 -sha -pri
-  done
-done
+# # ----------------------------------------------------------------------------- #
+# # E2E - Demo
+# DUR=300
+# ./dcube.sh -POST KEY=$KEY SITE=$SITE TARGET=nrf52840 BOARD=dk -e osf -n "OSF" -d "E2E DEMO TEST" -p $E2E_PROTO --dur=$DUR --j=0 --layout=1 -sha TESTBED=dcube DEPLOYMENT=dcube PERIOD=1 CHN=1 LOGGING=0 GPIO=0 LEDS=1 PWR=Pos8dBm PROTO=OSF_PROTO_STA NTA=6 NTX=3 IPV6=1 WITH_WEBSERVER=1 WITH_BORDER_ROUTER=1 BR=51,80 FEM=0 CRYPTO=0 PHY=PHY_BLE_2M RTX=1 -pri 
+# ./dcube.sh -POST KEY=$KEY SITE=$SITE TARGET=nrf52840 BOARD=dk -e osf -n "OSF" -d "E2E DEMO TEST CAT" -p 5 --dur=$DUR --j=0 --layout=0 -sha TESTBED=dcube DEPLOYMENT=dcube PERIOD=1 CHN=1 LOGGING=0 GPIO=0 LEDS=1 PWR=ZerodBm PROTO=OSF_PROTO_STA NTA=6 NTX=1 IPV6=1 WITH_WEBSERVER=1 WITH_BORDER_ROUTER=1 BR=51,80 FEM=0 CRYPTO=0 PHY=PHY_BLE_2M RTX=1 USB=1 -pri 

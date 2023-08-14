@@ -169,7 +169,7 @@ void uip_log(char *msg);
  */
 
 /** The maximum transmission unit at the IP Layer*/
-#define UIP_LINK_MTU 1280
+#define UIP_LINK_MTU 1500 /*1280*/
 
 #ifndef UIP_CONF_IPV6_QUEUE_PKT
 /** Do we do per %neighbor queuing during address resolution (default: no) */

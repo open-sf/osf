@@ -55,6 +55,8 @@
 #include "services/rpl-border-router/rpl-border-router.h"
 #elif BUILD_WITH_NULL_BORDER_ROUTER
 #include "services/null-border-router/null-border-router.h"
+#elif BUILD_WITH_OSF_BORDER_ROUTER
+#include "services/osf-border-router/osf-border-router.h"
 #endif
 #include "services/orchestra/orchestra.h"
 #include "services/shell/serial-shell.h"
@@ -144,6 +146,9 @@ main(void)
 #elif BUILD_WITH_NULL_BORDER_ROUTER
   null_border_router_init();
   LOG_DBG("With NULL Border Router\n");
+#elif BUILD_WITH_OSF_BORDER_ROUTER
+  osf_border_router_init();
+  LOG_DBG("With OSF Border Router\n");
 #endif /* BUILD_WITH_RPL_BORDER_ROUTER */
 #endif /* !BUILD_WITH_TESTBED */
 

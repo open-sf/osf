@@ -1,0 +1,10 @@
+PREFIX ?= fd00::1/64
+
+ifdef PORT
+	TUNSLIP6_ARGS = -s $(PORT) $(PREFIX)
+else
+	TUNSLIP6_ARGS = $(PREFIX)
+endif
+
+connect-router: $(TUNSLIP6)
+	sudo $(TUNSLIP6) $(TUNSLIP6_ARGS)

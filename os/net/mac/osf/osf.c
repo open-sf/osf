@@ -64,7 +64,6 @@
 #include "net/mac/osf/osf-packet.h"
 #include "net/mac/osf/osf-proto.h"
 #include "net/mac/osf/osf-buffer.h"
-#include "net/mac/osf/extensions/osf-ext.h"
 #include "net/mac/osf/osf-debug.h"
 #include "net/mac/osf/osf-log.h"
 #include "net/mac/osf/osf-stat.h"
@@ -73,7 +72,9 @@
 static void RADIO_IRQHandler_callback();
 
 /* MUST INCLUDE THESE FOR NODE IDS AND TESTBED PATTERNS */
+#if BUILD_WITH_DEPLOYMENT
 #include "services/deployment/deployment.h"
+#endif
 #if CONF_TESTBED
 #include "services/testbed/testbed.h"
 #endif
@@ -81,7 +82,7 @@ static void RADIO_IRQHandler_callback();
 /* Log configuration */
 #include "sys/log.h"
 #define LOG_MODULE "OSF"
-#define LOG_LEVEL LOG_LEVEL_DBG
+#define LOG_LEVEL LOG_LEVEL_MAC
 
 /*---------------------------------------------------------------------------*/
 /* OSF main struct */
@@ -94,13 +95,10 @@ uint8_t           osf_state;
 osf_buf_t         osf_aligned_buf;
 /* Pointers to parts of the osf_packet */
 osf_pkt_phy_t    *osf_buf_phy;
+static uint8_t   *osf_buf_phy_len;
 osf_pkt_hdr_t    *osf_buf_hdr;
 void             *osf_buf_rnd_pkt;
 uint16_t          osf_buf_len;
-
-/* OSF extensions */
-static osf_ext_d_t *osf_d_extension = OSF_DRIVER_EXTENSION;
-osf_ext_p_t *osf_p_extension = OSF_PROTO_EXTENSION;
 
 /* Global OSF variables */
 uint8_t osf_is_on = 0;
@@ -108,7 +106,14 @@ uint8_t osf_is_on = 0;
 uint8_t node_is_timesync = 0;
 uint8_t node_is_synced = 0;
 uint8_t node_is_joined = 0;
-uint8_t osf_timesync = 0;
+
+#ifdef OSF_CONF_TS
+OSF_TS(OSF_CONF_TS)
+uint8_t osf_n_timesyncs = OSF_N_TS;
+#else
+uint8_t osf_timesyncs[10] = {0};
+uint8_t osf_n_timesyncs = 0;
+#endif
 
 uint8_t node_is_source = 0;
 uint8_t node_is_destination = 0;
@@ -132,8 +137,35 @@ static uint16_t       n_ch_timeouts;      // counter for number of channel timeo
 static void hop_rx(struct rtimer *t, void *ptr);
 static void stop_rx(struct rtimer *t, void *ptr);
 
+#if BUILD_WITH_TESTBED
 /* Application data */
 static osf_input_callback_t receive_callback;
+#endif
+
+/*----------------------------------------------------------------------------*/
+/* Variables, used for set/get parameters externally */
+int8_t radio_rssi = 0;
+
+/* FEM default values */
+#ifdef FEM_MODE
+#define FEM_CONF_MODE FEM_MODE
+#else
+#define FEM_CONF_MODE PA_TX_Plus20dBm
+#endif
+#ifdef FEM_ANT_RX
+#define FEM_CONF_ANT_RX FEM_ANT_RX
+#else
+#define FEM_CONF_ANT_RX PA_LNA_ANT1
+#endif
+#ifdef FEM_ANT_TX
+#define FEM_CONF_ANT_TX FEM_ANT_TX
+#else
+#define FEM_CONF_ANT_TX PA_LNA_ANT1
+#endif
+
+uint8_t fem_rx_ant = FEM_CONF_ANT_RX;
+uint8_t fem_tx_ant = FEM_CONF_ANT_TX;
+uint8_t fem_tx_mode = FEM_CONF_MODE; 
 
 /*----------------------------------------------------------------------------*/
 /* TESTING PURPOSES ONLY */
@@ -143,6 +175,7 @@ static uint8_t test_n_missed_rxes = OSF_TEST_MISS_RXS;
 
 /*----------------------------------------------------------------------------*/
 /* Function declarations */
+/*----------------------------------------------------------------------------*/
 static void    schedule_epoch();
 static void    start_round();
 static void    end_round();
@@ -160,11 +193,20 @@ static inline bool isInterrupt()
 osf_led_on_t osf_led_on =  NULL;
 osf_led_off_t osf_led_off = NULL;
 
+/*----------------------------------------------------------------------------*/
+/* IPV6 */
+/*----------------------------------------------------------------------------*/
+#if OSF_WITH_IPV6
+#if OSF_DATA_LEN_MAX < PACKETBUF_SIZE
+#error "Too small OSF_DATA_LEN_MAX !"
+#endif
+#define NODE_ID_BROADCAST 255
+static void packet_received(uint8_t *data, uint8_t len, uint8_t src, uint8_t dst);
+#endif
+
 /*---------------------------------------------------------------------------*/
 /* Processes */
 /*---------------------------------------------------------------------------*/
-// FIXME: Isn't this going against the resons for a fully ISR-based driver?
-//        Although I think we do something similar for the TESTBED calls?
 PROCESS(osf_post_round_process, "OSF Post Round Process");
 PROCESS(osf_post_epoch_process, "OSF Post Epoch Process");
 
@@ -180,16 +222,10 @@ osf_stop(void)
   my_radio_off_completely();
   osf_state = OSF_STATE_OFF;
   NETSTACK_PA.off();
-  /* Do extensions */
-  DO_OSF_D_EXTENSION(stop);
+  
   DEBUG_LEDS_OFF(ROUND_LED);
+  DEBUG_LEDS_OFF(CRCERR_LED);
 }
-
-/*---------------------------------------------------------------------------*/
-/* Timers for serve Idle time of the ROUND */
-// TODO: Don't need these until we have dual radio configurations.
-// #define RTIMERX_RTC0_RATIO (RTIMERX_SECOND / CLOCK_SECOND)
-// #define RTIMERX_TO_RTC0(X) ((rtimer_clock_t)(((int64_t)(X) / RTIMERX_RTC0_RATIO)))
 
 /*---------------------------------------------------------------------------*/
 void
@@ -237,35 +273,47 @@ osf_sync(void)
 static void
 set_timesync()
 {
+  uint8_t i;
+  LOG_INFO("Configure TIMESYNCS...\n");
+  if(osf_n_timesyncs) {
+    LOG_INFO("- Reading TS(s) from manual OSF_CONF_TS\n"); 
 #if BUILD_WITH_TESTBED
-  volatile tb_pattern_t *pattern = tb_get_pattern();
-  switch(pattern->traffic_pattern) {
-  case P2P:
-  case P2MP:
-    osf_timesync = tb_get_sources()[0];
-    break;
-  case MP2P:
-    osf_timesync = tb_get_destinations()[0];
-    break;
-  case MP2MP:
-  default:
-    LOG_ERR("Unhandled PATTERN type! %s (%u)\n", PATTERN_TO_STR(pattern->traffic_pattern), pattern->traffic_pattern);
-    return;
-  }
-  LOG_INFO("- OSF Timesync AUTO (%s) set to node %u ", PATTERN_TO_STR(pattern->traffic_pattern), osf_timesync);
-#else
-  osf_timesync = OSF_TS;
-  LOG_INFO("- OSF Timesync MANUAL set to node %u ", osf_timesync);
-#endif
-  /* Check if we are the timesync */
-  if(node_id == osf_timesync) {
-    node_is_timesync = 1;
-    node_is_synced = 1;
-    node_is_joined = 1;
-    DEBUG_LEDS_ON(TS_LED);
-    LOG_INFO_("... I am TS! (TS is %u)\n", osf_timesync);
   } else {
-    LOG_INFO_("... I am NOT TS! (TS is %u)\n", osf_timesync);
+    uint8_t n_br = tb_get_n_br();
+    if(n_br) {
+      LOG_INFO("- Get TS from %u BRs\n", n_br); 
+      memcpy(osf_timesyncs, tb_get_brs(), n_br);
+      osf_n_timesyncs = n_br;
+    } else {
+      LOG_INFO("- Get TS from pattern type\n"); 
+      volatile tb_pattern_t *pattern = tb_get_pattern();
+      switch(pattern->traffic_pattern) {
+      case P2P:
+      case P2MP:
+        osf_timesyncs[0] = tb_get_sources()[0];
+        osf_n_timesyncs++;
+        break;
+      case MP2P:
+        osf_timesyncs[0] = tb_get_destinations()[0];
+        osf_n_timesyncs++;
+        break;
+      case MP2MP:
+      default:
+        LOG_ERR(" -- Unhandled PATTERN type! %s (%u)\n", PATTERN_TO_STR(pattern->traffic_pattern), pattern->traffic_pattern);
+      }
+    }
+#endif
+  }
+  /* Check if we are the timesync */
+  LOG_INFO("- There are %u TS\n", osf_n_timesyncs); 
+  for(i = 0; i < osf_n_timesyncs; i++) {
+    LOG_INFO(" -- %u: Node %u\n", i, osf_timesyncs[i]); 
+    if(node_id == osf_timesyncs[i]) {
+      node_is_timesync = 1;
+      node_is_synced = 1;
+      node_is_joined = 1;
+      DEBUG_LEDS_ON(TS_LED);
+    }
   }
 }
 
@@ -295,8 +343,7 @@ schedule_epoch()
     for (i = 0; i < osf.proto->len; i++) {
       osf.proto->sched[i].ntx = 0;
     }
-    /* Do extension */
-    DO_OSF_D_EXTENSION(configure, osf.proto);
+	
     /* Configure epoch protocol */
     osf.proto->configure();
     t_epoch_end = osf.t_epoch_ref + osf.proto->duration;
@@ -439,11 +486,11 @@ get_next_channel()
       test_n_missed_rxes--;
     }
 #endif
-    // DEBUG_FLASH_GPIO(osf_ch_index, DBG_PIN1);
+    DEBUG_FLASH_GPIO(osf_ch_index, DBG_PIN1);
     osf_ch_index = (osf_ch_index + 1) % osf_ch_len;
   } else {
     channel = scan_channels[osf_scan_index];
-    // DEBUG_FLASH_GPIO(osf_scan_index, DBG_PIN1);
+    DEBUG_FLASH_GPIO(osf_scan_index, DBG_PIN1);
     // Increment channel for next time we hop
     osf_scan_index++;
     if(osf_scan_index == osf_scan_len) {
@@ -468,8 +515,6 @@ hop_rx(struct rtimer *t, void *ptr)
   if(node_is_synced) {
     n_ch_timeouts++;
     osf.slot++; // increment to next slot
-    DO_OSF_D_EXTENSION(hop);
-    DO_OSF_P_EXTENSION(hop);
   }
   /* Set channel and RX */
   uint8_t channel = get_next_channel();
@@ -514,38 +559,40 @@ start_rx(rtimer_clock_t target)
   /* Set channel */
   uint8_t channel = get_next_channel();
 
-#if OSF_RX_MAX_LIMIT
-  if (osf.rconf->phy->mode == PHY_IEEE) {
-    my_radio_set_maxlen(OSF_MAXLEN(osf.rconf->phy->mode));
-  } else {
-    /* Limit maxlen for avoid RX overflow */
-    // my_radio_set_maxlen(OSF_ROUND_S_PAYLOAD_LENGTH); // FIXME: WHY?
-    if(node_is_joined) {
-      if (osf.round->type == OSF_ROUND_A) {
-        // my_radio_set_maxlen(OSF_PKT_HDR_LEN + OSF_PKT_A_RND_LEN + MIC_SIZE); // FIXME: WHY?
-      } else if (osf.round->type == OSF_ROUND_T) {
-        my_radio_set_maxlen(OSF_MAXLEN(osf.rconf->phy->mode));
-        }
-    }
-  }
-#else
-  my_radio_set_maxlen(OSF_MAXLEN(osf.rconf->phy->mode));
-#endif
+  /* Limit max RX length */
+  my_radio_set_maxlen(OSF_PKT_AIR_MAXLEN(osf.round->type, osf.rconf->phy->mode)); 
 
   /* Schedule RX (will be triggered on TIMERX) */
-  return schedule_rx_abs(&osf_buf[0], channel, target);
+  return schedule_rx_abs(osf_buf, channel, target);
 }
 
 /*---------------------------------------------------------------------------*/
 static void
 end_rx()
 {
-  osf.last_rx_ok = (NRF_RADIO->CRCSTATUS & RADIO_CRCSTATUS_CRCSTATUS_CRCOk); // TODO: move this radio check to the radio
+  osf.last_rx_ok = (NRF_RADIO->CRCSTATUS & RADIO_CRCSTATUS_CRCSTATUS_Msk); // TODO: move this radio check to the radio
 
   /* Statistics */
-  /* FIXME: What is this trying to log? */
   if (node_is_joined && (osf.round->type == OSF_ROUND_T)) {
     osf_stat.osf_mac_rx_slots_total++;
+  }
+  if (node_is_joined) {
+    if (osf.round->type == OSF_ROUND_S) {
+        osf_stat.osf_rx_sync_total++;
+    } else if (osf.round->type == OSF_ROUND_T) {
+        osf_stat.osf_rx_tx_total++;
+    } else if (osf.round->type == OSF_ROUND_A) {
+        osf_stat.osf_rx_ack_total++;
+    }
+  }
+  if (node_is_joined && !osf.last_rx_ok) {
+    if (osf.round->type == OSF_ROUND_S) {
+        osf_stat.osf_rx_sync_crc_error_total++;
+    } else if (osf.round->type == OSF_ROUND_T) {
+        osf_stat.osf_rx_tx_crc_error_total++;
+    } else if (osf.round->type == OSF_ROUND_A) {
+        osf_stat.osf_rx_ack_crc_error_total++;
+    }
   }
 
   /* Check CRC */
@@ -569,30 +616,28 @@ end_rx()
     osf.t_slot_drift = (node_is_synced ? t_ev_addr_ts - t_ref - OSF_REF_SHIFT : 0);
     /* Check for sync round */
     if(!node_is_timesync && osf.round->sync) {
-      osf_sync();
+      osf_sync(); 
     }
-    /* Do extensions */
-    DO_OSF_D_EXTENSION(rx_ok, osf.round->type, osf_buf, osf_buf_len);
+   
+  /* Schedule T round data processing */
+  if(osf.round->type == OSF_ROUND_T) {
+    osf.round->receive(); // 280ns - 61,88 us
+    process_poll(&osf_post_round_process); // 440 ns
+  }     
+
 #if OSF_LOGGING
     osf_log_slot_state('R');
     osf_log_slot_node(osf_buf_hdr->src);
     osf_log_slot_rssi();
     osf_log_slot_td();
-    osf_log_radio_buffer(osf_buf, OSF_PKT_PHY_LEN(osf.rconf->phy->mode, osf.round->statlen) + osf_buf_len, 0, OSF_PKT_RND_LEN(osf.round->type), osf.round->statlen, osf.round->type);
+    osf_log_radio_buffer(osf_buf, OSF_PKT_PHY_LEN2(osf.rconf->phy->mode, osf.round->statlen) + osf_buf_len, 0, OSF_PKT_RND_LEN(osf.round->type), osf.round->statlen, osf.round->type);
 #endif
   } else {
+    /* Error indicator */
+    DEBUG_LEDS_ON(CRCERR_LED);
     /* We received an invalid packet. Log this error then head back to RX */
     osf.n_rx_crc += 1;
-    // FIXME: This should not be done here.
-    if (osf.round->type == OSF_ROUND_S) {
-        osf_stat.osf_rx_sync_crc_error_total++;
-    } else if (osf.round->type == OSF_ROUND_T) {
-        osf_stat.osf_rx_tx_crc_error_total++;
-    } else if (osf.round->type == OSF_ROUND_A) {
-        osf_stat.osf_rx_ack_crc_error_total++;
-    }
-    /* Do extensions */
-    DO_OSF_D_EXTENSION(rx_error);
+
 #if OSF_LOGGING
     osf_log_slot_state('C');
     osf_log_slot_rssi();
@@ -600,9 +645,15 @@ end_rx()
 #endif
     if(!node_is_synced) {
       start_rx(RTIMERX_NOW() + US_TO_RTIMERTICKSX(500));
+      NETSTACK_PA.set_antenna(fem_rx_ant);
+      NETSTACK_PA.rx_on();
       return;
     }
   }
+
+  /* Read RSSI */
+  radio_rssi = my_radio_rssi();
+
   /* Do next slot */
   n_ch_timeouts++;
   osf.slot++;
@@ -616,18 +667,16 @@ start_tx(rtimer_clock_t target)
   /* Update OSF state */
   osf_state = OSF_STATE_RECEIVED;
 
-  // FIXME: What on earth is going on here?
+  /* Application specific length. Minimize amount of transmitted data. */
   if(!osf.round->statlen) {
-    if (osf.round->type == OSF_ROUND_T){
-      my_radio_set_maxlen(OSF_MAXLEN(osf.rconf->phy->mode));
+    my_radio_set_maxlen(OSF_MAXLEN(osf.rconf->phy->mode));
+    /* Set radio len for S&A rounds */
+    if (osf.round->type == OSF_ROUND_S) {
+      *osf_buf_phy_len = OSF_ROUND_S_PAYLOAD_LENGTH;
+    } else if (osf.round->type == OSF_ROUND_A) {
+      *osf_buf_phy_len = OSF_PKT_HDR_LEN + OSF_PKT_A_RND_LEN;
     }
-    // FIXME: WHY?
-    // if (osf.round->type == OSF_ROUND_S) {
-    //   *osf_buf_phy_len = OSF_ROUND_S_PAYLOAD_LENGTH;
-    // } else if (osf.round->type == OSF_ROUND_A) {
-    //   *osf_buf_phy_len = OSF_PKT_HDR_LEN + OSF_PKT_A_RND_LEN;
-    // }
-  }
+  }  
 
   /* Set osf header */
   osf_buf_hdr->slot = osf.slot;
@@ -646,7 +695,7 @@ end_tx()
   osf_log_slot_node(osf_buf_hdr->dst);
 #endif
   osf.n_tx++;
-  DO_OSF_D_EXTENSION(tx_ok);
+
   // /* If we are doing glossy then each TX needs to increment the ch timeouts,
   //    pretending we just did a ROF hop */
   // if(osf.round->primitive == OSF_PRIMITIVE_GLOSSY) {
@@ -655,7 +704,7 @@ end_tx()
     n_ch_timeouts++;
   // }
   /* Do next slot */
-  osf_log_radio_buffer(osf_buf, OSF_PKT_PHY_LEN(osf.rconf->phy->mode, osf.round->statlen) + osf_buf_len, 1, OSF_PKT_RND_LEN(osf.round->type), osf.round->statlen, osf.round->type);
+  osf_log_radio_buffer(osf_buf, OSF_PKT_PHY_LEN2(osf.rconf->phy->mode, osf.round->statlen) + osf_buf_len, 1, OSF_PKT_RND_LEN(osf.round->type), osf.round->statlen, osf.round->type);
   osf.slot++; // increment to next slot (also do this in RX)
   do_slot();
 }
@@ -675,15 +724,24 @@ do_slot()
   if(ROUND_LEN_RULE) {
     /* Do we TX or RX this timeslot? */
     if(osf.round->primitive == OSF_PRIMITIVE_ROF ? OSF_DOTX_ROF() : OSF_DOTX_GLOSSY()) {
-      r = start_tx(t_ref);
+       NETSTACK_PA.set_antenna(fem_tx_ant);
+       NETSTACK_PA.set_tx_gain(fem_tx_mode);       
+      r = start_tx(t_ref); // 20-28 us
       osf.last_slot_type = OSF_SLOT_T;
+      if(RTIMER_OK == r) {
+        NETSTACK_PA.tx_on();
+      }
     } else {
-      r = start_rx(t_ref);
+      NETSTACK_PA.set_antenna(fem_rx_ant);
+      r = start_rx(t_ref); // 20 us
       osf.last_slot_type = OSF_SLOT_R;
+      if(RTIMER_OK == r) {
+        NETSTACK_PA.rx_on();
+      }
     }
     if(r != RTIMER_OK) {
       rtimer_clock_t now = RTIMERX_NOW();
-      /* Check we aren't beond the end of the epoch */
+      /* Check we aren't beyond the end of the epoch */
       if(RTIMER_CLOCK_LT(t_epoch_end, now)) {
   #if OSF_LOGGING
         osf_log_slot_state('X');
@@ -695,7 +753,7 @@ do_slot()
         osf_stop();
         end_round();
         osf_stat.osf_rt_miss_epoch_total++; /* Statictics */
-      /* Check we aren't beond the end of the round */
+      /* Check we aren't beyond the end of the round */
       } else if (RTIMER_CLOCK_LT(t_round_end, now)) {
   #if OSF_LOGGING
         osf_log_slot_state('S');
@@ -729,7 +787,7 @@ static void
 start_round() {
 
   /* Round indicator */
-  DEBUG_LEDS_ON(ROUND_LED);
+  //DEBUG_LEDS_ON(ROUND_LED);
 
   /* Register our own radio handler (we can release later) */
   // FIXME: Radio stuff needs to be moved to the radio driver.
@@ -744,8 +802,7 @@ start_round() {
   /* Initialise the round */
   osf.round = osf.rconf->round;
 
-  // FIXME: This is stupid. If you want to do this then have the LED on the epoch.
-  /* Live round indicator. S round always. */
+  /* Live round indicator. S round always. More rounds with payload increase LED glow time. */
   if(osf.round->type == OSF_ROUND_S) {
     DEBUG_LEDS_ON(ROUND_LED);
   }
@@ -765,38 +822,44 @@ start_round() {
 #if OSF_TEST_MISS_RXS
   test_n_missed_rxes = OSF_TEST_MISS_RXS;
 #endif
-  /* Setup packet structure (inclusion of PHY hdr depends on statlen)*/
-  osf_buf_phy = (osf_pkt_phy_t *)&osf_buf[0];
-  osf_buf_hdr = (osf_pkt_hdr_t *)&osf_buf[OSF_PKT_PHY_LEN(osf.rconf->phy->mode, osf.round->statlen)];
-  osf_buf_rnd_pkt = (void *)&osf_buf[OSF_PKT_PHY_LEN(osf.rconf->phy->mode, osf.round->statlen) + OSF_PKT_HDR_LEN];
-
-  /* Send data according to round rules. Might be called in process context at
-     join phase  */
-  int_master_status_t stat = 0;
-  if (!isInterrupt()) {
-    stat = critical_enter();
+  /* Setup packet structure (inclusion of PHY hdr depends on statlen)*/  
+  if(!osf.round->statlen) {
+    osf_buf_phy = (osf_pkt_phy_t *)&osf_buf[0];
+    if(osf.rconf->phy->mode != PHY_IEEE) {
+      osf_buf_phy_len = &osf_buf_phy->ble.len;
+    } else {
+      osf_buf_phy_len = &osf_buf_phy->ieee.len;
+    }
+    osf_buf_hdr = (osf_pkt_hdr_t *)&osf_buf[OSF_PKT_PHY_LEN(osf.rconf->phy->mode)];
+    osf_buf_rnd_pkt = (void *)&osf_buf[OSF_PKT_PHY_LEN(osf.rconf->phy->mode) + OSF_PKT_HDR_LEN];
+	
+  } else {
+    osf_buf_phy = NULL;
+    osf_buf_phy_len = NULL;
+    osf_buf_hdr = (osf_pkt_hdr_t *)&osf_buf[0];
+    osf_buf_rnd_pkt = (void *)&osf_buf[OSF_PKT_HDR_LEN];
   }
-  uint8_t len = osf.round->send();
-  // if(len && (osf.round->type == OSF_ROUND_T) && !osf.round->statlen && node_is_joined) {
-  if(len) {
-    osf_stat.osf_mac_tx_total++; /* Statistics */
-  }
-  if (!isInterrupt()) {
-    critical_exit(stat);
-  }
+ 
+  osf_buf_len = OSF_PKT_HDR_LEN + OSF_PKT_RND_LEN(osf.round->type);
+  
+  //osf_buf_len = OSF_PKT_HDR_LEN + (osf.round->statlen ? OSF_PKT_RND_LEN(osf.round->type) : len); // new
+  //osf_buf_phy = (osf_pkt_phy_t *)&osf_buf[0];
+  //osf_buf_hdr = (osf_pkt_hdr_t *)&osf_buf[OSF_PKT_PHY_LEN2(osf.rconf->phy->mode, osf.round->statlen)];
+  //osf_buf_rnd_pkt = (void *)&osf_buf[OSF_PKT_PHY_LEN2(osf.rconf->phy->mode, osf.round->statlen) + OSF_PKT_HDR_LEN];
 
-  osf_buf_len = OSF_PKT_HDR_LEN + (osf.round->statlen ? OSF_PKT_RND_LEN(osf.round->type) : len);
-
-  /* Do extension */
-  // DEBUG_GPIO_ON(DBG_PIN2);
-  DO_OSF_D_EXTENSION(start, osf.round->type, osf.round->is_initiator, OSF_PKT_RND_LEN(osf.round->type));
-  // DEBUG_GPIO_OFF(DBG_PIN2);
 
   /* Check we aren't trying to send more than the MTU can handle */
   if(osf_buf_len <= OSF_MAXLEN(osf.rconf->phy->mode)) {
-    /* Re-initialise the radio for this round's PHY conf */
-    my_radio_init(osf.rconf->phy, &osf_buf[0], osf_buf_len, osf.round->statlen, osf.round->type);
-    /* Schedule all rounds, slots, etc from our epoch ref */
+    /* Re-initialise the radio for this round's PHY conf */	
+    if(osf.round->statlen) {
+      my_radio_init(osf.rconf->phy, &osf_buf[0], osf_buf_len, osf.round->statlen, osf.round->type);
+    } else {
+      my_radio_init(osf.rconf->phy, &osf_buf[0], OSF_PKT_AIR_MAXLEN(osf.round->type, osf.rconf->phy->mode), osf.round->statlen, osf.round->type);
+    }
+
+	//my_radio_init(osf.rconf->phy, &osf_buf[0], osf_buf_len, osf.round->statlen, osf.round->type); // new
+	
+    /* Schedule all rounds, slots, etc. from our epoch ref. */
     t_round_start = osf.t_epoch_ref + osf.rconf->t_offset;
     t_round_end = t_round_start + osf.rconf->duration;
     /* Init 'random' channel hopping seed */
@@ -806,7 +869,30 @@ start_round() {
       osf_ch_init_scan_index();
     }
 
-    /* Live round indicator. More rounds with payload increase LED on time. */
+    /* Total amount of T rounds */
+    if((osf.round->type == OSF_ROUND_T) && node_is_joined){
+      osf_stat.osf_mac_t_total++; /* Statistics */
+    }
+
+    /* Send data according to round rules */
+    int_master_status_t stat = 0;
+     /* Might be called in process context at join phase */
+    if (!isInterrupt()) {
+      stat = critical_enter();
+    }
+
+    uint8_t len = osf.round->send();
+    /* Set radio len for T round. S&A rounds handled in start_tx() */
+    if(len && (osf.round->type == OSF_ROUND_T) && !osf.round->statlen && node_is_joined) {
+      *osf_buf_phy_len = len + OSF_PKT_HDR_LEN;
+      osf_stat.osf_mac_tx_total++; /* Statistics */
+    }
+
+    if (!isInterrupt()) {
+      critical_exit(stat);
+    }
+
+    /* Live round indicator. More rounds with payload increase LED glow time. */
     if(len) {
       DEBUG_LEDS_ON(ROUND_LED);
     }
@@ -823,13 +909,11 @@ start_round() {
 static void
 end_round() {
   /* Receive data according to round rules */
-  if(!osf.round->is_initiator && (osf.n_rx_ok || osf.n_rx_crc)) {
-    osf.n_rnd_since_rx = 0;
-    if(osf.n_rx_ok) {
+  if(osf.n_rx_ok) {
+  	osf.n_rnd_since_rx = 0;
+    if(osf.round->type != OSF_ROUND_T) {
       osf.round->receive();
-    } else {
-      osf.round->no_rx();
-    }
+    }    
   } else {
     osf.n_rnd_since_rx++;
     osf.round->no_rx();
@@ -867,7 +951,6 @@ PROCESS_THREAD(osf_post_epoch_process, ev, ev_data)
 
   while (1) {
     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
-    DEBUG_GPIO_ON(DBG_PIN3); // 80us - empty loop
 
     /* Print logs */
 #if OSF_LOGGING
@@ -881,7 +964,6 @@ PROCESS_THREAD(osf_post_epoch_process, ev, ev_data)
       process_poll(&osf_post_round_process);
     }
 
-    DEBUG_GPIO_OFF(DBG_PIN3);
   }
 
   PROCESS_END();
@@ -895,7 +977,15 @@ PROCESS_THREAD(osf_post_round_process, ev, ev_data)
 
   while (1) {
     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
-    DEBUG_GPIO_ON(DBG_PIN3); // 100 us; 1,2ms ; 5ms (ping 1232); 7.5ms (UDP 1232)
+
+    /* Statistics for estimate queue length */
+    if(osf_buf_rx_length() > osf_stat.osf_rx_queue_peak) {
+      osf_stat.osf_rx_queue_peak = osf_buf_rx_length();
+    }
+    if(osf_buf_tx_length() > osf_stat.osf_tx_queue_peak) {
+      osf_stat.osf_tx_queue_peak = osf_buf_tx_length();
+    }
+
     /* If data in FIFO buffer -> push it to App */
     if (osf_buf_rx_length()) {
         osf_buf_element_t *el = osf_buf_rx_peek();
@@ -912,15 +1002,14 @@ PROCESS_THREAD(osf_post_round_process, ev, ev_data)
       process_poll(&osf_post_round_process);
     }
 
-    if (osf_buf_rx_length() > 2*OSF_NTX) {
+    if (osf_buf_rx_length() > OSF_BUF_MAX_SIZE/2) {      
       LOG_WARN("RX queue %d elements !\r\n", osf_buf_rx_length());
     }
 
-    if (osf_buf_tx_length() > 2*OSF_NTX) {
+    if (osf_buf_tx_length() > OSF_BUF_MAX_SIZE/2) {
       LOG_WARN("TX queue %d elements !\r\n", osf_buf_tx_length());
     }
 
-    DEBUG_GPIO_OFF(DBG_PIN3);
   }
 
   PROCESS_END();
@@ -932,7 +1021,8 @@ PROCESS_THREAD(osf_post_round_process, ev, ev_data)
 static void
 RADIO_IRQHandler_callback()
 {
-  DEBUG_GPIO_ON(RADIO_IRQ_EVENT_PIN); // Spikes READY | ADDR | END fo r debug
+  // Spikes READY | ADDR | END fo r debug
+  DEBUG_GPIO_ON(RADIO_IRQ_EVENT_PIN); // 1,24us - 108 us
   /* READY Event */
   if (NRF_RADIO->EVENTS_READY) {
     NRF_RADIO->EVENTS_READY = 0;
@@ -942,7 +1032,10 @@ RADIO_IRQHandler_callback()
       /* If we are an initiator about to transmit, or a receiver who has received,
          then kick us into a transmitting state */
       osf_state = OSF_STATE_TRANSMITTING;
-      NETSTACK_PA.tx_on();
+      /* TODO it can be late to enable PA due READY delay */
+      //NETSTACK_PA.set_antenna(fem_tx_ant);
+      //NETSTACK_PA.set_tx_gain(fem_tx_mode);
+      //NETSTACK_PA.tx_on();
     } else if (osf_state == OSF_STATE_WAITING){
       /* If we are receiving, set the channel timeout */
       if(osf.round->primitive == OSF_PRIMITIVE_ROF || !osf.n_rx_ok) {
@@ -952,7 +1045,9 @@ RADIO_IRQHandler_callback()
         /* Glossy - we want to stop RX just after where we expect address */
         schedule_slot_timeout(t_ev_ready_ts);
       }
-      NETSTACK_PA.rx_on();
+      /* TODO it can be late to enable PA due READY delay*/
+      //NETSTACK_PA.set_antenna(fem_rx_ant);
+      //NETSTACK_PA.rx_on();
     }
   }
   /* ADDRESS Event */
@@ -1062,6 +1157,8 @@ osf_init()
   osf_debug_gpio_init();
   /* Initialize runtime statistics */
   osf_stat_init();
+  /* Init PA */
+  NETSTACK_PA.init();
 }
 
 /*---------------------------------------------------------------------------*/
@@ -1075,10 +1172,16 @@ osf_send(uint8_t *data, uint8_t len, uint8_t dst)
 uint8_t
 osf_receive(uint8_t src, uint8_t dst, uint8_t *data, uint8_t len)
 {
+#if OSF_WITH_IPV6
+  packet_received(data, len, src, dst);
+#else
   receive_callback(data, len);
+#endif
   return 1;
 }
 
+
+#if BUILD_WITH_TESTBED
 /*---------------------------------------------------------------------------*/
 void
 osf_register_input_callback(osf_input_callback_t cb)
@@ -1086,6 +1189,110 @@ osf_register_input_callback(osf_input_callback_t cb)
   LOG_INFO("Register a receive callback...\n");
   receive_callback = cb;
 }
+#endif
+
+#if OSF_WITH_IPV6
+/*---------------------------------------------------------------------------*/
+static uint8_t
+linkaddr_to_nodeid(const linkaddr_t *addr)
+{
+  uint8_t node_id = NODE_ID_BROADCAST;
+
+  uint16_t id = deployment_id_from_lladdr(addr);
+  if(id) {
+    node_id = id;
+  }
+  return node_id;
+}
+/*---------------------------------------------------------------------------*/
+static void
+nodeid_to_linkaddr(uint8_t node_id, linkaddr_t *addr)
+{
+  linkaddr_t addr_ret;
+  linkaddr_copy(&addr_ret, &linkaddr_null);
+
+  deployment_lladdr_from_id(&addr_ret, node_id);
+
+  if(addr) {
+    linkaddr_copy(addr, &addr_ret);
+  }
+}
+/*---------------------------------------------------------------------------*/
+static void
+packet_received(uint8_t *data, uint8_t len, uint8_t src, uint8_t dst)
+{
+  if(dst == 255) {
+    LOG_WARN("Multicast : len %d ( %d -> %d )\r\n", len, src, dst);
+    osf_stat.osf_rx_multicast_total++; // Statictics
+    //return;
+  }
+
+  linkaddr_t addr_src;
+  linkaddr_t addr_dst;
+  nodeid_to_linkaddr(src, &addr_src);
+  nodeid_to_linkaddr(dst, &addr_dst);
+
+  // HACK: fixes us sending packets that aren't meant for us up to the IP layer. Do this properly, as what if we 
+  //       have different mesh prefixes?
+  if(node_id != dst && node_id != 255) {
+    LOG_INFO("Node ID not for us or multicast, discarding on OSF\n");
+    return;
+  }
+
+  /* Copy to packetbuf for processing */
+  if(len > PACKETBUF_SIZE) {
+    LOG_INFO("Packet size is too big , %d > %d !\r\n", len, PACKETBUF_SIZE);
+    //len = PACKETBUF_SIZE;
+    osf_stat.osf_rx_too_big_total++; // Statictics
+    return;
+  }
+
+  packetbuf_copyfrom(data, len);
+  packetbuf_set_addr(PACKETBUF_ADDR_SENDER, (const linkaddr_t *)&addr_src);
+  packetbuf_set_addr(PACKETBUF_ADDR_RECEIVER, (const linkaddr_t *)&addr_dst);
+
+  /* Reject wrong addresses */
+  if(!linkaddr_cmp(&addr_dst, &linkaddr_null) && !linkaddr_cmp(&addr_dst, &linkaddr_node_addr)) {
+    LOG_WARN("Packet is not for us : ");
+    LOG_WARN_LLADDR(&addr_dst);
+    LOG_WARN("\r\n");
+    osf_stat.osf_rx_wrong_addr_total++; // Statistics
+    return;
+  }
+
+  NETSTACK_NETWORK.input();
+}
+/*---------------------------------------------------------------------------*/
+static void
+send_packet(mac_callback_t sent, void *ptr) // 120 us
+{
+
+  if(!node_is_joined) {
+    LOG_WARN("#! not joined, drop outgoing packet\n");
+    mac_call_sent_callback(sent, ptr, MAC_TX_ERR, 1);
+    return;
+  }
+
+  uint16_t len = packetbuf_totlen();
+  if(len > PACKETBUF_SIZE) {
+      LOG_ERR("Input packet size is too big , %d > %d !\r\n", len, PACKETBUF_SIZE);
+      len = PACKETBUF_SIZE;
+  }
+
+  const linkaddr_t *addr_dst = packetbuf_addr(PACKETBUF_ADDR_RECEIVER);
+  uint8_t dst = linkaddr_to_nodeid(addr_dst);
+
+  /* Executed in context of some IPV6 stack's process */
+  int_master_status_t stat = critical_enter();
+  uint8_t status = osf_buf_tx_packetbuf_put(len, dst, sent, ptr);
+  critical_exit(stat);
+
+  if(!status) {
+    mac_call_sent_callback(sent, ptr, MAC_TX_QUEUE_FULL, 1);
+    LOG_WARN("#! TX queue is full ! !\r\n");
+  }
+}
+#endif /* OSF_WITH_IPV6 */
 
 /*---------------------------------------------------------------------------*/
 static int
@@ -1102,8 +1309,6 @@ osf_on()
   /* Initialize protocol */
   osf.proto = OSF_GET_PROTO(OSF_PROTOCOL);
   osf.proto->init();
-  /* Initialize Protocol extensions */
-  DO_OSF_P_EXTENSION(init);
   /* Initialise period */
   rtimer_clock_t min_period = OSF_PRE_EPOCH_GUARD + osf.proto->duration + OSF_POST_EPOCH_GUARD;
   if(OSF_PERIOD < min_period) {
@@ -1116,8 +1321,6 @@ osf_on()
   } else {
     osf.period = OSF_PERIOD;
   }
-  /* Initialise driver extensions */
-  DO_OSF_D_EXTENSION(init);
   /* Initialize logging */
   osf_log_init();
   /* OSF is now ON */
@@ -1154,14 +1357,33 @@ osf_off(void)
 
 
 /*---------------------------------------------------------------------------*/
+#if OSF_WITH_IPV6
+static int
+max_payload(void)
+{
+  int max_payload = MIN(OSF_DATA_LEN_MAX, PACKETBUF_SIZE);
+  return max_payload;
+}
+#endif
+
+/*---------------------------------------------------------------------------*/
 const struct mac_driver osf_driver = {
   "OSF",
   osf_init,
+#if OSF_WITH_IPV6
+  send_packet,
+  NULL,
+#else
   NULL,
   NULL,
+#endif
   osf_on,
   osf_off,
+#if OSF_WITH_IPV6
+  max_payload
+#else
   NULL
+#endif
 };
 
 /*---------------------------------------------------------------------------*/
@@ -1184,20 +1406,32 @@ print_osf_config()
 #ifdef OSF_PHY
   LOG_INFO("- OSF_CONF_PHY                 - %s\n", OSF_PHY_TO_STR(OSF_CONF_PHY));
 #endif
-  LOG_INFO("- OSF_TS                       - %u\n", OSF_TS);
+  uint8_t i;
+  LOG_INFO_("- OSF_TS                       - {%u", osf_timesyncs[0]);
+  for (i = 1; i < osf_n_timesyncs; i++) {
+    LOG_INFO_(",%u", osf_timesyncs[i]);
+  }
+  LOG_INFO("}\n");
   LOG_INFO("- OSF_NTX                      - %u\n", OSF_NTX);
   LOG_INFO("- OSF_MAX_MAX_SLOTS            - %u\n", OSF_MAX_MAX_SLOTS);
   LOG_INFO("- OSF_MAX_NODES                - %u\n", OSF_MAX_NODES);
   LOG_INFO("- OSF_TXPOWER                  - %s\n", OSF_TXPOWER_TO_STR(OSF_TXPOWER));
   LOG_INFO("- OSF_PROTOCOL:                - %s\n", OSF_PROTO_TO_STR(OSF_PROTOCOL));
-  LOG_INFO("- OSF_PROTO_EXTENSION:         - %s\n", (osf_p_extension != NULL ? osf_p_extension->name : "NONE"));
-  LOG_INFO("- OSF_DRIVER_EXTENSION:        - %s\n", (osf_d_extension != NULL ? osf_d_extension->name : "NONE"));
+#if USE_FEM == 1
+  LOG_INFO("- PA_TX_POWER:                 - %s\n", PA_TXPOWER_TO_STR(fem_tx_mode));
+  LOG_INFO("- PA_RX_ANTENNA:               - %s\n", PA_ANT_TO_STR(fem_rx_ant));
+  LOG_INFO("- PA_TX_ANTENNA:               - %s\n", PA_ANT_TO_STR(fem_tx_ant));
+#endif  
+ 
   /* Debug */
   LOG_INFO("OSF Config... (DEBUG)\n");
-  LOG_INFO("- OSF_PKT_PHY_LEN              - %u bytes\n", OSF_PKT_PHY_LEN(osf.rconf->phy->mode, osf.round->statlen));
+  LOG_INFO("- OSF_PKT_PHY_LEN               - %u bytes\n", OSF_PKT_PHY_LEN(osf.rconf->phy->mode));
   LOG_INFO("- OSF_PKT_HDR_LEN              - %u bytes\n", OSF_PKT_HDR_LEN);
   LOG_INFO("- OSF_DATA_LEN_MAX             - %u bytes\n", OSF_DATA_LEN_MAX);
   LOG_INFO("- OSF_BITMASK_LEN              - %u bytes\n", OSF_BITMASK_LEN);
+#if OSF_WITH_IPV6
+  LOG_INFO("- PACKETBUF_CONF_SIZE          - %u bytes\n", PACKETBUF_CONF_SIZE);
+#endif
 }
 
 /*---------------------------------------------------------------------------*/

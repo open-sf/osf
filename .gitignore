@@ -22,6 +22,7 @@ tools/readthedocs/examples
 patches-*
 tools/serial-io/tunslip6
 tools/serial-io/serialdump
+tools/serial-io/slipcmd
 serialdump-*
 build
 tools/coffee-manager/build/

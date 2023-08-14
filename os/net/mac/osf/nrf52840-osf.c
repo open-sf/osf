@@ -241,14 +241,14 @@ static nrf_radio_packet_conf_t nrf_phy_conf_802154 = {
   0, // s1len (bits)
   RADIO_PCNF0_S1INCL_Automatic, // s1incl
   0, // cilen
-  RADIO_PCNF0_PLEN_32bitZero,   // plen
-  RADIO_PCNF0_CRCINC_Exclude,   // crcincl
-  0, // termlen
+  RADIO_PCNF0_PLEN_32bitZero,   // plen, 32-bit zero preamble - used for IEEE 802.15.4
+  RADIO_PCNF0_CRCINC_Include,
+  0,   // termlen
   127, // maxlen
   127, // statlen
-  0, // balen
-  RADIO_PCNF1_ENDIAN_Little,    // big_endian
-  RADIO_PCNF1_WHITEEN_Disabled  // whiten
+  0,   // balen
+  RADIO_PCNF1_ENDIAN_Little,    // must be little-endian if CRC in use
+  OSF_PHY_WHITENING             // whiten
 };
 
 osf_phy_conf_t osf_phy_conf_802154 = {
@@ -256,8 +256,8 @@ osf_phy_conf_t osf_phy_conf_802154 = {
   RADIO_MODE_MODE_Ieee802154_250Kbit,
   &nrf_phy_conf_802154,
   RADIO_CRCCNF_LEN_Two, RADIO_CRCCNF_SKIPADDR_Ieee802154, 0x11021, 0x0UL,
-  US_TO_RTIMERTICKSX(140),      // header_air_ticks - 4B PRE + 1B SFD  @250K (128us +32 us)
-  // 2241,                         // header_air_ticks - MEASURED 140.064us on LA (READY to ADDR). Why? Only Nordic knows.
+  US_TO_RTIMERTICKSX(140),      // header_air_ticks - 4B PRE + 1B SFD  @250K (128us +32 us) // ?
+  // 2241,                      // header_air_ticks - MEASURED 140.064us on LA (READY to ADDR). Why? Only Nordic knows.
   0,                            // post_addr_air_ticks -  Calculated in my_radio_set_phy_airtime();
   0,                            // payload_air_ticks
   US_TO_RTIMERTICKSX(64),       // footer_air_ticks - 2B CRC @256K
@@ -330,6 +330,13 @@ configure_errata(osf_phy_conf_t *conf) {
    * This configuration applies to IC Rev. Revision 3, build codes QFAA-Fx0, QIAA-Fx0, CKAA-Fx0.
    * [254] RADIO: External PAs, FEMs, and LNAs need additional Radio configuration
    */
+#if USE_FEM == 1
+  /* [254] */
+  if(*(volatile uint32_t *) 0x10000330UL != 0xFFFFFFFFUL) {
+      *(volatile uint32_t *) 0x4000174CUL = *(volatile uint32_t *) 0x10000330UL;
+  }
+#endif
+
   switch (conf->mode) {
     case PHY_BLE_1M:
     case PHY_BLE_2M:
@@ -349,6 +356,15 @@ configure_errata(osf_phy_conf_t *conf) {
     case PHY_IEEE:
       /* [191] */
       *(volatile uint32_t *)0x40001740 = ((*((volatile uint32_t *)0x40001740)) & 0x7FFFFFFF);
+#if USE_FEM == 1
+      /* [254] */
+      if (*(volatile uint32_t *) 0x10000334UL != 0xFFFFFFFFUL) {
+        *(volatile uint32_t *) 0x40001584UL = *(volatile uint32_t *) 0x10000334UL;
+      }
+      if (*(volatile uint32_t *) 0x10000338UL != 0xFFFFFFFFUL) {
+        *(volatile uint32_t *) 0x40001588UL = *(volatile uint32_t *) 0x10000338UL;
+      }
+#endif
       break;
     default:
       break;
@@ -499,16 +515,18 @@ my_radio_set_phy_airtime(osf_phy_conf_t *phy, uint8_t len, uint8_t statlen)
     if(phy->mode == PHY_BLE_500K || phy->mode == PHY_BLE_125K) {
       /* Post-address */
       phy->post_addr_air_ticks = OSF_PHY_BITS_TO_RTIMERTICKSX(5, PHY_BLE_125K) // 2bit CI + 3bit TERM1 @125K (16us + 24us).
-                                 + OSF_PHY_BYTES_TO_RTIMERTICKSX(1, phy->mode) // S0 @os/net/mac/osfk (optional).
+                                 + OSF_PHY_BYTES_TO_RTIMERTICKSX(1, phy->mode) // S0 @125k (optional).
                                  + OSF_PHY_BITS_TO_RTIMERTICKSX(8, phy->mode); // LF @125k (optional).
 #if OSF_PACKET_WITH_S1
       phy->post_addr_air_ticks += OSF_PHY_BITS_TO_RTIMERTICKSX(1, phy->mode); // S1 @125k (optional).
 #endif
       /* Payload */
-      phy->payload_air_ticks = OSF_PHY_BYTES_TO_RTIMERTICKSX(phy->conf->maxlen, phy->mode);
+      phy->payload_air_ticks = OSF_PHY_BYTES_TO_RTIMERTICKSX(len, phy->mode);
+	  // phy->payload_air_ticks = OSF_PHY_BYTES_TO_RTIMERTICKSX(phy->conf->maxlen, phy->mode); // new but for fixed payload ?
     } else {
-      phy->post_addr_air_ticks = OSF_PHY_BYTES_TO_RTIMERTICKSX(OSF_PKT_PHY_LEN(phy->mode, statlen), phy->mode); // S0, LF, and S1 @125k (optional)
-      phy->payload_air_ticks = OSF_PHY_BYTES_TO_RTIMERTICKSX(phy->conf->maxlen, phy->mode);
+      phy->post_addr_air_ticks = OSF_PHY_BYTES_TO_RTIMERTICKSX(OSF_PKT_PHY_LEN(phy->mode), phy->mode); // S0, LF, and S1 @125k (optional)
+      phy->payload_air_ticks = OSF_PHY_BYTES_TO_RTIMERTICKSX(len, phy->mode);
+	  // phy->payload_air_ticks = OSF_PHY_BYTES_TO_RTIMERTICKSX(phy->conf->maxlen, phy->mode); // new but for fixed payload ?
     }
   }
   // NB: We SHOULDN'T need this, but the LA shows a missing...
@@ -535,7 +553,7 @@ my_radio_set_phy_airtime(osf_phy_conf_t *phy, uint8_t len, uint8_t statlen)
 
 /*---------------------------------------------------------------------------*/
 void
-my_radio_init(osf_phy_conf_t *phy_conf, void *my_tx_buffer, uint8_t len, uint8_t statlen, uint8_t addr)
+my_radio_init(osf_phy_conf_t *phy_conf, void *my_tx_buffer, uint8_t len, uint8_t statlen, uint8_t round_type)
 {
   UNUSED(print_radio_config);
 
@@ -566,17 +584,17 @@ my_radio_init(osf_phy_conf_t *phy_conf, void *my_tx_buffer, uint8_t len, uint8_t
 
   /* Fast RU (40us) */
   NRF_RADIO->MODECNF0 = (RADIO_MODECNF0_RU_Fast << RADIO_MODECNF0_RU_Pos);
-  /* Pull instructions from cache rather than flash */
-  NRF_NVMC->ICACHECNF = NVMC_ICACHECNF_CACHEEN_Msk;
+
   /* Constant CPU wakeup latency. */
   NRF_POWER->TASKS_CONSTLAT = 1UL;
+  /*NRF_POWER->TASKS_LOWPWR = 1UL;*/
 
   /* Configure physical layer params */
   if(phy_conf != NULL) {
     osf_phy_conf = phy_conf;
     configure_phy(phy_conf, len, statlen);
     configure_errata(phy_conf);
-    configure_address(phy_conf, addr);
+    configure_address(phy_conf, round_type);
   } else {
     osf_phy_conf = NULL;
   }
@@ -621,6 +639,7 @@ my_radio_init(osf_phy_conf_t *phy_conf, void *my_tx_buffer, uint8_t len, uint8_t
   NRF_PPI->CH[RADIO_TXEN_CH].TEP = (uint32_t)&NRF_RADIO->TASKS_TXEN;
   NRF_PPI->CH[RADIO_RXEN_CH].EEP = (uint32_t)&NRF_TIMERX->EVENTS_COMPARE[SCHEDULE_REG];
   NRF_PPI->CH[RADIO_RXEN_CH].TEP = (uint32_t)&NRF_RADIO->TASKS_RXEN;
+
   /* Reinit radio interrupts */
   // NVIC_EnableIRQ(RADIO_IRQn);
 }
@@ -652,7 +671,7 @@ schedule_tx_abs(uint8_t *buf, uint8_t channel, rtimer_clock_t t_abs)
     NRF_RADIO->PACKETPTR = (uint32_t)buf;
     r = RTIMER_OK;
 
-    nrf_radio_int_enable(RADIO_INTENSET_READY_Msk | RADIO_INTENSET_END_Msk | RADIO_INTENSET_ADDRESS_Msk);
+    nrf_radio_int_enable(RADIO_INTENSET_READY_Msk | RADIO_INTENSET_END_Msk /*| RADIO_INTENSET_ADDRESS_Msk*/);
     NVIC_EnableIRQ(RADIO_IRQn);
   }
 

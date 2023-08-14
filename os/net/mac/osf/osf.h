@@ -50,9 +50,8 @@
 
 /* Statically configue the timesync */
 #ifdef OSF_CONF_TS
-#define OSF_TS                        OSF_CONF_TS
-#else
-#define OSF_TS                        1
+#define OSF_TS(...)                   uint8_t osf_timesyncs[] = {__VA_ARGS__};
+#define OSF_N_TS                      sizeof(osf_timesyncs)/sizeof(uint8_t)
 #endif
 
 /* Maximum number of sources / destinations supported in the network. This is
@@ -193,13 +192,6 @@ typedef enum osf_primitive_t {
 /* MAX MAX SLOTS*/
 #define OSF_MAX_MAX_SLOTS             (MAX(OSF_ROUND_S_MAX_SLOTS, MAX(OSF_ROUND_T_MAX_SLOTS, OSF_ROUND_A_MAX_SLOTS)))
 
-/* Turn frequncy hopping on/off */
-#ifdef OSF_CONF_CH
-#define OSF_CH                        OSF_CONF_CH
-#else
-#define OSF_CH                        1
-#endif
-
 /* Default TX power */
 #ifdef OSF_CONF_TXPOWER
 #define OSF_TXPOWER                   OSF_CONF_TXPOWER
@@ -228,7 +220,7 @@ typedef enum osf_primitive_t {
 #if BUILD_WITH_TESTBED
 #define OSF_PRE_EPOCH_GUARD           (US_TO_RTIMERTICKSX(20000))
 #else
-#define OSF_PRE_EPOCH_GUARD           (US_TO_RTIMERTICKSX(0))
+#define OSF_PRE_EPOCH_GUARD           (US_TO_RTIMERTICKSX(150)) // do not change !
 #endif
 
 /* Post epoch guard for stuff just after the epoch in osf_post_epoch_process
@@ -236,19 +228,20 @@ typedef enum osf_primitive_t {
 #if OSF_CONF_LOGGING
 #define OSF_POST_EPOCH_GUARD          (US_TO_RTIMERTICKSX(10000))
 #else
-#define OSF_POST_EPOCH_GUARD          (US_TO_RTIMERTICKSX(0))
+#define OSF_POST_EPOCH_GUARD          (US_TO_RTIMERTICKSX(150+100)) // do not change !
 #endif
 
 /* We need just enough processing guard to complete round setup before we hit
    t_epoch_ref. */
-#define OSF_ROUND_GUARD               (US_TO_RTIMERTICKSX(500))
+#define OSF_ROUND_GUARD               (US_TO_RTIMERTICKSX(600)) // do not change !
 
 /* NB: IFS ticks between TX's. Min needed is...
     osf_phy_conf->tx_rx_addr_offset_ticks + <some-processing-time> + RRU
    If you wish to get this down even further, the code path will need
    to be reduced. Equally, if you want to do stuff in between TX slots,
    then this value needs to be increased. */
-#define OSF_TIFS_TICKS                (US_TO_RTIMERTICKSX(200))
+#define OSF_TIFS_TICKS                (US_TO_RTIMERTICKSX(300)) // do not change !
+
 /* NB: REF_SHIFT: The TS takes it's reference time from TXEN, while the
    receivers sync on EVENTS_ADDRESS/FRAMESTART. The receivers therefore need
    to pull their ref time back by a processing offset between EVENTS_ADDRESS
@@ -320,13 +313,6 @@ extern uint8_t osf_state;
 #define OSF_SLOT_E 'E'  /* Stop RX / No EVENTS_END */
 #define OSF_SLOT_O 'O'  /* Stop RX / No EVENTS_END */
 
-/* OSF slot data struct */
-// // TODO: different types of slots (e.g., TX/RX)
-// typedef struct osf_slot {
-//   uint8_t        type;
-//   rtimer_clock_t dur;
-// } osf_slot_t;
-
 /*---------------------------------------------------------------------------*/
 /* OSF round data struct */
 typedef enum osf_round_type {
@@ -381,15 +367,15 @@ extern osf_round_t osf_round_a;
 
 /* OSF round configuration */
 typedef struct osf_round_conf {
-osf_round_t             *round;                          /* round logic */
-osf_phy_conf_t          *phy;                            /* PHY configuration */
-uint8_t                  ntx;                            /* number of TX in round */
-uint8_t                  is_last;                        /* after this round exit the epoch */
-uint8_t                  max_slots;                      /* max number of timeslots in round */
-rtimer_clock_t           duration;                       /* total round duration */
-rtimer_clock_t           t_offset;                       /* offset from the epoch ref*/
-rtimer_clock_t           t_slots[OSF_NTX];               /* rxtx timeslot timings TODO: Not used */
-uint8_t                  sources[OSF_BITMASK_LEN];       /* permitted sources in this slot */
+  osf_round_t             *round;                          /* round logic */
+  osf_phy_conf_t          *phy;                            /* PHY configuration */
+  uint8_t                  ntx;                            /* number of TX in round */
+  uint8_t                  is_last;                        /* after this round exit the epoch */
+  uint8_t                  max_slots;                      /* max number of timeslots in round */
+  rtimer_clock_t           duration;                       /* total round duration */
+  rtimer_clock_t           t_offset;                       /* offset from the epoch ref*/
+  rtimer_clock_t           t_slots[OSF_NTX];               /* rxtx timeslot timings TODO: Not used */
+  uint8_t                  sources[OSF_BITMASK_LEN];       /* permitted sources in this slot */
 } osf_round_conf_t;
 
 /*---------------------------------------------------------------------------*/
@@ -479,8 +465,8 @@ extern osf_t osf;
 /*---------------------------------------------------------------------------*/
 /* General externs */
 extern uint8_t osf_is_on;
-extern uint8_t osf_timesync;
-
+extern uint8_t osf_timesyncs[10];
+extern uint8_t osf_n_timesyncs;
 extern uint8_t node_is_timesync;
 extern uint8_t node_is_synced;
 extern uint8_t node_is_joined;

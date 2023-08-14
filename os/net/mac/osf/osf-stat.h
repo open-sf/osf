@@ -57,11 +57,19 @@ typedef struct osf_mac_stat {
   uint32_t osf_rx_dup_total;         /* Dublicated packets */
   uint32_t osf_rx_wrong_addr_total;  /* Wrong link address packets */
   uint32_t osf_rx_too_big_total;     /* Longer than packet lenght */
+  uint32_t osf_rx_multicast_total;   /* Packets with multicast address */
+  
+  uint32_t osf_rx_tx_total;          /* Total RX, T round */
+  uint32_t osf_rx_ack_total;         /* Total RX, A round */
+  uint32_t osf_rx_sync_total;        /* Total RX, S round */
 
   uint32_t osf_rx_tx_crc_error_total;   /* CRC errors, T round */
   uint32_t osf_rx_ack_crc_error_total;  /* CRC errors, A round */
   uint32_t osf_rx_sync_crc_error_total; /* CRC errors, S round */
-  /**/
+  
+  uint32_t osf_rx_queue_peak;        /* Peak usage of RX buffers */
+  uint32_t osf_tx_queue_peak;        /* Peak usage of TX buffers */
+  
   uint32_t osf_join_total;           /* Join events */
   uint32_t osf_ts_lost_total;        /* Total lost of SYNC frames */
   uint32_t osf_sync_epoch_err_total; /* Epoc from sync frame is not mach */
@@ -70,7 +78,7 @@ typedef struct osf_mac_stat {
   uint32_t osf_rt_miss_epoch_total;  /* TimerX, miss epoch */
   uint32_t osf_rt_miss_round_total;  /* TimerX, miss round */
   uint32_t osf_rt_miss_slot_total;   /* TimerX, miss slot */
-
+ 
   uint32_t osf_rt_miss_rx_total;     /* TimerX, miss rx abs */
   uint32_t osf_rt_miss_tx_total;     /* TimerX, miss tx_abs */
 

@@ -49,10 +49,6 @@
 #include "net/mac/osf/osf-debug.h"
 #include "net/mac/osf/osf-stat.h"
 
-#if OSF_MPHY
-#include "net/mac/osf/osf-proto.h"
-#endif
-
 #if BUILD_WITH_TESTBED
 #include "services/testbed/testbed.h"
 #endif
@@ -88,31 +84,29 @@ send()
 {
   uint8_t packet_len = 0;
   osf_pkt_s_round_t *rnd_pkt = (osf_pkt_s_round_t *)osf_buf_rnd_pkt;
-  /* Send ONLY if we are a TS*/
+  /* Send ONLY if we are a TS */
   if(node_is_timesync) {
     osf_buf_hdr->src = node_id;
     osf_buf_hdr->dst = 0xFF;
     rnd_pkt->epoch = osf.epoch;
     packet_len += sizeof(rnd_pkt->epoch);
 #if OSF_ROUND_S_PAYLOAD
-    osf_buf_element_t *el = osf_buf_tx_get();
+    // TODO , S_PAYLOAD is not tested
+    osf_buf_element_t *el = osf_buf_tx_peek();
+	// osf_buf_element_t *el = osf_buf_tx_get(); // new
     /* Send data from the MAC buffer */
     if(el != NULL) {
       osf_buf_hdr->dst = el->dst;
       rnd_pkt->id = el->id;
       packet_len += sizeof(rnd_pkt->id);
       memcpy(rnd_pkt->payload, el->data, el->len);
-      rnd_pkt += el->len;
+      packet_len += el->len; // rnd_pkt += el->len; ?
       osf.proto->sent[osf.proto->index] = el->dst;
       osf_log_slot_node(osf_buf_hdr->dst);
       return packet_len;
     }
 #endif
-#if OSF_MPHY
-    rnd_pkt->pattern = osf_mphy_pattern;
-#else
     return 0;
-#endif
   }
   return 0;
 }
@@ -129,13 +123,7 @@ receive()
     return 1;
   }
 #endif
-#if OSF_MPHY
-  osf_pkt_s_round_t *rnd_pkt = (osf_pkt_s_round_t *)osf_buf_rnd_pkt;
-  osf_mphy_pattern = rnd_pkt->pattern;
-  return 1;
-#else
   return 0;
-#endif
 }
 
 /*---------------------------------------------------------------------------*/

@@ -73,7 +73,7 @@
 #define OSF_LOG_HEARTBEAT             0
 #endif /* OSF_LOGGING */
 
-#define OSF_LOG_PRINT_LEN_MAX         8
+#define OSF_LOG_PRINT_LEN_MAX         20
 
 /*---------------------------------------------------------------------------*/
 /* Msg logs */
@@ -83,8 +83,8 @@
 /* Radio buffer logs */
 /*---------------------------------------------------------------------------*/
 typedef struct radio_buffer {
- uint8_t             buf[255];
- uint8_t             len;
+ uint8_t             buf[260];
+ uint16_t            len;
  uint8_t             is_tx;
  uint8_t             rnd_pkt_len;
  uint8_t             print_phy;
@@ -101,7 +101,7 @@ typedef struct radio_buffer {
 //       messages until you want to print them. It would also be useful for
 //       the TSCH logging system
 #define OSF_LOG_MSG_SIZE_MAX          100
-#define OSF_LOG_MSG_LEN_MAX           64
+#define OSF_LOG_MSG_LEN_MAX           255
 
 /* Poor man's approach to %s %u %d %x */
 typedef struct osf_log_msg {
@@ -218,10 +218,10 @@ void osf_log_slot_ch();
 #define osf_log_slot_ch()
 #endif
 #if OSF_LOG_LAST_PACKET
-void osf_log_radio_buffer(uint8_t *buf, uint8_t len, uint8_t is_tx, uint8_t rnd_pkt_len, uint8_t statlen, osf_round_type_t round);
+void osf_log_radio_buffer(uint8_t *buf, uint16_t len, uint8_t is_tx, uint8_t rnd_pkt_len, uint8_t statlen, osf_round_type_t round);
 void osf_log_test();
 #else
-#define osf_log_radio_buffer(buf, len, rnd_pkt_len, is_tx, statlen, round)
+#define osf_log_radio_buffer(buf, len, is_tx, rnd_pkt_len, statlen, round)
 #endif
 
 void osf_log_msg(const char *prefix, const char *module, const uint8_t *msg, uint8_t len, uint8_t type);

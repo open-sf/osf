@@ -51,8 +51,14 @@
 #define OSF_HOPPING             OSF_CH_SEEDED
 #endif
 
+#ifdef OSF_CHN
+#define CH_DEFAULT               OSF_CHN
+#else
 #define CH_DEFAULT               80
-#define CH_SCAN_LIST           {  2, 26, 80 }
+#endif
+
+//#define CH_SCAN_LIST           {  2, 26, 80 }
+#define CH_SCAN_LIST           {  5, 25, 80 }
 #define CH_SCAN_LIST_LEN          3
 #define CH_ALL_LIST            {  5, 10, 15, 20, 25, 30, 35, 40, 45, 50, \
                                  55, 60, 65, 70, 75, 80 };

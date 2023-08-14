@@ -46,7 +46,6 @@
 #include "net/mac/osf/osf-proto.h"
 #include "net/mac/osf/osf-packet.h"
 #include "net/mac/osf/osf-buffer.h"
-#include "net/mac/osf/extensions/osf-ext.h"
 
 #if BUILD_WITH_TESTBED
 #include "services/testbed/testbed.h"
@@ -72,11 +71,15 @@ osf_round_configure(osf_round_conf_t *rconf, osf_round_t *rnd, osf_phy_conf_t *p
   rconf->ntx = ntx;
   rconf->max_slots = max_slots;
 
-  rtimer_clock_t slot_duration = my_radio_set_phy_airtime(phy, OSF_PKT_HDR_LEN + OSF_PKT_RND_LEN(rnd->type), rnd->statlen);
-  rconf->duration = (slot_duration * rconf->max_slots) - (OSF_TIFS_TICKS); // take off last TIFS + RRU
+  rtimer_clock_t slot_duration = 0;
+ 
+	if(rnd->statlen) {
+  	slot_duration = my_radio_set_phy_airtime(phy, OSF_PKT_HDR_LEN + OSF_PKT_RND_LEN(rnd->type), rnd->statlen);
+  } else {
+  	slot_duration = my_radio_set_phy_airtime(phy, OSF_PKT_AIR_MAXLEN(rnd->type, rconf->phy->mode), rnd->statlen);
+  }  
 
-  /* Protocol extensions */
-  DO_OSF_P_EXTENSION(configure, osf.proto, rconf);
+  rconf->duration = (slot_duration * rconf->max_slots) - (OSF_TIFS_TICKS); // take off last TIFS + RRU
 }
 
 /*---------------------------------------------------------------------------*/
@@ -88,10 +91,19 @@ osf_round_conf_print(osf_round_conf_t *rconf, osf_round_t *rnd)
   LOG_INFO("- STATLEN          - %s\n", (rnd->statlen) ? "TRUE" : "FALSE");
   LOG_INFO("- HEADER_AIR_TIME  - %8lu ticks | %6lu us\n", rconf->phy->header_air_ticks, RTIMERTICKS_TO_USX(rconf->phy->header_air_ticks));
   LOG_INFO("- POST_ADDR_TIME   - %8lu ticks | %6lu us\n", rconf->phy->post_addr_air_ticks, RTIMERTICKS_TO_USX(rconf->phy->post_addr_air_ticks));
+  #if 1
+  LOG_INFO("- PAYLOAD_AIR_TIME - %8lu ticks | %6lu us | %3u B, %3u B %s\n", rconf->phy->payload_air_ticks, \
+                                                               RTIMERTICKS_TO_USX(rconf->phy->payload_air_ticks), \
+                                                               OSF_PKT_AIR_MAXLEN(rnd->type, rconf->phy->mode),  \
+                                                               (rnd->statlen) ? OSF_MAXLEN(rconf->phy->mode) : OSF_PKT_HDR_LEN + OSF_PKT_RND_LEN(rnd->type), \
+                                                               (rnd->statlen) ? "(MTU for var len packets)" : "(MAX payload)" );
+  #else
   LOG_INFO("- PAYLOAD_AIR_TIME - %8lu ticks | %6lu us | %u B %s\n", rconf->phy->payload_air_ticks, \
                                                                RTIMERTICKS_TO_USX(rconf->phy->payload_air_ticks), \
                                                                (!rnd->statlen) ? OSF_MAXLEN(rconf->phy->mode) : OSF_PKT_HDR_LEN + OSF_PKT_RND_LEN(rnd->type), \
                                                                (!rnd->statlen) ? "(MTU for var len packets)" : "" );
+  #endif
+															   
   LOG_INFO("- FOOTER_AIR_TIME  - %8lu ticks | %6lu us\n", rconf->phy->footer_air_ticks, RTIMERTICKS_TO_USX(rconf->phy->footer_air_ticks));
   LOG_INFO("- PACKET_AIR_TIME  - %8lu ticks | %6lu us \n", rconf->phy->packet_air_ticks, RTIMERTICKS_TO_USX(rconf->phy->packet_air_ticks));
   LOG_INFO("- TXRX_ADDR_OFFSET - %8lu ticks | %6lu us\n", rconf->phy->tx_rx_addr_offset_ticks, RTIMERTICKS_TO_USX(rconf->phy->tx_rx_addr_offset_ticks));
@@ -108,20 +120,20 @@ osf_proto_print(osf_proto_t *proto)
   LOG_INFO("=== %s ===\n", OSF_PROTO_TO_STR(proto->type));
   LOG_INFO("- PROTO LEN        - %u rounds\n", proto->len);
   LOG_INFO("- PROTO DURATION   - %5lu ticks | %4lu us\n", proto->duration, RTIMERTICKS_TO_USX(proto->duration));
-  LOG_INFO("- STA EMPTY        - %u\n", OSF_PROTO_STA_EMPTY);
-#if OSF_MPHY
-  LOG_INFO("- STA MPHY         - %u (%s%%)\n", OSF_MPHY, OSF_MPHY_PATTERN_TO_STR(osf_mphy_pattern));
-#endif
-  LOG_INFO("=== Proto Ext ===\n");
-  LOG_INFO("- NOISE DETECTION  - %u\n", OSF_EXT_ND);
-  LOG_INFO("- RANDOM BACKOFF   - %u\n", OSF_EXT_BACKOFF);
+  //LOG_INFO("- STA EMPTY        - %u\n", OSF_PROTO_STA_EMPTY);
+//#if OSF_MPHY
+  //LOG_INFO("- STA MPHY         - %u (%s%%)\n", OSF_MPHY, OSF_MPHY_PATTERN_TO_STR(osf_mphy_pattern));
+//#endif
+  //LOG_INFO("=== Proto Ext ===\n");
+  //LOG_INFO("- NOISE DETECTION  - %u\n", OSF_EXT_ND);
+  //LOG_INFO("- RANDOM BACKOFF   - %u\n", OSF_EXT_BACKOFF);
 
-  LOG_INFO("=== Driver Ext ===\n");
-  LOG_INFO("- RANDOM NTX       - %u\n", OSF_EXT_RNTX);
+  //LOG_INFO("=== Driver Ext ===\n");
+  //LOG_INFO("- RANDOM NTX       - %u\n", OSF_EXT_RNTX);
   LOG_INFO("- SCHEDULE: |");
   for (i = 0; i < proto->len; i++) {
     osf_round_conf_t *rconf = &proto->sched[i];
-    uint8_t is_source = OSF_CHK_BIT_BYTE(rconf->sources, deployment_index_from_id(node_id));
+    uint8_t is_source = OSF_CHK_BIT_BYTE(rconf->sources, deployment_id_from_index(node_id)/*deployment_index_from_id(node_id)*/);
     LOG_INFO_("%u:%s-%s-%u", i, OSF_ROUND_TO_STR_SHORT(rconf->round->type), OSF_PHY_TO_STR(rconf->phy->mode), is_source);
     LOG_INFO_("|");
   }

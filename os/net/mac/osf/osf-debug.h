@@ -38,39 +38,27 @@
 
 #ifndef OSF_DEBUG_H_
 #define OSF_DEBUG_H_
+
 /*---------------------------------------------------------------------------*/
 /* LEDs */
 /*---------------------------------------------------------------------------*/
-
 /* Callback for implement led indication in application */
 typedef void (*osf_led_on_t)(uint8_t led_n);
 typedef void (*osf_led_off_t)(uint8_t led_n);
 extern osf_led_on_t osf_led_on;
 extern osf_led_off_t osf_led_off;
-
-#if 0
-#define TS_LED                          LED_1
-#define ROUND_LED                       LED_2
-#define SYNCED_LED                      LED_3
-#define CRCERR_LED                      LED_4
-#else
+/* LED enumeration */
 #define TS_LED                          1
 #define ROUND_LED                       2
 #define SYNCED_LED                      3
 #define CRCERR_LED                      4
-#endif
 
 #if OSF_DEBUG_LEDS
-//#define DEBUG_LEDS_ON(n)                nrf_gpio_pin_clear(n)
-//#define DEBUG_LEDS_OFF(n)               nrf_gpio_pin_set(n)
 #define DEBUG_LEDS_ON(n)                if(NULL!=osf_led_on){osf_led_on(n);}
 #define DEBUG_LEDS_OFF(n)               if(NULL!=osf_led_off){osf_led_off(n);}
-
 #else /* OSF_DEBUG_LEDS */
-
 #define DEBUG_LEDS_ON(n)
 #define DEBUG_LEDS_OFF(n)
-
 #endif /* OSF_DEBUG_LEDS */
 
 /*---------------------------------------------------------------------------*/
@@ -110,13 +98,12 @@ extern osf_led_off_t osf_led_off;
 /* Enable individual event indication */
 #define RADIO_TXRX_PIN                  NRF_GPIO_PIN_MAP(0, 31) // high on READY, low on END
 #define RADIO_IRQ_EVENT_PIN             NRF_GPIO_PIN_MAP(0, 30) // high on IRQ in, low - on out
-// #define DBG_PIN1                        NRF_GPIO_PIN_MAP(1, 5)  // DBG1
-#define DBG_PIN2                        NRF_GPIO_PIN_MAP(1, 6)  // DBG2
-#define DBG_PIN3                        NRF_GPIO_PIN_MAP(1, 7)  // DBG3
-// #define DBG_PIN4                        NRF_GPIO_PIN_MAP(1, 8)  // DBG4
-#define DBG_PIN4                        NRF_GPIO_PIN_MAP(0, 29)  // DBG4
+#define DBG_PIN1                        NRF_GPIO_PIN_MAP(0, 29)  // DBG1
+#define DBG_PIN2                        NRF_GPIO_PIN_MAP(0, 28)  // DBG2
+// #define DBG_PIN3                        NRF_GPIO_PIN_MAP(1, 5)  // DBG3
+// #define DBG_PIN4                        NRF_GPIO_PIN_MAP(0, 29)  // DBG4
 // #define RADIO_READY_EVENT_PIN           NRF_GPIO_PIN_MAP(0, 29) // READY
-#define RADIO_ADDRESS_EVENT_PIN         NRF_GPIO_PIN_MAP(1, 5) // ADDRESS
+// #define RADIO_ADDRESS_EVENT_PIN         NRF_GPIO_PIN_MAP(1, 5) // ADDRESS
 // #define RADIO_PAYLOAD_EVENT_PIN         NRF_GPIO_PIN_MAP(1, 6) // PAYLOAD
 // #define RADIO_END_EVENT_PIN             NRF_GPIO_PIN_MAP(0, 29) // END
 // #define RADIO_BCMATCH_EVENT_PIN         NRF_GPIO_PIN_MAP(0, 29) // BCMATCH

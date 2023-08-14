@@ -19,10 +19,13 @@ import seaborn as sns
 # sns.set_context("poster", font_scale=2.5)
 # plt.rcParams['axes.xmargin'] = 0
 
+sns.set_context("notebook")
+sns.set_palette('Paired')
+
 marker = itertools.cycle((',', '.', 'o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd', 'P', 'X'))
 marker_list = [',', '.', 'o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd', 'P', 'X']  # for seaborn
 hatch = itertools.cycle(('/', 'x', '\\', '-', '//'))
-hatch_list = ['/', '\\', '//', '-', 'x', 'o', 'O', '.', '*']  # for seaborn
+hatch_list = ['/', 'x', '\\', '//', '-']  # for seaborn
 
 
 # ----------------------------------------------------------------------------
@@ -32,16 +35,16 @@ def is_string(obj):
 
 
 # ----------------------------------------------------------------------------
-def add_hatches_bar(ax, x):
+def add_hatches_bar(ax):
     """Add hatches to seaborn barplot."""
     # Loop over the bars. Seaborn seems to save the patches in order of type rather
     # than where they bars are on the graph, so we use a hacky cast to set the
     # hash for the first x, then the second x, etc.
-    num_bins = len(x.unique())
-    bin_len = len(ax.patches)/num_bins
+    bin_len = len(ax.patches)/len(ax.patches)
     for i, bar in enumerate(ax.patches):
-        h = int(i / num_bins)
-        bar.set_hatch(hatch_list[h])
+        h = int(i / bin_len)
+        bar.set_hatch(hatch_list[i])
+
 
 # ----------------------------------------------------------------------------
 def add_hatches_box(ax):
@@ -65,22 +68,26 @@ def autolabel(ax, rects, max_h):
                     ha='center', va='bottom')
 
 # ----------------------------------------------------------------------------
-def plot_bar(data, x, y, **kwargs):
+def bar(data, x, y, **kwargs):
     """Plot an seaborn barplot and save."""
 
     order = kwargs['order'] if 'order' in kwargs else None
     hue = kwargs['hue'] if 'hue' in kwargs else None
-    hatch = kwargs['hatch'] if 'hatch' in kwargs else False
 
-    ax = sns.barplot(x=x, y=y, data=data, hue=hue, order=order, edgecolor='black')
-
-    if hatch:
-        add_hatches_bar(ax, x)
+    ax = sns.barplot(x=x, y=y, hue=hue, data=data, order=order, edgecolor='black')
+    # Loop over the bars. Seaborn seems to save the patches in order of type rather
+    # than where they bars are on the graph, so we use a hacky cast to set the
+    # hash for the first x, then the second x, etc.
+    num_bins = len(data[y].unique())
+    bin_len = len(ax.patches)/num_bins
+    for i, bar in enumerate(ax.patches):
+        h = int(i / bin_len)
+        bar.set_hatch(hatch_list[h])
 
     return ax
 
 # ----------------------------------------------------------------------------
-def plot_line(data, **kwargs):
+def line(data, **kwargs):
     """Plot an seaborn lineplot and save."""
 
     # ax = sns.lineplot(data=data, lw=2, dashes=False, markers=marker_list[0:data.shape[1]], markersize=7)
@@ -122,20 +129,19 @@ def save_fig(fig, ax, df, filename, out, **kwargs):
     ylabel = kwargs['ylabel'] if 'ylabel' in kwargs else None
     title = kwargs['title'] if 'title' in kwargs else None
     labels = kwargs['labels'] if 'labels' in kwargs else None
-    legend = kwargs['legend'] if 'legend' in kwargs else None
-    tight = kwargs['tight'] if 'tight' in kwargs else None
+    loc = kwargs['loc'] if 'loc' in kwargs else 'best'
+    tight = kwargs['tight'] if 'tight' in kwargs else 'tight'
     pltshow = kwargs['pltshow'] if 'pltshow' in kwargs else None
 
     os.makedirs(out, exist_ok=True)
 
     set_labels(fig, ax, xlabel, ylabel)
     set_title(fig, ax, title)
-    set_legend(fig, ax, labels, legend)
+    set_legend(fig, ax, labels, loc)
 
     if not out.endswith('/'):
         out = out + '/'  # make sure that ou ends with a '/'
 
-    plt.show()
 
     print('   ... Saving figure: ' + out + 'fig_' + filename + '.pdf')
     fig.savefig(out + 'fig_' + filename + '.pdf', bbox_inches=tight)
@@ -159,27 +165,31 @@ def set_title(fig, ax, title):
     if title is not None:
         ax.set_title(title, fontweight='bold')
 
-
 # ----------------------------------------------------------------------------
 def set_legend(fig, ax, labels, loc):
     L = ax.get_legend()
-    if loc is None:
-        if L is not None:
-            L.remove()
+    # Manually create the legend from the patches and x axes labels
+    if L is None:
+        xticklabels = []
+        for l in ax.get_xticklabels():
+            xticklabels.append(l.get_text())
+        ax.legend(handles=ax.patches, labels=xticklabels, loc=loc)
+    # We already have a legend...
     else:
-        if labels is not None:
-            if L is not None:
-                handles, labels_orig = ax.get_legend_handles_labels()
-                # ax.legend(handles=handles, labels=labels, loc=loc,  bbox_to_anchor=(0.5,1.1), ncol=len(labels))
-                ax.legend(handles=handles, labels=labels, loc=loc, ncol=len(labels))
-                i = 0
-                for l in labels:
-                    L.get_texts()[i].set_text(l)
-                    i = i + 1
-            else:
-                ax.legend(labels=labels, loc=loc)
-        if loc == 'bbox':
+        # If we don't want a legend, then remove it
+        if loc is None:
+            L.remove()
+        # Manually set bounding box
+        elif loc == 'bbox':
             handles, labels_orig = ax.get_legend_handles_labels()
-            ax.legend(handles=handles, loc='best', ncol=4, bbox_to_anchor=(1.01,1.45), fontsize=6)
+            ax.legend(handles=handles, loc=loc, bbox_to_anchor=(1.05,1.37), fontsize=8)
+        # If we DO want a legend and we don't want to set a manual location...
         else:
             ax.legend(labels=labels, loc=loc)
+    # We want to add custom labels to the legend so  replace the text
+    if labels is not None:
+        L = ax.get_legend()
+        i = 0
+        for l in labels:
+            L.get_texts()[i].set_text(l)
+            i = i + 1

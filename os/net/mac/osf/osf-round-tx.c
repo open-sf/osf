@@ -52,7 +52,7 @@
 
 #include "sys/log.h"
 #define LOG_MODULE "OSF-RND-T"
-#define LOG_LEVEL LOG_LEVEL_INFO
+#define LOG_LEVEL LOG_LEVEL_ERR
 
 static osf_round_t *this = &osf_round_tx;
 
@@ -74,7 +74,6 @@ configure()
     this->is_initiator = 0;
     osf.last_slot_type = OSF_SLOT_T;
   }
-  osf_stat.osf_mac_t_total++; /* Statistics */
 }
 
 /*---------------------------------------------------------------------------*/
@@ -111,9 +110,6 @@ receive()
       osf_buf_receive(rnd_pkt->id, osf_buf_hdr->src, osf_buf_hdr->dst, rnd_pkt->payload, osf_buf_len - sizeof(rnd_pkt->id) - OSF_PKT_HDR_LEN, osf_buf_hdr->slot);
     }
     osf.proto->received[osf.proto->index] = osf_buf_hdr->src;
-#if OSF_MPHY
-    mphy_last_received[osf_buf_hdr->src] = clock_time();
-#endif
     osf_stat.osf_mac_rx_total++; // Statistics
     return 1;
   }

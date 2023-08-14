@@ -41,8 +41,8 @@
 
 #include "net/mac/osf/osf.h"
 #include "net/mac/osf/osf-proto.h"
-#include "net/mac/osf/extensions/osf-ext.h"
 
+#define MIC_SIZE  0
 #define OSF_PACKET_WITH_S1 0
 
 /*---------------------------------------------------------------------------*/
@@ -66,9 +66,8 @@ typedef union __attribute__((packed)) osf_pkt_phy {
   ble_t  ble;
 } osf_pkt_phy_t;
 
-// #define OSF_PKT_PHY_LEN(P)         ((P != PHY_IEEE) ? sizeof(ble_t) : sizeof(ieee_t))
-#define OSF_PKT_PHY_LEN(P, S)         (((S) ? 0 : ((P != PHY_IEEE) ? sizeof(ble_t) : sizeof(ieee_t))))
-
+#define OSF_PKT_PHY_LEN(P)         ((P != PHY_IEEE) ? sizeof(ble_t) : sizeof(ieee_t))
+#define OSF_PKT_PHY_LEN2(P, S)     (((S) ? 0 : ((P != PHY_IEEE) ? sizeof(ble_t) : sizeof(ieee_t))))
 
 /*---------------------------------------------------------------------------*/
 /* OSF header */
@@ -81,7 +80,11 @@ typedef struct __attribute__((packed)) osf_pkt_hdr {
 
 /*---------------------------------------------------------------------------*/
 /* MAX possible packet length. 127 -2 for crc in IEEE */
+#ifdef OSF_CONF_MAXLEN
+#define OSF_MAXLEN(P)              ((P != PHY_IEEE) ? OSF_CONF_MAXLEN : OSF_CONF_MAXLEN)
+#else
 #define OSF_MAXLEN(P)              ((P != PHY_IEEE) ? 255 : 125)
+#endif
 
 /* OSF max data length */
 #ifdef OSF_CONF_DATA_LEN_MAX
@@ -91,22 +94,20 @@ typedef struct __attribute__((packed)) osf_pkt_hdr {
 #endif
 
 /*---------------------------------------------------------------------------*/
+#define OSF_PKT_S_RND_EPOCH_LEN sizeof(uint16_t) /* uint16_t epoch */
 /* S round packet */
 typedef struct __attribute__((packed)) osf_pkt_s_round {
   uint16_t epoch;
-#if OSF_ROUND_S_PAYLOAD
+#if OSF_ROUND_S_PAYLOAD /* Not tested ! */
   uint16_t id;
   uint8_t  payload[OSF_DATA_LEN_MAX];
-#endif
-#if OSF_MPHY
-  uint8_t  pattern;
-#endif
-#if OSF_EXT_BV
-  uint8_t  bv_crc[2];
-#endif
+#elif OSF_ROUND_S_PAYLOAD_LENGTH
+  uint8_t  payload[ OSF_ROUND_S_PAYLOAD_LENGTH - OSF_PKT_HDR_LEN - OSF_PKT_S_RND_EPOCH_LEN];
+#endif  
 } osf_pkt_s_round_t;
 
 #define OSF_PKT_S_RND_LEN sizeof(osf_pkt_s_round_t)
+
 /*---------------------------------------------------------------------------*/
 /* T round packet */
 typedef struct __attribute__((packed)) osf_pkt_t_round {
@@ -119,13 +120,10 @@ typedef struct __attribute__((packed)) osf_pkt_t_round {
 /*---------------------------------------------------------------------------*/
 /* A round packet */
 typedef struct __attribute__((packed)) osf_pkt_a_round {
-#if OSF_PROTO_STA_ACK_TOGGLING
-  uint8_t  ack[OSF_BITMASK_LEN];
+  #if OSF_CONF_ROUND_A_PAYLOAD
+  uint8_t  ack[OSF_CONF_ROUND_A_PAYLOAD];
+  #endif
 } osf_pkt_a_round_t;
-#else
-  // Use dst field of osf_round_hdr
-} osf_pkt_a_round_t;
-#endif
 
 #define OSF_PKT_A_RND_LEN sizeof(osf_pkt_a_round_t)
 
@@ -137,12 +135,12 @@ typedef struct __attribute__((packed)) osf_pkt_a_round {
 
 #define OSF_PKT_RND_LEN_MAX (MAX(OSF_PKT_S_RND_LEN, MAX(OSF_PKT_T_RND_LEN, OSF_PKT_A_RND_LEN)))
 
-#if OSF_SHRINK_ROUND
+#if OSF_SHRINK_S_A_ROUNDS
 /* Max reserved AIR time in bytes */
 #define OSF_PKT_AIR_MAXLEN(R, P) \
-  ((R == OSF_ROUND_S) ? 100 : \
+  ((R == OSF_ROUND_S) ? (OSF_ROUND_S_AIR_LENGTH) : \
    (R == OSF_ROUND_T) ? (OSF_MAXLEN(P)) : \
-   (R == OSF_ROUND_A) ? 12 : 0)
+   (R == OSF_ROUND_A) ? (OSF_ROUND_A_AIR_LENGTH) : 0)
 #else
 #define OSF_PKT_AIR_MAXLEN(R, P) \
   ((R == OSF_ROUND_S) ? (OSF_MAXLEN(P)) : \
@@ -151,7 +149,7 @@ typedef struct __attribute__((packed)) osf_pkt_a_round {
 #endif
 
 /*---------------------------------------------------------------------------*/
-#define OST_PBUF_N_MAX            (OSF_MAX_MAX_SLOTS/2) // Glossy can have MAX_SLOTS/2 RXs
+#define OSF_PBUF_N_MAX            (OSF_MAX_MAX_SLOTS/2) // Glossy can have MAX_SLOTS/2 RXs
 
 /* Packet buffer */
 typedef struct {

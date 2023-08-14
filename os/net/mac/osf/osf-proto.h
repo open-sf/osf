@@ -36,8 +36,8 @@
  *         Yevgen Gyl <yevgen.gyl@unikie.com>
  */
 
-#ifndef OSF_ROUND_H_
-#define OSF_ROUND_H_
+#ifndef OSF_PROTO_H_
+#define OSF_PROTO_H_
 
 /*---------------------------------------------------------------------------*/
 /* Common */
@@ -51,10 +51,6 @@
 #endif
 #endif
 
-/* TODO: Codes */
-#define OSF_PROTO_CODE_BROADCAST               0xFF
-#define OSF_PROTO_CODE_STA_EXIT                0xEE
-
 /*---------------------------------------------------------------------------*/
 #ifdef OSF_CONF_PROTO_STA_N_TA
 #define OSF_PROTO_STA_N_TA                     OSF_CONF_PROTO_STA_N_TA
@@ -65,76 +61,10 @@
 #error "ERROR: Number of TA pairs plus S round > OSF_SCHEDULE_LEN_MAX!"
 #endif
 
-#ifdef OSF_CONF_PROTO_STA_ACK_TOGGLING
-#define OSF_PROTO_STA_ACK_TOGGLING             OSF_CONF_PROTO_STA_ACK_TOGGLING
-#else
-#define OSF_PROTO_STA_ACK_TOGGLING             0
-#endif
-
-#ifdef OSF_CONF_ROUND_A_ALWAYS_ACK
-#define OSF_ROUND_A_ALWAYS_ACK                 (OSF_CONF_ROUND_A_ALWAYS_ACK && OSF_PROTO_STA_ACK_TOGGLING) // Can only be used with toggling
-#else
-#define OSF_ROUND_A_ALWAYS_ACK                 0
-#endif
-
-#ifdef OSF_CONF_PROTO_STA_EMPTY
-#define OSF_PROTO_STA_EMPTY                    OSF_CONF_PROTO_STA_EMPTY
-#else
-#define OSF_PROTO_STA_EMPTY                    0
-#endif
-
-/*---------------------------------------------------------------------------*/
-#ifdef OSF_CONF_MPHY
-#define OSF_MPHY                               OSF_CONF_MPHY
-#else
-#define OSF_MPHY                               0
-#endif
-
-#if OSF_MPHY
-typedef enum {
-  OSF_MPHY_PATTERN_100,
-  OSF_MPHY_PATTERN_75,
-  OSF_MPHY_PATTERN_50,
-  OSF_MPHY_PATTERN_25,
-  OSF_MPHY_PATTERN_0,
-  OSF_MPHY_NUM_PATTERNS
-} osf_mphy_pattern_t;
-
-
-extern uint8_t osf_mphy_pattern_100[];
-extern uint8_t osf_mphy_pattern_75[];
-extern uint8_t osf_mphy_pattern_50[];
-extern uint8_t osf_mphy_pattern_25[];
-extern uint8_t osf_mphy_pattern_0[];
-
-#define OSF_GET_MPHY_PATTERN(P)  \
-  ((P == OSF_MPHY_PATTERN_100)  ? &osf_mphy_pattern_100[0] : \
-   (P == OSF_MPHY_PATTERN_75)   ? &osf_mphy_pattern_75[0] : \
-   (P == OSF_MPHY_PATTERN_50)   ? &osf_mphy_pattern_50[0] : \
-   (P == OSF_MPHY_PATTERN_25)   ? &osf_mphy_pattern_25[0] : \
-   (P == OSF_MPHY_PATTERN_0)    ? &osf_mphy_pattern_0[0]  : NULL)
-
-#define OSF_MPHY_PATTERN_TO_STR(P) \
-  ((P == OSF_MPHY_PATTERN_100) ? ("100") : \
-   (P == OSF_MPHY_PATTERN_75) ? ("75") : \
-   (P == OSF_MPHY_PATTERN_50) ? ("50") : \
-   (P == OSF_MPHY_PATTERN_25) ? ("25") : \
-   (P == OSF_MPHY_PATTERN_0) ?  ("0")  : ("???"))
-
-#define OSF_MPHY_PATTERN_LEN 4
-
-extern uint8_t osf_mphy_pattern;
-extern uint8_t *osf_mphy;
-extern clock_time_t mphy_last_received[];
-
-#define MPHY_THRESHOLD_SECONDS 40
-#endif
-
-
 /*---------------------------------------------------------------------------*/
 /* API */
 void osf_round_configure(osf_round_conf_t *rconf, osf_round_t *rnd, osf_phy_conf_t *phy, uint8_t ntx, uint8_t max_slots);
 void osf_round_conf_print(osf_round_conf_t *rconf, osf_round_t *rnd);
 void osf_proto_print(osf_proto_t *proto);
 
-#endif /* OSF_ROUND_H_ */
+#endif /* OSF_PROTO_H_ */

@@ -149,7 +149,8 @@ ifneq ($(filter nrf-upload-sequence,$(MAKECMDGOALS)),)
 endif
 
 nrf-upload-snr.%:
-	$(NRFJPROG) -f nrf52 --snr $* --sectorerase --program $(HEX_FILE)
+#	$(NRFJPROG) -f nrf52 --snr $* --sectorerase --program $(HEX_FILE)
+	$(NRFJPROG) -f nrf52 --snr $* --sectorerase --program $(HEX_FILE) --verify $(HEX_FILE)
 	$(NRFJPROG) -f nrf52 --snr $* --reset
 
 nrf-upload-sequence: $(foreach SNR, $(NRF_SNRS), nrf-upload-snr.$(SNR))

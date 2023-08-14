@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Technology Innovation Institute
+ * Copyright (c) 2020, Technology Innovation Institute
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,65 +28,65 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
- /**
+/*---------------------------------------------------------------------------*/
+/**
+ * \addtogroup osf
+ * @{
+ *
  * \file
- *         OSF random backoff protocol extension.
- * \author
- *         Michael Baddeley <michael.baddeley@tii.ae>
- *         Yevgen Gyl <yevgen.gyl@unikie.com>
+ *         OSF border router implementation.
+ *
+ * \author Michael Baddeley <michael.baddeley@tii.ae>
+ *
  */
+/*---------------------------------------------------------------------------*/
 
 #include "contiki.h"
-#include "node-id.h"
-#include "net/mac/osf/osf.h"
-#include "net/mac/osf/osf-packet.h"
-#include "net/mac/osf/osf-buffer.h"
-#include "net/mac/osf/osf-log.h"
+#include "net/ipv6/uip-ds6-route.h"
+#include "osf-border-router.h"
 
-#include "net/mac/osf/extensions/osf-ext.h"
-
-#if OSF_CONF_EXT_BACKOFF
+/* Log configuration */
 #include "sys/log.h"
-#define LOG_MODULE "BACKOFF"
+#define LOG_MODULE "BR"
 #define LOG_LEVEL LOG_LEVEL_INFO
 
-#define OSF_RAND(var, mod)         do {rand_seed = (rand_seed * 1103515245 + 12345) & UINT32_MAX; var = (rand_seed % mod);} while(0)
-static uint32_t rand_seed;
-
-#define OSF_EXT_BACKOFF_THRESHOLD  80
+uint8_t prefix_set;
 
 /*---------------------------------------------------------------------------*/
-static void
-init()
+void
+print_local_addresses(void)
 {
-  rand_seed = node_id;
-}
+  int i;
+  uint8_t state;
 
-/*---------------------------------------------------------------------------*/
-static void
-next(osf_proto_t *proto, osf_round_conf_t *rconf)
-{
-  uint8_t random;
-  uint8_t threshold;
-  if (rconf->round->type == OSF_ROUND_T && osf_buf_tx_length()) {
-    OSF_RAND(random, 100);
-    if((rconf->phy->mode == PHY_BLE_1M) || (rconf->phy->mode == PHY_BLE_2M)) {
-      threshold = OSF_EXT_BACKOFF_THRESHOLD;
-    } else {
-      threshold = 100; // i.e. no backoff
+  LOG_INFO("Server IPv6 addresses:\n");
+  for(i = 0; i < UIP_DS6_ADDR_NB; i++) {
+    state = uip_ds6_if.addr_list[i].state;
+    if(uip_ds6_if.addr_list[i].isused &&
+       (state == ADDR_TENTATIVE || state == ADDR_PREFERRED)) {
+      LOG_INFO("  ");
+      LOG_INFO_6ADDR(&uip_ds6_if.addr_list[i].ipaddr);
+      LOG_INFO_("\n");
     }
-    proto->role = osf_buf_tx_length() ? (random < threshold ? OSF_ROLE_SRC : OSF_ROLE_FWD) : (node_is_destination ? OSF_ROLE_DST : OSF_ROLE_FWD);
   }
 }
 
 /*---------------------------------------------------------------------------*/
-/* BV extension driver */
+void
+set_prefix_64(uip_ipaddr_t *prefix_64)
+{
+  prefix_set = 1;
+
+  /* NB: OSF nodes have already STATICALLY set the prefix and take their IP
+         addresses from that, so there is no need to set the prefix here. There
+         is a need to solve the bigger issue of how to do IPv6 in OSF in
+         general, but that's a different story. */
+}
 /*---------------------------------------------------------------------------*/
-osf_ext_p_t osf_ext_p_backoff = {
-    "osf_backoff",
-    &init,
-    NULL,
-    NULL,
-    &next,
-};
-#endif
+void
+osf_border_router_init(void)
+{
+  PROCESS_NAME(border_router_process);
+  process_start(&border_router_process, NULL);
+}
+/*---------------------------------------------------------------------------*/

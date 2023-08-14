@@ -98,7 +98,7 @@ function compile {
   # save the pwd before we start going into example directories
   CURRENT_DIR=$PWD
   cd "../../examples/$EXAMPLE"
-  echo "Compiling..."
+  echo "Compiling... "
   echo " > EXAMPLE: $PWD"
   echo " > TARGET: $TARGET"
   # echo " > MAKEARGS: $@"
@@ -430,13 +430,12 @@ if [[ -v POST ]]; then
   fi
 
   [ -z "$PATCHING" ]     && PATCHING=1
+  MAKEARGS+=" PATCHING=$PATCHING"
   if [[ $PATCHING == 1 ]]; then
-    # Onlt add TESTBED=dcube if we are using patching
+    # Only add TESTBED if we are using patching
     [ -z "$TESTBED" ]    && TESTBED=dcube
-  else
-    [ -z "$TESTBED" ]    && TESTBED=nulltb
+    MAKEARGS+=" TESTBED=$TESTBED"
   fi
-  MAKEARGS+=" TESTBED=$TESTBED PATCHING=$PATCHING"
 
   if [[ -v START_LAYOUT && -v END_LAYOUT ]]; then
     echo " > POST layout suite..."
@@ -444,7 +443,7 @@ if [[ -v POST ]]; then
     for i in $(seq $START_LAYOUT  1 $END_LAYOUT); do
       LAYOUT=$i;
       echo " ... POST job $DESC to layout $LAYOUT ..."
-      create_job "_LAYOUT_$i";
+      create_job;
       sleep 1
     done
     exit 1

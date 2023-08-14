@@ -18,6 +18,8 @@
 #include "services/rpl-border-router/rpl-border-router.h"
 #elif BUILD_WITH_NULL_BORDER_ROUTER
 #include "services/null-border-router/null-border-router.h"
+#elif BUILD_WITH_OSF_BORDER_ROUTER
+#include "services/osf-border-router/osf-border-router.h"
 #endif
 
 #include "services/testbed/testbed.h"
@@ -62,8 +64,7 @@ uint8_t tb_num_src, tb_num_dst, tb_num_fwd, tb_num_br;
 static uint8_t tb_rx_fifo[TB_RX_FIFO_LEN][MAX_TB_PACKET_LEN] = {{0}};
 static uint8_t tb_rx_fifo_pos = 0;
 static uint8_t tb_tx_fifo[TB_TX_FIFO_LEN][MAX_TB_PACKET_LEN] = {{0}};
-static uint8_t tb_tx_fifo_head = 0;
-static uint8_t tb_tx_fifo_tail = 0;
+static uint8_t tb_tx_fifo_pos = 0;
 
 // Each source node is connected via software I2C to an EEPROM that contains the raw
 // sensor values to be transmitted to one or multiple (at most eight) destination nodes.
@@ -211,7 +212,7 @@ get_pattern_info()
       for(j=0; j < TB_N_DESTINATIONS; j++) {
         tb_num_dst++;
         // check to see we are participating
-        if((tb_destinations[j] == node_id) || (tb_destinations[j] == TB_DESTINATION_BCAST && !tb_node_type)) {
+        if(tb_destinations[j] == node_id) {
           found = 1;
           tb_node_type = NODE_TYPE_DESTINATION;
         }
@@ -367,14 +368,14 @@ init()
 static uint8_t
 push(uint8_t *rx_pkt, uint8_t len)
 {
-  if(((tb_tx_fifo_head + 1) % TB_TX_FIFO_LEN) == tb_tx_fifo_tail) {
+  if(tb_tx_fifo_pos >= TB_TX_FIFO_LEN) {
     LOG_ERR("E2-W FIFO FULL!\n");
     return 0;
   }
-  memcpy(tb_tx_fifo[tb_tx_fifo_head], rx_pkt, len);
-  tb_tx_fifo_head = (tb_tx_fifo_head + 1) % TB_TX_FIFO_LEN;
-  LOG_DBG("E2-W++ [%u/%u]\n", tb_tx_fifo_head, tb_tx_fifo_tail);
-  return 1;
+  memcpy(tb_tx_fifo[tb_tx_fifo_pos], rx_pkt, len);
+  tb_tx_fifo_pos++;
+  LOG_DBG("E2-T++ %u\n", tb_tx_fifo_pos);
+  return tb_tx_fifo_pos;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -480,7 +481,7 @@ PROCESS_THREAD(tb_eeprom_writer_process, ev, data)
     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
 
     /* Check we have data to write*/
-    if(tb_tx_fifo_head == tb_tx_fifo_tail) {
+    if(!tb_tx_fifo_pos) {
       continue;
     }
 
@@ -509,13 +510,16 @@ PROCESS_THREAD(tb_eeprom_writer_process, ev, data)
     }
 
     /* We have received a packet and need to write it to the EEPROM */
-    eeprom.write(tb_tx_fifo[tb_tx_fifo_tail]);
-    tb_tx_fifo_tail = (tb_tx_fifo_tail + 1) % TB_TX_FIFO_LEN;
-    LOG_DBG("E2-W-- [%u/%u]\n", tb_tx_fifo_head, tb_tx_fifo_tail);
+    // LOG_DBG("E2-W %u/%u\n", tb_tx_fifo_pos, TB_TX_FIFO_LEN);
+    tb_tx_fifo_pos--;
+    LOG_DBG("E2-T-- %u\n", tb_tx_fifo_pos);
 
+    eeprom.write(tb_tx_fifo[tb_tx_fifo_pos]);
+
+    // eeprom_next_write = NRF_RTIMER_NOW() + EEPROM_SETTLE_TIME;
     eeprom_next_write = RTIMER_NOW() + EEPROM_SETTLE_TIME;
 
-    if(tb_tx_fifo_head != tb_tx_fifo_tail) {
+    if(tb_tx_fifo_pos > 0) {
       /* Setup a periodic send timer. */
       process_poll(&tb_eeprom_writer_process);
     }
@@ -536,12 +540,15 @@ PROCESS_THREAD(tb_br_process, ev, data)
 
 #if BUILD_WITH_RPL_BORDER_ROUTER
   rpl_border_router_init();
-  LOG_INFO("-- With RPL Border Router\n");
+  LOG_INFO(" -- With RPL Border Router\n");
 #elif BUILD_WITH_NULL_BORDER_ROUTER
   null_border_router_init();
-  LOG_INFO("-- With NULL Border Router\n");
+  LOG_INFO(" -- With NULL Border Router\n");
+#elif BUILD_WITH_OSF_BORDER_ROUTER
+  osf_border_router_init();
+  LOG_INFO(" -- With OSF Border Router\n");
 #else
-  LOG_ERR("-- No Border Router process!!!\n");
+  LOG_ERR(" -- No Border Router process!!!\n");
 #endif /* BUILD_WITH_RPL_BORDER_ROUTER */
 
   PROCESS_END();

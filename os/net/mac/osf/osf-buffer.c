@@ -37,7 +37,6 @@
  */
 
 #include "contiki.h"
-#include "net/mac/mac.h"
 #include "lib/list.h"
 #include "lib/queue.h"
 #include "net/packetbuf.h"
@@ -53,7 +52,7 @@
 
 #include "sys/log.h"
 #define LOG_MODULE "OSF-BUF"
-#define LOG_LEVEL LOG_LEVEL_NONE
+#define LOG_LEVEL LOG_LEVEL_ERR
 
 QUEUE(osf_tx_buf);
 QUEUE(osf_rx_buf);
@@ -244,7 +243,7 @@ osf_buf_tx_get()
 {
   osf_buf_element_t *el = list_head(osf_tx_buf);
   if (el != NULL)  {
-    if(OSF_BUF_RETRANSMISSIONS != 0 && el->rtx > OSF_BUF_RETRANSMISSIONS) {
+    if(el->rtx > OSF_BUF_RETRANSMISSIONS) {
       osf_buf_tx_remove_head();
       osf_stat.osf_mac_no_ack_total++; // Statistics
     }
@@ -266,7 +265,6 @@ osf_buf_tx_peek()
   osf_buf_element_t *el = list_head(osf_tx_buf);
   return el;
 }
-
 
 /*---------------------------------------------------------------------------*/
 uint8_t
@@ -354,16 +352,15 @@ osf_buf_receive(uint16_t id, uint8_t src, uint8_t dst, uint8_t *data, uint8_t le
 {
   last_was_superfluous[src] = 1;
   /* Superflous check using packet id */
-  if(OSF_BUF_PKT_ID_LT(last_seq_no_rx[src], id)) {
+  if(last_seq_no_rx[src] != id) {  
     last_seq_no_rx[src] = id;
-    /* No need, just add to RX buffer */
-    //osf_receive(src, dst, data, len);;
+	  /* Add to RX buffer */
     last_was_superfluous[src] = 0;
     last_was_acked[src] = 0;
   }
   if(last_was_superfluous[src]) {
     osf_buf_log_data(DUP, id, src, dst, data, len, 0, slot);
-    LOG_DBG("Drop TX duplicate %u!\n", id);
+    LOG_WARN("Drop TX dublicate %d !\r\n", id);
     osf_stat.osf_rx_dup_total++; // Statictics
   } else {
     osf_buf_rx_put(id, src, dst, data, len);

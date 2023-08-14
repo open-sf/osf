@@ -882,9 +882,10 @@ main(int argc, char **argv)
 
     case 'M':
       devmtu=atoi(optarg);
-      if(devmtu < MIN_DEVMTU) {
+      if(devmtu > MIN_DEVMTU) {
         devmtu = MIN_DEVMTU;
       }
+      break;
 
     case 'P':
       showprogress=1;

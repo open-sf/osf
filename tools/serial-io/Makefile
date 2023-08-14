@@ -1,4 +1,4 @@
-APPS = tunslip6 serialdump
+APPS = tunslip6 serialdump slipcmd
 LIB_SRCS = tools-utils.c
 DEPEND = tools-utils.h
 

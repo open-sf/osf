@@ -48,6 +48,9 @@
 #include "net/linkaddr.h"
 #include "net/routing/routing.h"
 
+// FIXME: temporary
+#include "node-id.h"
+
 #include <string.h>
 
 /* Log configuration */
@@ -512,9 +515,19 @@ get_nexthop(uip_ipaddr_t *addr)
   /* We first check if the destination address is on our immediate
      link. If so, we simply use the destination address as our
      nexthop address. */
-  if(uip_ds6_is_addr_onlink(&UIP_IP_BUF->destipaddr)) {
+  // FIXME: temporary
+  if(uip_ds6_is_addr_onlink(&UIP_IP_BUF->destipaddr) && 
+    (UIP_IP_BUF->destipaddr.u8[0] != 0xfd) &&
+    (UIP_IP_BUF->destipaddr.u8[15] != 0x01)
+    ) {
     LOG_INFO("output: destination is on link\n");
     return &UIP_IP_BUF->destipaddr;
+  }
+  if (uip_ds6_is_addr_onlink(&UIP_IP_BUF->destipaddr) && 
+    (UIP_IP_BUF->destipaddr.u8[0] == 0xfd) &&
+    (UIP_IP_BUF->destipaddr.u8[15] == 0x01)
+    ) {
+    LOG_DBG("output: HACK for u8[14] == 0x10 --> dont see as onlink\n");
   }
 
   /* Check if we have a route to the destination address. */
@@ -522,8 +535,14 @@ get_nexthop(uip_ipaddr_t *addr)
 
   /* No route was found - we send to the default route instead. */
   if(route == NULL) {
-    nexthop = uip_ds6_defrt_choose();
-    if(nexthop == NULL) {
+    // FIXME: temporary
+    if (UIP_IP_BUF->destipaddr.u8[1] != node_id) {
+      nexthop = uip_ds6_defrt_choose();
+    } else {
+      LOG_DBG("output: HACK for u8[1] == node_id --> do fallback\n");
+      nexthop = NULL;
+    }
+    if(nexthop == NULL) { 
       output_fallback();
     } else {
       LOG_INFO("output: no route found, using default route: ");
