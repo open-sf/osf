@@ -1,11 +1,13 @@
 baud=115200
 FILE=nrf.csv
 
+# This file requires installation of nrfjprog, socat and ts (which requires moreutils)
+
 function help {
 echo " ./nrf-helper.sh"
 echo "     -info               print out device information ID/MAC/SN"
-echo "         -s                  generate a save of ID/MAC/SN"
-echo "         -d                  output a deployment mapping of ID/MAC (FIXME: Also need to use -s to generate the uuids!)"
+echo "         -d                  output to nulltb deployment mapping"
+echo "         -a                  append to nulltb deployment mapping"
 echo "     -t                  output serial to terminal"
 echo "     -clean              clean the logfile folder"
 echo "     --l=*               save logs to folder"
@@ -26,12 +28,12 @@ while (( "$#" )); do
       INFO=1
       shift
       ;;
-    -s)
-      SAVE=1
-      shift
-      ;;
     -d)
       DEPLOYMENT=1
+      shift
+      ;;
+    -a)
+      APPEND=1
       shift
       ;;
     --l=*)
@@ -62,64 +64,71 @@ while (( "$#" )); do
 done
 
 # --------------------------------------------------------------------------- #
-# Save
-# --------------------------------------------------------------------------- #
-if [ ! -f "$FILE" ]; then
-  echo "> WARN: \"$FILE\" does not exist!"
-elif [[ -v SAVE ]]; then
-  echo "> WARN: Generating new \"$FILE\"!"
-  rm nrf.csv
-else
-  echo "> WARN: Read from \"$FILE\" (list of node id/mac/sn/port)..."
-  readarray -t id_arr < <(cut -d, -f1 $FILE)
-  readarray -t mac_arr < <(cut -d, -f2 $FILE)
-  readarray -t sn_arr < <(cut -d, -f3 $FILE)
-fi
-
-# --------------------------------------------------------------------------- #
 # Board info
 # --------------------------------------------------------------------------- #
 if [[ -v INFO ]]; then
   echo "> Print board info..."
 
+  DEPLOYMENT_FOLDER="../../os/services/deployment/nulltb"
+  DEPLOYMENT_FILE="$DEPLOYMENT_FOLDER/deployment-map-nulltb.c"
+
   if [[ -v DEPLOYMENT ]]; then
-    DEPLOYMENT_FOLDER=../../os/services/deployment/nulltb
-    DEPLOYMENT_FILE=$DEPLOYMENT_FOLDER/deployment-map-nulltb.c
-    mkdir -p $DEPLOYMENT_FOLDER
+    mkdir -p "$DEPLOYMENT_FOLDER"
     if [[ -f "$DEPLOYMENT_FILE" ]]; then
-      rm $DEPLOYMENT_FILE
+      rm "$DEPLOYMENT_FILE"
     fi
     echo "> Create deployment mapping in $DEPLOYMENT_FILE"
     echo ""
-    echo "#include \"services/deployment/deployment.h\"" | tee -a $DEPLOYMENT_FILE
-    echo "" | tee -a $DEPLOYMENT_FILE
-    echo "#if CONTIKI_TARGET_NRF52840" | tee -a $DEPLOYMENT_FILE
-    echo "const struct id_mac deployment_nulltb[] = {" | tee -a $DEPLOYMENT_FILE
+    echo "#include \"services/deployment/deployment.h\"" | tee -a "$DEPLOYMENT_FILE"
+    echo "" | tee -a "$DEPLOYMENT_FILE"
+    echo "#if CONTIKI_TARGET_NRF52840" | tee -a "$DEPLOYMENT_FILE"
+    echo "const struct id_mac deployment_nulltb[] = {" | tee -a "$DEPLOYMENT_FILE"
+  elif [[ -v APPEND ]]; then
+    if [[ -f "$DEPLOYMENT_FILE" ]]; then
+      echo "> Append to deployment mapping in $DEPLOYMENT_FILE"
+    else
+      echo "> ERROR: deployment does not exist! Please create with '-d' option."
+    fi
   fi
 
   # nrfjprog exists so we can get mac addresses
   if command -v nrfjprog &> /dev/null; then
     len=`expr ${#mac_arr[@]} - 1`
     id=0
-    nrfjprog --com | while read row; do
+    #nrfjprog --com | while read row; do
+    nrfjprog -i | while read row; do
       port=${row:13:12}
       sn=${row::9}
       mac=`nrfjprog --snr $sn --memrd 0x100000A4 --n 8 | cut -c 13-21,28-30`
       mac="F4CE36${mac:9:2}${mac:6:2}${mac:4:2}${mac:2:2}${mac:0:2}"
-      if [[ -v SAVE ]]; then
-        id=$(( $id + 1 ))
-        echo "$id,$mac,$sn" >> $FILE
-      else
-        for i in $(seq 0 $len); do
-          if [ ${mac_arr[$i]} == $mac ]; then
-            id=${id_arr[$i]}
-          fi
-        done
-      fi
+      id=$(($id + 1))
       if [[ -v DEPLOYMENT ]]; then
         mac=${mac,,}
         mac="0x${mac:0:2},0x${mac:2:2},0x${mac:4:2},0x${mac:6:2},0x${mac:8:2},0x${mac:10:2},0x${mac:12:2},0x${mac:14:2}"
         echo "  {   $id, {{$mac}} }," | tee -a $DEPLOYMENT_FILE
+      elif [[ -v APPEND ]]; then
+        mac=${mac,,}
+        formatted_mac="0x${mac:0:2},0x${mac:2:2},0x${mac:4:2},0x${mac:6:2},0x${mac:8:2},0x${mac:10:2},0x${mac:12:2},0x${mac:14:2}"
+        # Create a temporary file
+        temp_file=$(mktemp)
+        if grep -q "$formatted_mac" "$DEPLOYMENT_FILE"; then
+          echo "> ERROR: This MAC address is already included in the deployment!"
+          exit 1
+        fi
+        # Get the value from the last line before {   0, {{0}}}
+        last_value=$(awk '/\{[[:space:]]+0,[[:space:]]\{\{0\}\}/{print prev}{prev=$0}' "$DEPLOYMENT_FILE" | awk -F',' '{print $1}' | awk -F'{' '{print $2}')
+        next_value=$((last_value + 1))
+        new_mac="  {   $next_value, {{${formatted_mac}}} },"
+        while IFS= read -r line; do
+          if [[ "$line" =~ \{[[:space:]]+0,[[:space:]]\{\{0\}\} ]]; then
+            echo "$new_mac"
+            echo "$new_mac" >> "$temp_file"
+          fi
+          echo "$line"
+          echo "$line" >> "$temp_file"
+        done < "$DEPLOYMENT_FILE"
+        # Overwrite input file with the temp file
+        mv "$temp_file" "$DEPLOYMENT_FILE"
       else
         echo "  - Port: $port | Node ID: $id | MAC Addr: $mac | JLink SN: $sn"
       fi
@@ -142,11 +151,11 @@ if [[ -v INFO ]]; then
   fi
 
   if [[ -v DEPLOYMENT ]]; then
-    echo "  {   0, {{0}}}" | tee -a $DEPLOYMENT_FILE
-    echo "};" | tee -a $DEPLOYMENT_FILE
-    echo "#else" | tee -a $DEPLOYMENT_FILE
-    echo "#warning \"WARN: Unknown DEPLOYMENT target\"" | tee -a $DEPLOYMENT_FILE
-    echo "#endif" | tee -a $DEPLOYMENT_FILE
+    echo "  {   0, {{0}}}" | tee -a "$DEPLOYMENT_FILE"
+    echo "};" | tee -a "$DEPLOYMENT_FILE"
+    echo "#else" | tee -a "$DEPLOYMENT_FILE"
+    echo "#warning \"WARN: Unknown DEPLOYMENT target\"" | tee -a "$DEPLOYMENT_FILE"
+    echo "#endif" | tee -a "$DEPLOYMENT_FILE"
     echo ""
   fi
 

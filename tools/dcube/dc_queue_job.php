@@ -7,7 +7,7 @@ $act = "queue/create_job";
 
 $job = array(
     "protocol"        => intval($argv[2]),
-    "layout"          => $argv[3],
+    "layout"          => $argv[3], 
     "periodicity"     => intval($argv[4]),
     "message_length"  => intval($argv[5]),
     "patching"        => intval($argv[6]),
@@ -36,7 +36,6 @@ if(sizeof($overrides)) {
 
 $payload = json_encode($job);
 
-print_r($payload);
 $options = array(
     'http' => array(
     'method'  => 'POST',
@@ -49,7 +48,6 @@ $context  = stream_context_create($options);
 $result = file_get_contents($base . $act . $key, false, $context);
 $response = json_decode($result, true);
 
-print_r($response);
 echo "Job created, got response:" . PHP_EOL;
 var_dump($result);
 echo "Job ID: " . $response['id'] . PHP_EOL;
