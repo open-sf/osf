@@ -65,7 +65,8 @@ if __name__ == "__main__":
                     for x in range(0,iteration+1):
                         timestamp = time_interval*60000000000
                         add = pd.Series([(timestamp*(x)), "30", "30", "30", "30", "30", "30", "30", "30"], index=['timestamp','rpi120','rpi121','rpi122','rpi123','rpi124','rpi125','rpi126','rpi127'])
-                        dtp = dtp.append(add, ignore_index=True)
+                        # dtp = dtp.append(add, ignore_index=True)
+                        dtp = pd.concat([dtp, add.to_frame().T], ignore_index=True)
                         newcol.append(min_temp + (x*temp_interval))
 
                     # Switch case determines which column to change depending on the node to modify and their ID
@@ -82,7 +83,8 @@ if __name__ == "__main__":
 
                     # Adds final line to the templab.csv. This helps beating.py correctly splitting the data of each temperature specification. It can be used as cooldown line if needed
                     add = pd.Series([(timestamp*(x+1)), "30", "30", "30", "30", "30", "30", "30", "30"], index=['timestamp','rpi120','rpi121','rpi122','rpi123','rpi124','rpi125','rpi126','rpi127'])
-                    dtp = dtp.append(add, ignore_index=True)
+                    # dtp = dtp.append(add, ignore_index=True)
+                    dtp = pd.concat([dtp, add.to_frame().T], ignore_index=True)
 
                     # Saves the templab file
                     file_path = 'templab-i' + "%i" % time_interval + '-t' + "%i" % min_temp + '-' + "%i" % max_temp + '-' + pattern_type + "-SRC=" + "%i" % SRC_ID + "-DST=" + "%i" % DST_ID + "-FWD=" + "%i" % FWD_ID + '.csv'

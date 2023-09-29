@@ -77,6 +77,7 @@ static void RADIO_IRQHandler_callback();
 #include "services/deployment/deployment.h"
 #if CONF_TESTBED
 #include "services/testbed/testbed.h"
+#include "services/testbed/testbed-rand.h"
 #endif
 
 /* Log configuration */
@@ -116,7 +117,13 @@ uint8_t node_is_destination = 0;
 uint8_t node_is_br = 0;
 
 uint8_t was_out_of_sync = 0;
-uint8_t exp_buf[TB_CONF_NULLTB_DATA_LEN] = {0};
+// uint8_t exp_buf[TB_CONF_NULLTB_DATA_LEN] = {0};
+static uint8_t exp_pkt_buf[255] = {0};
+static uint8_t err_arr[2040] = {0};
+static uint8_t err_flag = 0;
+static uint32_t packet_len_bits;
+static uint8_t packet_len;
+uint8_t exp_buf[OSF_CONF_DATA_LEN_MAX] = {0};
 uint8_t pkt_number = 0;
 uint16_t prev_seed = 0;
 /* Timings */
@@ -154,6 +161,10 @@ static void    end_round();
 static inline void do_slot();
 static void    print_osf_config();
 static void    print_osf_timings();
+static void create_expected_packet();
+static void isolate_errors();
+static void update_pkt_payload();
+static void resync(uint16_t, uint16_t);
 
 /* Check if in interrupt mode */
 static inline bool isInterrupt()
@@ -186,6 +197,17 @@ osf_stop(void)
   NETSTACK_PA.off();
   /* Do extensions */
   DO_OSF_D_EXTENSION(stop);
+  if ((osf_d_extension == NULL) && (tb_node_type == NODE_TYPE_DESTINATION)){
+    if (was_out_of_sync == 1 && pkt_flag == 1) {
+          osf_pkt_s_round_t *rnd_pkt = (osf_pkt_s_round_t *)osf_buf_rnd_pkt;
+          uint16_t tmp = (osf.epoch-1) % 3;
+          tmp = (osf.epoch-1) - tmp;
+          resync(rnd_pkt->id, tmp);
+          
+          // tb_exp_id = bv_pkt->id;
+          was_out_of_sync = 0;
+        }
+  }
   DEBUG_LEDS_OFF(ROUND_LED);
 }
 
@@ -291,7 +313,7 @@ update_id(uint16_t ep) {
 }
 
 static void
-update_msg(uint16_t seed, uint8_t *dst_buf)
+update_msg(uint16_t seed, uint8_t *dt_buf)
 {
   // set seed relative to epoch
   if(tb_node_type == NODE_TYPE_SOURCE) {
@@ -305,7 +327,7 @@ update_msg(uint16_t seed, uint8_t *dst_buf)
   uint8_t i;
   for(i = 0; i < tb_msg_len; i++)
   {
-    TB_RAND(dst_buf[i], TB_RAND_BUF_MAX);
+    TB_RAND(dt_buf[i], TB_RAND_BUF_MAX);
   }
 
   if(tb_node_type == NODE_TYPE_SOURCE) {
@@ -637,6 +659,24 @@ end_rx()
     }
     /* Do extensions */
     DO_OSF_D_EXTENSION(rx_ok, osf.round->type, osf_buf, osf_buf_len);
+
+    if ((osf_d_extension == NULL) && (tb_node_type == NODE_TYPE_DESTINATION)){
+        osf_pkt_hdr_t *exp_hdr = (osf_pkt_hdr_t *)&exp_pkt_buf[0];
+        osf_pkt_s_round_t *rnd_pkt = (osf_pkt_s_round_t *)osf_buf_rnd_pkt;
+        exp_hdr->slot = osf.slot;
+
+        if (was_out_of_sync == 1 && pkt_flag == 1) {
+          // PRINT("resync\n");
+          uint16_t tmp = (osf.epoch-1) % 3;
+          tmp = (osf.epoch-1) - tmp;
+          resync(rnd_pkt->id, tmp);
+
+          // tb_exp_id = rnd_pkt->id;
+          was_out_of_sync = 0;
+    }
+          //     osf_log_x("Packet Calclatd in rx_ok", exp_pkt_buf, osf_buf_len);
+          // osf_log_x("Packet Received in rx_ok", osf_buf, osf_buf_len);
+    }
 #if OSF_LOGGING
     osf_log_slot_state('R');
     osf_log_slot_node(osf_buf_hdr->src);
@@ -657,6 +697,16 @@ end_rx()
     }
     /* Do extensions */
     DO_OSF_D_EXTENSION(rx_error);
+    
+    if ((osf_d_extension == NULL) && (tb_node_type == NODE_TYPE_DESTINATION)){
+        osf_pkt_hdr_t *exp_hdr = (osf_pkt_hdr_t *)&exp_pkt_buf[0];
+        exp_hdr->slot = osf.slot;
+        if (was_out_of_sync == 0) {
+          isolate_errors();
+          err_flag = 1;
+        }
+    }
+
 #if OSF_LOGGING
     osf_log_slot_state('C');
     osf_log_slot_rssi();
@@ -858,6 +908,12 @@ start_round() {
   /* Do extension */
   // DEBUG_GPIO_ON(DBG_PIN2);
   DO_OSF_D_EXTENSION(start, osf.round->type, osf.round->is_initiator, OSF_PKT_RND_LEN(osf.round->type));
+    // Create packet to use for error isolation
+  if((osf_d_extension == NULL) && (tb_node_type == NODE_TYPE_DESTINATION)) {
+    memset(&exp_pkt_buf, 0, sizeof(exp_pkt_buf));
+    create_expected_packet();
+    // osf_log_x("Packet Calclatd in start", exp_pkt_buf, osf_buf_len);
+  }
   // DEBUG_GPIO_OFF(DBG_PIN2);
 
   /* Check we aren't trying to send more than the MTU can handle */
@@ -904,16 +960,36 @@ end_round() {
     osf.round->no_rx();
   }
 
+      /* To spoof the logging that happens at the end of the round when bit voting is enabled to match the software calculation cycles*/
+  // LOG_INFO("inside if\n");
+  if ((osf_d_extension == NULL) && (tb_node_type == NODE_TYPE_DESTINATION)){
+    uint32_t packet_len_bits = osf_buf_len*8;
+    PRINT("EP:%d,N_RX:%d,N_ERR_PKTS:%d,"
+          "ERRS:{",
+          osf.epoch, osf.n_rx_ok + osf.n_rx_crc, osf.n_rx_crc
+          );
+    if (err_flag == 1){
+      uint32_t i;
+      for(i = 0; i < packet_len_bits; i++) {
+        if(err_arr[i] != 0) {
+          PRINT("%ld:%d;", i, err_arr[i]);
+        }
+      }
+    }
+    PRINT("},SLTS:");
+    // clear errors for next round
+    memset(&err_arr, 0, sizeof(err_arr));
+    err_flag = 0;
+  }
   /* Clear the buffer */
   memset(osf_buf, 0, sizeof(osf_buf_t));
-
+  
   /* Free the handler for other MACs */
   // FIXME: Radio stuff should really not go here
   NVIC_DisableIRQ(RADIO_IRQn);
   nrf_radio_int_disable(0xFFFFFFFF);
   NVIC_ClearPendingIRQ(RADIO_IRQn);
   nrf52840_radioirq_register_handler(NULL);
-
   /* Next round */
   osf.proto->index++;
   if ((osf.rconf = osf.proto->next_round()) != NULL) {
@@ -1111,6 +1187,7 @@ osf_configure(uint8_t *sources, uint8_t src_len,
       break;
     }
   }
+  LOG_INFO("Macro output: %d", CONTIKI_TARGET_NRF52840);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -1280,4 +1357,69 @@ print_osf_timings()
   LOG_INFO("- OSF_ROUND_GUARD              - %llu (%luus)\n", OSF_ROUND_GUARD, RTIMERTICKS_TO_USX(OSF_ROUND_GUARD));
   LOG_INFO("- OSF_RX_GUARD                 - %llu (%luus)\n", OSF_RX_GUARD, RTIMERTICKS_TO_USX(OSF_RX_GUARD));
   LOG_INFO("- OSF_REF_SHIFT                - %lu ticks | %lu us\n", OSF_REF_SHIFT, RTIMERTICKS_TO_USX(OSF_REF_SHIFT));
+}
+
+/*---------------------------------------------------------------------------*/
+static void
+create_expected_packet()
+{
+  packet_len = osf_buf_len;
+  
+  osf_pkt_hdr_t *exp_hdr = (osf_pkt_hdr_t *)&exp_pkt_buf[0];
+  osf_pkt_s_round_t *exp_pkt = (osf_pkt_s_round_t *)&exp_pkt_buf[OSF_PKT_HDR_LEN];
+  exp_hdr->src = osf.sources[0];        // known source
+  if (!pkt_flag) {
+    exp_hdr->dst = 0xff;                // known dst
+    exp_pkt->id = 0;
+  }
+  else {
+    exp_hdr->dst = node_id; // known dst
+    update_pkt_payload(&exp_pkt->payload[0]);
+    exp_pkt->id = tb_exp_id;
+  }
+  // exp_hdr->slot = 0;                    // 0 slot for bv_crc
+  // exp_pkt->epoch = 0;                   // 0 epoch for bv_crc
+
+  // // Find & add bv_crc
+  // exp_bv_crc = crc16_ccitt(&exp_pkt_buf[0], packet_len - sizeof(exp_bv_crc), 0xFFFF);
+  // memcpy(exp_pkt->bv_crc, &exp_bv_crc, sizeof(exp_bv_crc));
+
+  exp_hdr->slot = osf.slot;             // current slot
+  exp_pkt->epoch = osf.epoch;           // current epoch
+}
+
+/*---------------------------------------------------------------------------*/
+static void
+update_pkt_payload(uint8_t *dst_buf){
+  uint8_t i;
+  for(i = 0; i < tb_msg_len; i++) {
+    dst_buf[i] = exp_buf[i];
+  }
+}
+
+/*---------------------------------------------------------------------------*/
+static void
+resync(uint16_t id, uint16_t seed) {
+  tb_exp_id = id;
+  tb_rand_init(seed);
+
+  // update buffer
+  uint8_t i;
+  for(i = 0; i < tb_msg_len; i++)
+  {
+    TB_RAND(exp_buf[i], TB_RAND_BUF_MAX);
+  }
+}
+
+/*---------------------------------------------------------------------------*/
+static void
+isolate_errors()
+{
+  packet_len_bits = osf_buf_len * 8;
+  uint32_t i;
+  for (i = 8; i < packet_len_bits; i++) {
+    if(OSF_CHK_BIT_BYTE(exp_pkt_buf, i) ^ OSF_CHK_BIT_BYTE(osf_buf, i)) {
+      err_arr[i]++;
+    }
+  }
 }

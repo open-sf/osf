@@ -297,11 +297,11 @@ get_pattern_info()
     tb_node_type = NODE_TYPE_NONE;
   }
 #else
-  if(!found) {
-    // neither a source or a destination or border router - so we must be a forwarder
-    tb_node_type = NODE_TYPE_FORWARDER;
-    tb_num_fwd++;
-  }
+  // if(!found) {
+  //   // neither a source or a destination or border router - so we must be a forwarder
+  //   tb_node_type = NODE_TYPE_FORWARDER;
+  //   tb_num_fwd++;
+  // }
 #endif
 
   return ret;

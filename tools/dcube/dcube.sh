@@ -1,3 +1,4 @@
+#!/bin/bash
 # ----------------------------------------------------------------------------#
 # *** dcube.sh README ***
 # Filename:     dcube.sh
@@ -98,10 +99,10 @@ function compile {
   # save the pwd before we start going into example directories
   CURRENT_DIR=$PWD
   cd "../../examples/$EXAMPLE"
-  echo "Compiling... "
+  echo "Compiling..."
   echo " > EXAMPLE: $PWD"
   echo " > TARGET: $TARGET"
-  # echo " > MAKEARGS: $@"
+  echo " > MAKEARGS: $@"
   echo " > CMD: make clean TARGET=$TARGET && make -j16 TARGET=$TARGET BOARD=dk DEPLOYMENT=dcube $@"
 
 
@@ -199,8 +200,8 @@ while (( "$#" )); do
       shift
       ;;
     -m)
-      METRIC=$2
-      shift 2
+      # METRIC=$2
+      shift 
       ;;
     --range=*)
       RANGE=${1:8}
@@ -430,12 +431,13 @@ if [[ -v POST ]]; then
   fi
 
   [ -z "$PATCHING" ]     && PATCHING=1
-  MAKEARGS+=" PATCHING=$PATCHING"
   if [[ $PATCHING == 1 ]]; then
-    # Only add TESTBED if we are using patching
+    # Onlt add TESTBED=dcube if we are using patching
     [ -z "$TESTBED" ]    && TESTBED=dcube
-    MAKEARGS+=" TESTBED=$TESTBED"
+  else
+    [ -z "$TESTBED" ]    && TESTBED=nulltb
   fi
+  MAKEARGS+=" TESTBED=$TESTBED PATCHING=$PATCHING"
 
   if [[ -v START_LAYOUT && -v END_LAYOUT ]]; then
     echo " > POST layout suite..."
@@ -443,7 +445,7 @@ if [[ -v POST ]]; then
     for i in $(seq $START_LAYOUT  1 $END_LAYOUT); do
       LAYOUT=$i;
       echo " ... POST job $DESC to layout $LAYOUT ..."
-      create_job;
+      create_job "_LAYOUT_$i";
       sleep 1
     done
     exit 1

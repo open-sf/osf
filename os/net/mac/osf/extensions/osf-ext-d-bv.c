@@ -6,6 +6,8 @@
 #include "net/mac/osf/osf-stat.h"
 #include "net/mac/osf/extensions/osf-ext.h"
 #include "os/services/testbed/testbed-rand.h"
+#include <stdio.h>
+#include<string.h>
 
 #if OSF_CONF_EXT_BV
 #include "sys/log.h"
@@ -238,11 +240,7 @@ stop()
       // osf_log_x("RCV",&bv_pkt->bv_crc, 2);
       // osf_log_x("rid",&bv_pkt->id, 2);
       // osf_log_x("lid",&last_id, 2);
-      if(bv_pkt->id != last_id) {
-        last_id = bv_pkt->id;
-        new_id = 1;
-        // osf_log_u("nid", &last_id, 2);
-      }
+      
       if(bv_crc == (*(uint16_t *)(&bv_buf[packet_len - sizeof(bv_crc)]))) {
         bv_success = 1;
         bv_ok_cnt++;
@@ -260,6 +258,11 @@ stop()
         // osf_log_u("OK!", &bv_ok_cnt, 1);
         // osf_log_u("BV_COUNT", &bv_count, 1);
         // copy the application data from the bv stack
+        if(bv_pkt->id != last_id) {
+          last_id = bv_pkt->id;
+          new_id = 1;
+          // osf_log_u("nid", &last_id, 2);
+        }
         osf.n_rx_ok++;
         memcpy(osf_buf, &bv_buf, packet_len);
       } else {
@@ -310,7 +313,7 @@ create_expected_packet()
     exp_pkt->id = 0;
   }
   else {
-    exp_hdr->dst = osf.destinations[0]; // known dst
+    exp_hdr->dst = node_id; // known dst
     update_pkt_payload(&exp_pkt->payload[0]);
     exp_pkt->id = tb_exp_id;
   }

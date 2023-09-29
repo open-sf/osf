@@ -153,7 +153,8 @@ tesbed_callback(uint8_t *data, uint16_t len, uint8_t *dest, uint8_t n_dest)
     osf_send(data, len, dest[i]);
     LOG_INFO("TX d:%u: ", dest[i]);
     for(j = 0; j < MIN(len,PRINT_DATA_LEN); j++) {
-      LOG_INFO_("%02x ", data[j]);
+      // LOG_INFO_("%02x ", data[j]);
+      LOG_INFO_("%u ", data[j]);
     }
     LOG_INFO_("\n");
   }
@@ -185,6 +186,10 @@ PROCESS_THREAD(opensf_process, ev, data)
 #elif BUILD_WITH_TESTBED
   LOG_INFO("Init TESTBED application...\n");
   testbed_init();
+  if (tb_node_type == NODE_TYPE_NONE){
+    LOG_ERR("Node type not set!\n");
+    PROCESS_EXIT();
+  }
   volatile tb_pattern_t *p = tb_get_pattern();
   osf_configure((uint8_t *)p->source_id, tb_get_n_src(),
                 (uint8_t *)p->destination_id, tb_get_n_dest(),

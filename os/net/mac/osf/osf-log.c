@@ -270,7 +270,8 @@ print_msg_log()
           break;
         case OSF_LOG_MSG_X:
           for(i = 0; i < l->len; i++) {
-            printf("%02x ", l->msg[i]);
+            // printf("%02x ", l->msg[i]);
+            printf("%u ", l->msg[i]);
           };
           printf("\n");
           break;
