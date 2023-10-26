@@ -1,0 +1,2 @@
+time,min,max,interval,src,fwd,dst,type
+10,30,70,10,122,126,124,nSRC
