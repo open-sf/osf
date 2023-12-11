@@ -93,7 +93,7 @@ if [[ -v INFO ]]; then
     echo ""
     echo "#include \"services/deployment/deployment.h\"" | tee -a $DEPLOYMENT_FILE
     echo "" | tee -a $DEPLOYMENT_FILE
-    echo "#if CONTIKI_TARGET_NRF52840" | tee -a $DEPLOYMENT_FILE
+    echo "#if CONTIKI_TARGET_NRF52840 || CONTIKI_TARGET_NRF52833" | tee -a $DEPLOYMENT_FILE
     echo "const struct id_mac deployment_nulltb[] = {" | tee -a $DEPLOYMENT_FILE
   fi
 
