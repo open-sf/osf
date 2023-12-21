@@ -4,7 +4,7 @@ endif
 
 ### Board selection
 BOARD ?= dk
-BOARDS = dk dongle
+BOARDS = dk 33dk dongle
 
 ### Unless the example dictates otherwise, build with code size optimisations switched off
 SMALL ?= 0

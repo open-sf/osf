@@ -881,7 +881,7 @@ print_radio_config()
   LOG_DBG("NRF_CLOCK->LFCLKSRC     : 0x%08lX\n", NRF_CLOCK->LFCLKSRC);
   LOG_DBG("NRF_CLOCK->LFCLKSTAT    : 0x%08lX\n", NRF_CLOCK->LFCLKSTAT);
   LOG_DBG("NRF_CLOCK->HFCLKSTAT    : 0x%08lX\n", NRF_CLOCK->HFCLKSTAT);
-  LOG_DBG("NRF_CLOCK->LFRCMODE     : 0x%08lX\n", NRF_CLOCK->LFRCMODE);
+  // LOG_DBG("NRF_CLOCK->LFRCMODE     : 0x%08lX\n", NRF_CLOCK->LFRCMODE);  // nrf52833 Port: commented out to avoid compile error, not needed
 
   LOG_DBG("NRF_WDT->RUNSTATUS      : 0x%08lX\n", NRF_WDT->RUNSTATUS);
   LOG_DBG("NRF_WDT->CRV            : 0x%08lX\n", NRF_WDT->CRV);
