@@ -274,7 +274,7 @@ schedule_epoch()
 {
   /* Increment the epoch counter */
   osf.epoch++;
-  DEBUG_LEDS_TOGGLE(ROUND_LED);
+  // DEBUG_LEDS_TOGGLE(ROUND_LED);
   /* Set next available epoch from now */
   osf.t_epoch_ref += osf.period;
   /* Check that we haven't overrun doing other stuff. If so, keep calling this
@@ -671,6 +671,7 @@ do_slot()
   }
   /* Loop for NTX timeslots in round (TX and RX) */
   if(ROUND_LEN_RULE) {
+    DEBUG_LEDS_ON(ROUND_LED);
     /* Do we TX or RX this timeslot? */
     if(osf.round->primitive == OSF_PRIMITIVE_ROF ? OSF_DOTX_ROF() : OSF_DOTX_GLOSSY()) {
       r = start_tx(t_ref);
@@ -718,6 +719,7 @@ do_slot()
   } else {
     osf_stop();
     end_round();
+    DEBUG_LEDS_OFF(ROUND_LED);
   }
 }
 
