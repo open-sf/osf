@@ -41,36 +41,19 @@
 /*---------------------------------------------------------------------------*/
 /* LEDs */
 /*---------------------------------------------------------------------------*/
-
-/* Callback for implement led indication in application */
-typedef void (*osf_led_on_t)(uint8_t led_n);
-typedef void (*osf_led_off_t)(uint8_t led_n);
-extern osf_led_on_t osf_led_on;
-extern osf_led_off_t osf_led_off;
-
-#if 0
 #define TS_LED                          LED_1
 #define ROUND_LED                       LED_2
 #define SYNCED_LED                      LED_3
 #define CRCERR_LED                      LED_4
-#else
-#define TS_LED                          1
-#define ROUND_LED                       2
-#define SYNCED_LED                      3
-#define CRCERR_LED                      4
-#endif
 
 #if OSF_DEBUG_LEDS
-//#define DEBUG_LEDS_ON(n)                nrf_gpio_pin_clear(n)
-//#define DEBUG_LEDS_OFF(n)               nrf_gpio_pin_set(n)
-#define DEBUG_LEDS_ON(n)                if(NULL!=osf_led_on){osf_led_on(n);}
-#define DEBUG_LEDS_OFF(n)               if(NULL!=osf_led_off){osf_led_off(n);}
-
+#define DEBUG_LEDS_ON(n)                nrf_gpio_pin_clear(n)
+#define DEBUG_LEDS_OFF(n)               nrf_gpio_pin_set(n)
+#define DEBUG_LEDS_TOGGLE(n)            nrf_gpio_pin_toggle(n)
 #else /* OSF_DEBUG_LEDS */
-
 #define DEBUG_LEDS_ON(n)
 #define DEBUG_LEDS_OFF(n)
-
+#define DEBUG_LEDS_TOGGLE(n)
 #endif /* OSF_DEBUG_LEDS */
 
 /*---------------------------------------------------------------------------*/

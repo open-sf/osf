@@ -156,10 +156,6 @@ static inline bool isInterrupt()
   return (SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk) != 0;
 }
 
-/* Callback for implement customized led indication in application */
-osf_led_on_t osf_led_on =  NULL;
-osf_led_off_t osf_led_off = NULL;
-
 /*---------------------------------------------------------------------------*/
 /* Processes */
 /*---------------------------------------------------------------------------*/
@@ -182,7 +178,8 @@ osf_stop(void)
   NETSTACK_PA.off();
   /* Do extensions */
   DO_OSF_D_EXTENSION(stop);
-  DEBUG_LEDS_OFF(ROUND_LED);
+
+  DEBUG_LEDS_OFF(CRCERR_LED);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -277,6 +274,7 @@ schedule_epoch()
 {
   /* Increment the epoch counter */
   osf.epoch++;
+  DEBUG_LEDS_TOGGLE(ROUND_LED);
   /* Set next available epoch from now */
   osf.t_epoch_ref += osf.period;
   /* Check that we haven't overrun doing other stuff. If so, keep calling this
@@ -550,8 +548,6 @@ end_rx()
 
   /* Check CRC */
   if(osf.last_rx_ok) {
-    /* Error indicator */
-    DEBUG_LEDS_OFF(CRCERR_LED);
     /* We received a valid packet */
     osf_state = OSF_STATE_RECEIVED;
     osf.n_rx_ok += 1;
@@ -581,6 +577,8 @@ end_rx()
     osf_log_radio_buffer(osf_buf, OSF_PKT_PHY_LEN(osf.rconf->phy->mode, osf.round->statlen) + osf_buf_len, 0, OSF_PKT_RND_LEN(osf.round->type), osf.round->statlen, osf.round->type);
 #endif
   } else {
+    /* Error indicator */
+    DEBUG_LEDS_ON(CRCERR_LED);
     /* We received an invalid packet. Log this error then head back to RX */
     osf.n_rx_crc += 1;
     // FIXME: This should not be done here.
@@ -727,10 +725,6 @@ do_slot()
 /*---------------------------------------------------------------------------*/
 static void
 start_round() {
-
-  /* Round indicator */
-  DEBUG_LEDS_ON(ROUND_LED);
-
   /* Register our own radio handler (we can release later) */
   // FIXME: Radio stuff needs to be moved to the radio driver.
   NVIC_DisableIRQ(RADIO_IRQn);
@@ -743,12 +737,6 @@ start_round() {
 
   /* Initialise the round */
   osf.round = osf.rconf->round;
-
-  // FIXME: This is stupid. If you want to do this then have the LED on the epoch.
-  /* Live round indicator. S round always. */
-  if(osf.round->type == OSF_ROUND_S) {
-    DEBUG_LEDS_ON(ROUND_LED);
-  }
 
   /* Init radio event times */
   t_ev_ready_ts = 0;
@@ -804,11 +792,6 @@ start_round() {
       osf_ch_init_index(osf.epoch + osf.proto->index);
     } else {
       osf_ch_init_scan_index();
-    }
-
-    /* Live round indicator. More rounds with payload increase LED on time. */
-    if(len) {
-      DEBUG_LEDS_ON(ROUND_LED);
     }
 
     /* Start the slots */
