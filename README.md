@@ -70,9 +70,29 @@ While OSF supports a fair number of features, there are still many things on the
 
 ---
 
-## How to Use
+## Installation
 
-OSF has been tested and developed on Ubuntu. We strongly recommend using a native Ubuntu installation, and not a VM. Details on how to install the arm compiler and other tools needed for the nRF boards can be found on the [Contiki-NG Wiki](https://github.com/contiki-ng/contiki-ng/wiki/Platform-nrf52840).
+OSF has been tested and developed on Ubuntu. We strongly recommend using a native Ubuntu installation, and not a VM (unless you know what you are doing with permissions etc.). 
+
+Details on how to install the arm compiler and other tools needed for the nRF boards can be found on the [Contiki-NG Wiki](https://github.com/contiki-ng/contiki-ng/wiki/Platform-nrf52840).
+
+**IMPORTANT** While there are newer compilers available, currently OSF has only been tested using arm-gcc 9. Do not use any other compiler.
+
+```
+$ arm-none-eabi-gcc --version
+arm-none-eabi-gcc (GNU Arm Embedded Toolchain 9-2020-q2-update) 9.3.1 20200408 (release)
+Copyright (C) 2019 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+```
+
+Additionally you will need to install a number of other programs to run `nrf-helper.sh` (which uses tilix and picocom)
+
+```
+$ sudo apt install socat tilix picocom
+```
+
+## How to Use
 
 ### nrf-helper.sh
 
