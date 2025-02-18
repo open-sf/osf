@@ -86,10 +86,10 @@ This is free software; see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 ```
 
-Additionally you will need to install a number of other programs to run `nrf-helper.sh` (which uses tilix and picocom)
+Additionally you will need to install a number of other programs to run `nrf-helper.sh` (which uses tilix to spawn different child windows for each board.). *N.B. You will need `moreutils` for the `ts` utility, which allows timestamping of the serial.*
 
 ```
-$ sudo apt install socat tilix picocom
+$ sudo apt install socat moreutils tilix picocom
 ```
 
 ## How to Use
