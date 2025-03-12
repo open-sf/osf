@@ -35,7 +35,7 @@
  *         Michael Baddeley <michael.baddeley@tii.ae>
  *         Yevgen Gyl <yevgen.gyl@unikie.com>
  */
- 
+
 #include "contiki.h"
 #include "nrf_radio.h"
 #include "nrf_ppi.h"

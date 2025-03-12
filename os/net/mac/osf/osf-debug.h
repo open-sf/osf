@@ -97,9 +97,9 @@
 #define DBG_PIN2                        NRF_GPIO_PIN_MAP(1, 6)  // DBG2
 #define DBG_PIN3                        NRF_GPIO_PIN_MAP(1, 7)  // DBG3
 // #define DBG_PIN4                        NRF_GPIO_PIN_MAP(1, 8)  // DBG4
-#define DBG_PIN4                        NRF_GPIO_PIN_MAP(0, 29)  // DBG4
+// #define DBG_PIN4                        NRF_GPIO_PIN_MAP(0, 28)  // DBG4
 // #define RADIO_READY_EVENT_PIN           NRF_GPIO_PIN_MAP(0, 29) // READY
-#define RADIO_ADDRESS_EVENT_PIN         NRF_GPIO_PIN_MAP(1, 5) // ADDRESS
+#define RADIO_ADDRESS_EVENT_PIN         NRF_GPIO_PIN_MAP(1, 29) // ADDRESS
 // #define RADIO_PAYLOAD_EVENT_PIN         NRF_GPIO_PIN_MAP(1, 6) // PAYLOAD
 // #define RADIO_END_EVENT_PIN             NRF_GPIO_PIN_MAP(0, 29) // END
 // #define RADIO_BCMATCH_EVENT_PIN         NRF_GPIO_PIN_MAP(0, 29) // BCMATCH
