@@ -36,6 +36,9 @@
 #endif
 #endif /* LENGTH */
 
+/* Number of (re)transmissions per packet at the buffer level */
+#define OSF_CONF_BUF_RETRANSMISSIONS        1
+
 /*---------------------------------------------------------------------------*/
 /* Basic OSF Configuration */
 /*---------------------------------------------------------------------------*/
