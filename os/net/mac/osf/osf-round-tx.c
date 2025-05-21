@@ -82,18 +82,20 @@ static uint8_t
 send()
 {
   uint8_t packet_len = 0;
-  osf_buf_element_t *el = osf_buf_tx_get();
   /* Send ONLY if we have TX data and are NOT a TS (TS can send in S round) */
-  if(osf.proto->role == OSF_ROLE_SRC && el != NULL) {
-    osf_buf_hdr->src = el->src;
-    osf_buf_hdr->dst = el->dst;
-    osf_pkt_t_round_t *rnd_pkt = (osf_pkt_t_round_t *)osf_buf_rnd_pkt;
-    rnd_pkt->id = el->id;
-    packet_len += sizeof(rnd_pkt->id);
-    memcpy(rnd_pkt->payload, el->data, el->len);
-    packet_len += el->len;
-    osf.proto->sent[osf.proto->index] = el->dst;
-    return packet_len;
+  if(osf.proto->role == OSF_ROLE_SRC) {
+    osf_buf_element_t *el = osf_buf_tx_get();
+    if(el != NULL) {
+      osf_buf_hdr->src = el->src;
+      osf_buf_hdr->dst = el->dst;
+      osf_pkt_t_round_t *rnd_pkt = (osf_pkt_t_round_t *)osf_buf_rnd_pkt;
+      rnd_pkt->id = el->id;
+      packet_len += sizeof(rnd_pkt->id);
+      memcpy(rnd_pkt->payload, el->data, el->len);
+      packet_len += el->len;
+      osf.proto->sent[osf.proto->index] = el->dst;
+      return packet_len;
+    }
   }
   return 0;
 }
