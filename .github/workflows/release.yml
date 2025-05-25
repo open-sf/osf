@@ -1,0 +1,45 @@
+name: release
+permissions: write-all
+
+on:
+  workflow_call:
+    secrets:
+      personal_access_token:
+        required: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # # Only run the release job if a tag has been pushed
+    # if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          token: ${{ secrets.personal_access_token }}
+      
+      - uses: actions/download-artifact@v4
+        with:
+          path: packages
+
+      # - name: Collate test reports
+      #   run: |
+      #     mkdir test_reports
+      #     mv packages/**/*_test_report.html test_reports/
+      #     zip -r netloc_${{ github.ref_name }}_test_reports.zip test_reports/*
+
+      - name: "Generate release body from CHANGELOG.md file"
+        run: |
+          awk -v ver=${{ github.ref_name }} '/^#+ \[/ { if (p) { exit }; if ($2 == "["ver"]") { p=1; next} } p && NF' CHANGELOG.md > changelog_section.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          prerelease: false
+          generate_release_notes: true
+          body_path: changelog_section.txt
+          fail_on_unmatched_files: true
+          files: |
+            packages/**/*.zip
+            packages/**/*.sha1

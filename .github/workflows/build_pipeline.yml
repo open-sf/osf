@@ -1,0 +1,69 @@
+name: build
+permissions: write-all
+
+on:
+  workflow_call:
+    secrets:
+      personal_access_token:
+        required: true
+  
+jobs:
+  build:
+    strategy:
+      matrix:
+        board:
+          [
+            # dwm1001,
+            # dwm3001cdk, 
+            # bluebite,
+            uwpcie,
+            # dc10",
+          ]
+      fail-fast: false  # Ensures all matrix jobs run even if one fails
+    runs-on: ubuntu-latest
+    container: contiker/contiki-ng
+    timeout-minutes: 20    
+
+    steps:
+    - name: Install additional packages
+      run: |
+        sudo apt update -y
+        sudo apt install -y python3.10 python3.10-venv nodejs
+        
+    - uses: actions/checkout@v4
+      with:
+          # We need this for 'git describe' to work
+          fetch-depth: 0
+          submodules: true
+          token: ${{ secrets.personal_access_token }}
+
+    - name: Configure Git
+      run: git config --global --add safe.directory /__w/spidr-netloc/spidr-netloc
+
+    # Only clone submodules we need
+    - name: Checkout submodules
+      run: |
+        git submodule update --init arch/cpu/arm/CMSIS
+        git submodule update --init arch/cpu/nrf/lib/nrfx
+        git submodule update --init arch/cpu/nrf52840/lib/nrf52-sdk
+        git submodule update --init arch/cpu/nrf/lib/tinyusb
+        git submodule update --init os/net/security/tinydtls
+        
+    - name: Install Python developer depedancies
+      run: |
+        python3.10 -m venv .venv
+        . .venv/bin/activate
+        pip install -r requirements-dev.txt
+        inv --list
+
+    - name: Build and package
+      run: |
+        . .venv/bin/activate
+        inv package -b ${{ matrix.board }} --output=packages
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: "${{ matrix.board }}-packages"
+        path: packages/*
+        retention-days: 30
