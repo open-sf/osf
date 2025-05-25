@@ -79,3 +79,9 @@ tests/18-coap-lwm2m/leshan-server-demo*.jar
 
 # compiler commands
 compile_commands.json
+
+# Python virtual environment
+.venv
+venv
+# Test reports
+test/output
