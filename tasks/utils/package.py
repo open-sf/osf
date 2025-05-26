@@ -108,11 +108,13 @@ def generate_package(board: str, target: str):
     pkg_name = f"netloc_{manifest['image']['board']}_{app_version}"
     logger.info(f"Generating package: {pkg_name}.zip")
 
-    build_path = path.join("examples", "osf-flock", "build", "nrf", f"{target.split('/')[0]}", f"{target.split('/')[1]}")
+    build_path = path.join("examples", "osf-flock", "build", f"{target}", f"{board}")
     
     file_paths = []
     file_paths.append(path.join(build_path, f"node.elf"))
     file_paths.append(path.join(build_path, f"node.hex"))
+    file_paths.append(path.join(build_path, f"node.bin"))
+    file_paths.append(path.join(build_path, f"node.{target}"))
 
     manifest["image"]["hex_path"] = "node.hex"
 

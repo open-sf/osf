@@ -32,12 +32,12 @@ def build_project(board: str, target: str):
         cwd="examples/osf-flock",
         capture_output=False
     )
-    
-    # Generate hex file from .elf
-    t = subprocess.run(
-        ["arm-none-eabi-objcopy", "-O", "ihex", f"build/{target}/{board}/node.elf", f"build/nrf/{board}/node.hex"],
-        cwd="examples/osf-flock",
-    )
 
-    if t.returncode != 0:
-        raise Exception(f"Failed to generate hex file for board {board}")
+    # # Generate hex file from .elf
+    # t = subprocess.run(
+    #     ["arm-none-eabi-objcopy", "-O", "ihex", f"build/{target}/{board}/node.elf", f"build/nrf/{board}/node.hex"],
+    #     cwd="examples/osf-flock",
+    # )
+
+    # if t.returncode != 0:
+    #     raise Exception(f"Failed to generate hex file for board {board}")
