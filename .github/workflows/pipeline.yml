@@ -32,7 +32,7 @@ jobs:
   #     personal_access_token: ${{ secrets.PAT }}
 
   release:
-    # needs: [hil_tests]
+    needs: [build]
     if: startsWith(github.ref, 'refs/tags/')
     uses: ./.github/workflows/release.yml
     secrets:
