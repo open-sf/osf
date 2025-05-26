@@ -21,7 +21,7 @@ on:
   
 jobs:
   build:
-    uses: ./.github/workflows/build_pipeline.yml
+    uses: ./.github/workflows/build_boards.yml
     secrets:
       personal_access_token: ${{ secrets.PAT }}
 

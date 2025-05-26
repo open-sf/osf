@@ -38,7 +38,7 @@ jobs:
           token: ${{ secrets.personal_access_token }}
 
     - name: Configure Git
-      run: git config --global --add safe.directory /__w/spidr-netloc/spidr-netloc
+      run: git config --global --add safe.directory /__w/flock/flock
 
     # Only clone submodules we need
     - name: Checkout submodules
