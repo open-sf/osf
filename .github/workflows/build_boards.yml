@@ -46,7 +46,6 @@ jobs:
         git submodule update --init arch/cpu/arm/CMSIS
         git submodule update --init arch/cpu/nrf/lib/nrfx
         git submodule update --init arch/cpu/nrf52840/lib/nrf52-sdk
-        git submodule update --init arch/cpu/nrf/lib/tinyusb
         git submodule update --init os/net/security/tinydtls
         
     - name: Install Python developer depedancies
