@@ -54,6 +54,27 @@ jobs:
         . .venv/bin/activate
         pip install -r requirements-dev.txt
         inv --list
+    
+    - name: Create dummy deployment table
+      run: |
+        ls
+        touch os/services/deployment/nulltb/deployment-map-nulltb.c
+        cat <<EOF > os/services/deployment/nulltb/deployment-map-nulltb.c
+        #include "services/deployment/deployment.h"
+
+        #if CONTIKI_TARGET_NRF52840
+        const struct id_mac deployment_nulltb[] = {
+            /* AD nodes */
+            {1, {{0xf4, 0xce, 0x36, 0xA5, 0xA4, 0x84, 0x99, 0x7A}}},
+            {2, {{0xf4, 0xce, 0x36, 0xA5, 0xA4, 0x84, 0x99, 0x71}}},
+            {3, {{0xf4, 0xce, 0x36, 0xA5, 0xA4, 0x84, 0x99, 0x7F}}},
+            {4, {{0xf4, 0xce, 0x36, 0xA5, 0xA4, 0x84, 0x99, 0x7B}}},
+            {5, {{0xf4, 0xce, 0x36, 0xA5, 0xA4, 0x84, 0x99, 0x7D}}},
+            {0, {{0}}}};
+        #else
+        #warning "WARN: Unknown DEPLOYMENT target"
+        #endif
+        EOF
 
     - name: Build and package
       run: |
