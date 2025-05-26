@@ -84,6 +84,10 @@ def _is_version_clean(version: str):
         # Dirty repo
         return False
 
+    if "-" not in version:
+        # Handle case where repo has not been tagged
+        return False
+
     build = version.split("-")[1]
     if build != "0":
         # Number of commits ahead of tag is > 0
