@@ -1,4 +1,4 @@
-# Open-SF (OSF): An Open-Source Project for Multi-PHY Synchronous Flooding Protocols
+# Open-SF (OSF): An Open-Source Project for Multi-PHY Synchronous Flooding Protocols 
 
 ## Intro
 
