@@ -28,7 +28,7 @@ jobs:
     - name: Install additional packages
       run: |
         sudo apt update -y
-        sudo apt install -y python3.10 python3.10-venv nodejs
+        sudo apt install -y python3.10 python3.10-venv nodejs tree
         
     - uses: actions/checkout@v4
       with:
