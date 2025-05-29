@@ -244,20 +244,23 @@ osf_buf_tx_get()
 {
   osf_buf_element_t *el = list_head(osf_tx_buf);
   if (el != NULL)  {
-    if(OSF_BUF_RETRANSMISSIONS != 0 && el->rtx > OSF_BUF_RETRANSMISSIONS) {
-      osf_buf_tx_remove_head();
-      osf_stat.osf_mac_no_ack_total++; // Statistics
+    if (!el->rtx) {
+      /* First transmission */
+      osf_buf_log_data(TX, el->id, el->src, el->dst, el->data, el->len, el->rtx, 0);
     }
-    if(!el->rtx) {
-      osf_buf_log_data(TX, el->id, node_id, el->dst, el->data, el->len, el->rtx, 0);
-    } else {
-      osf_buf_log_data(RTR, el->id, node_id, el->dst, el->data, el->len, el->rtx, 0);
+    if (OSF_BUF_RETRANSMISSIONS && el->rtx <= OSF_BUF_RETRANSMISSIONS) {
+      /* Retransmissions */
+      el->rtx++;
+      osf_buf_log_data(RTR, el->id, el->src, el->dst, el->data, el->len, el->rtx, 0);
       osf_stat.osf_mac_tx_ret_total++; // Statistics
     }
-    el->rtx++;
+    if (!OSF_BUF_RETRANSMISSIONS || el->rtx > OSF_BUF_RETRANSMISSIONS) {
+      /* If we have hit max retransmissions, or if zero retransmissions, remove the element */
+      osf_buf_tx_remove_head();
+    }
   }
   return el;
-}
+  }
 
 /*---------------------------------------------------------------------------*/
 osf_buf_element_t *

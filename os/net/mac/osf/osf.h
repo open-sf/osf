@@ -396,16 +396,17 @@ uint8_t                  sources[OSF_BITMASK_LEN];       /* permitted sources in
 /* OSF protocol */
 #define OSF_PROTO_BCAST  (0x00)
 #define OSF_PROTO_STA    (0x01)
+#define OSF_PROTO_STT    (0x02)
 
-#define OSF_GET_PROTO(P)                            \
-(                                                   \
-  (P == OSF_PROTO_BCAST) ? &osf_proto_bcast :       \
-  ((P == OSF_PROTO_STA)  ? &osf_proto_sta   : NULL) \
-)
+#define OSF_GET_PROTO(P) \
+  ((P == OSF_PROTO_BCAST) ? &osf_proto_bcast : \
+   (P == OSF_PROTO_STA)   ? &osf_proto_sta   : \
+   (P == OSF_PROTO_STT)   ? &osf_proto_stt   : NULL)
 
 #define OSF_PROTO_TO_STR(R) \
-  ((R == OSF_PROTO_BCAST) ? ("OSF_PROTO_BCAST") : \
-   (R == OSF_PROTO_STA)   ? ("OSF_PROTO_STA") : ("???"))
+  ((R == OSF_PROTO_BCAST) ? "OSF_PROTO_BCAST" : \
+   (R == OSF_PROTO_STA)   ? "OSF_PROTO_STA" : \
+   (R == OSF_PROTO_STT)   ? "OSF_PROTO_STT" : "???")
 
 #ifdef OSF_CONF_PROTO
 #define OSF_PROTOCOL                  OSF_CONF_PROTO
@@ -435,6 +436,7 @@ typedef struct osf_proto {
 /* Protocol externs */
 extern osf_proto_t osf_proto_bcast;
 extern osf_proto_t osf_proto_sta;
+extern osf_proto_t osf_proto_stt;
 
 /*---------------------------------------------------------------------------*/
 /* Data structure to hold global OSF status and configuration */
