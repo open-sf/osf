@@ -103,7 +103,7 @@ Let's assume that your platform is called `my-platform` and that it is powered b
   * `platform.c`: This is where you will provide platform-specific functions needed by Contiki-NG's `main()` routine. Using `platform.c` as the filename is a convention, not a strictly technical requirement.
   * `contiki-conf.h`: This is where you will put platform-specific macros that users are expected to be able to modify.
   * `my-platform-def.h` (optionally): This is where you will put platform-specific macros that users should _not_ modify (for example, LED pin mappings).
-  * `doxygen-group.txt`: This is where you will define where your platform code's documentation will be located in the API doc structure. See for example [`arch/platform/nrf52dk/doxygen-group.txt`](https://github.com/contiki-ng/contiki-ng/tree/develop/arch/platform/nrf52dk/doxygen-group.txt).
+  * `doxygen-group.txt`: This is where you will define where your platform code's documentation will be located in the API doc structure. See for example [`arch/platform/nrf/doxygen-group.txt`](https://github.com/contiki-ng/contiki-ng/tree/develop/arch/platform/nrf/doxygen-group.txt).
 
 #### Prepare the configuration system
 Open `contiki-conf.h` and:
@@ -191,7 +191,7 @@ You then need to decide whether you want to specify your own main loop (do so on
 ```C
 #define PLATFORM_CONF_PROVIDES_MAIN_LOOP 1
 ```
-One platform that defines its own main loop is the [jn516x](https://github.com/contiki-ng/contiki-ng/tree/develop/arch/platform/jn516x/platform.c) platform.
+One platform that defines its own main loop is the [native](https://github.com/contiki-ng/contiki-ng/tree/develop/arch/platform/native/platform.c) platform.
 
 Lastly, the main loop will periodically try to put your device to a low-power state. This is achieved by calling `platform_idle()`, which is one more function that you will need to provide an implementation for (once again in `platform.c`).
 
@@ -229,7 +229,7 @@ Following our example above, here is what you should put where:
 * In `platform/my-platform/sensing-board`: Drivers for the sensing elements on this board. You will append them to `CONTIKI_SOURCEFILES` inside `Makefile.sensing-board`.
 * In `platform/my-platform/usb-board`: Drivers for anything specific to the `usb-board`. If there is nothing specific to this board, then note that you do not _have_ to create the sub-directory in the first place.
 
-As a final comment, imagine that you have a number of different boards, featuring partially overlapping sets of peripherals. In this scenario, one approach is to create a directory called `common` under your `arch/platform/my-platform`. You can place all peripheral drivers in this directory and then pick and choose what to compile for each board using the `CONTIKI_SOURCEFILES` make variable within each individual board's `$(BOARD)/Makefile.$(board)`. For an example of this approach, see [`arch/platform/srf06-cc26xx`](https://github.com/contiki-ng/contiki-ng/tree/develop/arch/platform/srf06-cc26xx).
+As a final comment, imagine that you have a number of different boards, featuring partially overlapping sets of peripherals. In this scenario, one approach is to create a directory called `common` under your `arch/platform/my-platform`. You can place all peripheral drivers in this directory and then pick and choose what to compile for each board using the `CONTIKI_SOURCEFILES` make variable within each individual board's `$(BOARD)/Makefile.$(board)`. For an example of this approach, see [`arch/platform/cc26x0-cc13x0`](https://github.com/contiki-ng/contiki-ng/tree/develop/arch/platform/cc26x0-cc13x0).
 
 ### Create some examples
 You will likely want your users to be able to use some of the existing Contiki-NG platform-independent examples on your device. For those examples, either make sure they run off-the-shelf, or extend them accordingly. If you want an existing example to do something slightly different on your hardware, _do not_ create a copy of the entire example in a separate directory. It is always better to change the examples so it can provide for platform-specific extensions. For some ideas of how this can be achieved, see the [`mqtt-client`](https://github.com/contiki-ng/contiki-ng/tree/develop/examples/mqtt-client), [`sensniff`](https://github.com/contiki-ng/contiki-ng/tree/develop/examples/sensniff) and [`slip-radio`](https://github.com/contiki-ng/contiki-ng/tree/develop/examples/slip-radio) examples.

@@ -616,6 +616,9 @@ transmit(unsigned short transmit_len)
   nrf_radio_event_clear(NRF_RADIO_EVENT_PHYEND);
   nrf_radio_event_clear(NRF_RADIO_EVENT_TXREADY);
 
+  /* No need to sample RSSI during TX */
+  nrf_radio_shorts_disable(NRF_RADIO_SHORT_ADDRESS_RSSISTART_MASK);
+
   /* Start the transmission */
   ENERGEST_SWITCH(ENERGEST_TYPE_LISTEN, ENERGEST_TYPE_TRANSMIT);
 
@@ -782,7 +785,14 @@ off(void)
 {
   /* Turn OFF power amplifier */
   NETSTACK_PA.off();
-  
+
+  /* Power down radio circuitry */
+  nrf_radio_task_trigger(NRF_RADIO_TASK_DISABLE);
+
+  /* Wait for completion */
+  while(nrf_radio_state_get() != NRF_RADIO_STATE_DISABLED);
+
+  /* Power down radio peripheral, erasing stored register values */
   nrf_radio_power_set(false);
 
   ENERGEST_OFF(ENERGEST_TYPE_LISTEN);

@@ -29,8 +29,6 @@ ifdef nodemac
 CFLAGS += -DMACID=$(nodemac)
 endif
 
-CFLAGS += -g
-
 include $(CONTIKI_NG_RELOC_CPU_DIR)/msp430/Makefile.msp430
 
 NUMPAR=20
@@ -122,14 +120,6 @@ sizeplot:
 	msp430-size $(OBJECTDIR)/*.o | $(CONTIKI_NG_TOOLS_DIR)/sky/check-size > size-data
 	gnuplot $(CONTIKI)/tools/sky/plot-size
 	gv size.pdf
-
-winslip:
-ifdef INTERFACE
-	$(CONTIKI_NG_TOOLS_DIR)/wpcapslip/wpcapslip -s $(USBDEVPREFIX)$(firstword $(CMOTES)) $(INTERFACE) 172.16.0.0 255.255.0.0
-else
-	@echo "Usage: \"$(MAKE) $@ INTERFACE=<the IP address of a local network interface>\""
-	@echo "Use the \"ipconfig\" command to find out the IP addresses of the local interfaces"
-endif
 
 ifdef MOTE
   PORT = $(USBDEVPREFIX)$(word $(MOTE), $(CMOTES))

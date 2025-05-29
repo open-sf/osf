@@ -1,10 +1,8 @@
-COOJA_PATH ?= $(CONTIKI_NG_TOOLS_DIR)/cooja
-
 ifdef nodeid
 CFLAGS += -DNODEID=$(nodeid)
 endif
 
-CFLAGS += -gstabs+
+CFLAGS_DEBUG = -gstabs+
 
 ### Define the CPU directory
 CONTIKI_CPU = $(CONTIKI_NG_RELOC_CPU_DIR)/msp430
@@ -44,6 +42,9 @@ CONTIKI_SOURCEFILES        += $(CONTIKI_TARGET_SOURCEFILES)
 
 ### Compiler definitions
 
+# LTO is available in GCC 4.7.2, but crashes for MSP430.
+NO_LTO_TARGET = 1
+
 ifeq ($(WERROR),1)
   CFLAGSWERROR = -Werror
 endif
@@ -77,6 +78,7 @@ CFLAGSNO = -Wall -mmcu=$(MCU) $(CFLAGSWERROR)
 endif
 CFLAGS  += -Os -fno-strict-aliasing -std=gnu99
 LDFLAGS += -mmcu=$(MCU) -Wl,-Map=$(CONTIKI_NG_PROJECT_MAP)
+LDFLAGS += -Wl,--sort-section=alignment
 
 ### These flags can reduce the code size and RAM usage with up to 10%
 SMALL ?= 1
@@ -108,24 +110,20 @@ CLEAN += *.firmware *.ihex
 %.firmware:	%.${TARGET}
 	mv $< $@
 
-%.ihex: %.$(TARGET)
+%.ihex: $(BUILD_DIR_BOARD)/%.$(TARGET)
 	$(OBJCOPY) $^ -O ihex $@
 
-$(COOJA_PATH)/build.xml:
+$(COOJA_PATH)/java:
 	@echo '----------------'
-	@echo 'Could not find the COOJA build file. Did you run "git submodule update --init --recursive"?'
+	@echo 'Could not find COOJA. Did you run "git submodule update --init --recursive"?'
 	@echo '----------------'
+	@false
 
-$(COOJA_PATH)/mspsim/build.xml: $(COOJA_PATH)/build.xml
-	@echo '----------------'
-	@echo 'Could not find the MSPSim build file. Did you run "git submodule update --init --recursive"?'
-	@echo '----------------'
+$(COOJA_PATH)/build/libs/cooja-full.jar: | $(COOJA_PATH)/java
+	$(Q)$(GRADLE) --no-watch-fs --parallel --build-cache -p $(COOJA_PATH) fulljar
 
-$(COOJA_PATH)/mspsim/mspsim.jar: $(COOJA_PATH)/mspsim/build.xml
-	cd $(COOJA_PATH)/mspsim && ant jar
+%.mspsim: $(BUILD_DIR_BOARD)/%.${TARGET} ${COOJA_PATH}/build/libs/cooja-full.jar
+	  $(Q)$(JAVA) -classpath ${COOJA_PATH}/build/libs/cooja-full.jar se.sics.mspsim.Main -platform=${TARGET} $(realpath $<)
 
-%.mspsim:	%.${TARGET} ${COOJA_PATH}/mspsim/mspsim.jar
-	$(JAVA) -jar ${COOJA_PATH}/mspsim/mspsim.jar -platform=${TARGET} $<
-
-%.mspsim-maptable: %.$(TARGET)
-	$(JAVA) -classpath ${COOJA_PATH}/mspsim/mspsim.jar se.sics.mspsim.util.MapTable $(CONTIKI_NG_PROJECT_MAP)
+%.mspsim-maptable: $(BUILD_DIR_BOARD)/%.$(TARGET) ${COOJA_PATH}/build/libs/cooja-full.jar
+	$(Q)$(JAVA) -classpath ${COOJA_PATH}/build/libs/cooja-full.jar se.sics.mspsim.util.MapTable $(CONTIKI_NG_PROJECT_MAP)
