@@ -39,15 +39,29 @@
 #include PROJECT_CONF_PATH
 #endif /* PROJECT_CONF_PATH */
 /*---------------------------------------------------------------------------*/
+#if (defined(NRF52840_XXAA) || defined(NRF52833_XXAA))
+/*---------------------------------------------------------------------------*/
 /* Include platform peripherals configuration */
 #include "nrf52840-board-def.h"
 #include "nrf52840-def.h"
 /*---------------------------------------------------------------------------*/
+/* Include CPU-related configuration */
+#include "nrf52840-conf.h"
+#endif
+/*---------------------------------------------------------------------------*/
+/* nRF52832 based targets */
+#ifdef NRF52832_XXAA
+/*---------------------------------------------------------------------------*/
+/* Include platform peripherals configuration */
+#include "nrf52832-board-def.h"
+#include "nrf52832-def.h"
+/*---------------------------------------------------------------------------*/
+/* Include CPU-related configuration */
+#include "nrf52832-conf.h"
+#endif
+/*---------------------------------------------------------------------------*/
 #ifndef SICSLOWPAN_CONF_FRAG
 #define SICSLOWPAN_CONF_FRAG                    1
 #endif
-/*---------------------------------------------------------------------------*/
-/* Include CPU-related configuration */
-#include "nrf52840-conf.h"
 /*---------------------------------------------------------------------------*/
 #endif /* CONTIKI_CONF_H */

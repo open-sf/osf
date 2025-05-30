@@ -47,13 +47,23 @@
 /*---------------------------------------------------------------------------*/
 /* TX POWER */
 /*---------------------------------------------------------------------------*/
+#define UNSUPPORTED_TX_POWER        (50UL)
+
+#if (defined(NRF52840_XXAA) || defined(NRF52833_XXAA))
 #define Pos8dBm                     RADIO_TXPOWER_TXPOWER_Pos8dBm
 #define Pos7dBm                     RADIO_TXPOWER_TXPOWER_Pos7dBm
 #define Pos6dBm                     RADIO_TXPOWER_TXPOWER_Pos6dBm
 #define Pos5dBm                     RADIO_TXPOWER_TXPOWER_Pos5dBm
+#define Pos2dBm                     RADIO_TXPOWER_TXPOWER_Pos2dBm
+#else 
+#define Pos8dBm                     (UNSUPPORTED_TX_POWER+8UL)
+#define Pos7dBm                     (UNSUPPORTED_TX_POWER+7UL)
+#define Pos6dBm                     (UNSUPPORTED_TX_POWER+6UL)
+#define Pos5dBm                     (UNSUPPORTED_TX_POWER+5UL)
+#define Pos2dBm                     (UNSUPPORTED_TX_POWER+2UL)
+#endif
 #define Pos4dBm                     RADIO_TXPOWER_TXPOWER_Pos4dBm
 #define Pos3dBm                     RADIO_TXPOWER_TXPOWER_Pos3dBm
-#define Pos2dBm                     RADIO_TXPOWER_TXPOWER_Pos2dBm
 #define ZerodBm                     RADIO_TXPOWER_TXPOWER_0dBm
 #define Neg4dBm                     RADIO_TXPOWER_TXPOWER_Neg4dBm
 #define Neg8dBm                     RADIO_TXPOWER_TXPOWER_Neg8dBm
@@ -64,21 +74,21 @@
 #define Neg40dBm                    RADIO_TXPOWER_TXPOWER_Neg40dBm
 
 #define OSF_TXPOWER_TO_STR(P) \
-  ((P == RADIO_TXPOWER_TXPOWER_Pos8dBm)  ? ("+8dBm") : \
-   (P == RADIO_TXPOWER_TXPOWER_Pos7dBm)  ? ("+7dBm") : \
-   (P == RADIO_TXPOWER_TXPOWER_Pos6dBm)  ? ("+6dBm") : \
-   (P == RADIO_TXPOWER_TXPOWER_Pos5dBm)  ? ("+5dBm") : \
-   (P == RADIO_TXPOWER_TXPOWER_Pos4dBm)  ? ("+4dBm") : \
-   (P == RADIO_TXPOWER_TXPOWER_Pos3dBm)  ? ("+3dBm") : \
-   (P == RADIO_TXPOWER_TXPOWER_Pos2dBm)  ? ("+2dBm") : \
-   (P == RADIO_TXPOWER_TXPOWER_0dBm)     ? ("0dBm")  : \
-   (P == RADIO_TXPOWER_TXPOWER_Neg4dBm)  ? ("-4dBm") : \
-   (P == RADIO_TXPOWER_TXPOWER_Neg8dBm)  ? ("-8dBm") : \
-   (P == RADIO_TXPOWER_TXPOWER_Neg12dBm) ? ("-12dBm") : \
-   (P == RADIO_TXPOWER_TXPOWER_Neg30dBm) ? ("-30dBm") : \
-   (P == RADIO_TXPOWER_TXPOWER_Neg16dBm) ? ("-16dBm") : \
-   (P == RADIO_TXPOWER_TXPOWER_Neg20dBm) ? ("-20dBm") : \
-   (P == RADIO_TXPOWER_TXPOWER_Neg40dBm) ? ("-40dBm") : ("???"))
+  ((P == Pos8dBm)  ? ("+8dBm") : \
+   (P == Pos7dBm)  ? ("+7dBm") : \
+   (P == Pos6dBm)  ? ("+6dBm") : \
+   (P == Pos5dBm)  ? ("+5dBm") : \
+   (P == Pos4dBm)  ? ("+4dBm") : \
+   (P == Pos3dBm)  ? ("+3dBm") : \
+   (P == Pos2dBm)  ? ("+2dBm") : \
+   (P == ZerodBm)  ? ("0dBm")  : \
+   (P == Neg4dBm)  ? ("-4dBm") : \
+   (P == Neg8dBm)  ? ("-8dBm") : \
+   (P == Neg12dBm) ? ("-12dBm") : \
+   (P == Neg30dBm) ? ("-30dBm") : \
+   (P == Neg16dBm) ? ("-16dBm") : \
+   (P == Neg20dBm) ? ("-20dBm") : \
+   (P == Neg40dBm) ? ("-40dBm") : ("???"))
 
 /*---------------------------------------------------------------------------*/
 /* RSSI */
@@ -88,13 +98,25 @@
 /*---------------------------------------------------------------------------*/
 /* PHY */
 /*---------------------------------------------------------------------------*/
+#define PHY_NRF_UNSUPPORTED        (100UL)
 #define PHY_NRF_1M                RADIO_MODE_MODE_Nrf_1Mbit          // 0
 #define PHY_NRF_2M                RADIO_MODE_MODE_Nrf_2Mbit          // 1
 #define PHY_BLE_1M                RADIO_MODE_MODE_Ble_1Mbit          // 3
 #define PHY_BLE_2M                RADIO_MODE_MODE_Ble_2Mbit          // 4
+
+#if NRF52840_WITH_CODED_PHY
 #define PHY_BLE_500K              RADIO_MODE_MODE_Ble_LR500Kbit      // 5
 #define PHY_BLE_125K              RADIO_MODE_MODE_Ble_LR125Kbit      // 6
+#else
+#define PHY_BLE_500K              (PHY_NRF_UNSUPPORTED+5UL)
+#define PHY_BLE_125K              (PHY_NRF_UNSUPPORTED+6UL)
+#endif
+#if NRF52840_WITH_IEEE_PHY
 #define PHY_IEEE                  RADIO_MODE_MODE_Ieee802154_250Kbit // 15
+#else
+
+#define PHY_IEEE                  (PHY_NRF_UNSUPPORTED+15UL)
+#endif
 
 #define OSF_PHY_TO_STR(P) \
   ((P == PHY_NRF_1M) ? ("NRF_1M") : \
@@ -145,11 +167,11 @@ extern osf_phy_conf_t osf_phy_conf_2M_LF;
 /*---------------------------------------------------------------------------*/
 #define PHY_BIT_TIME_MULTIPLIER(P) \
   ( \
-    (P == RADIO_MODE_MODE_Ble_1Mbit) ? 1 : \
-    ((P == RADIO_MODE_MODE_Ble_2Mbit) ? 0.5 : \
-     ((P == RADIO_MODE_MODE_Ble_LR500Kbit) ? 2 : \
-      ((P == RADIO_MODE_MODE_Ble_LR125Kbit) ? 8 : \
-       ((P == RADIO_MODE_MODE_Ieee802154_250Kbit) ? 4 : 0)))) \
+    (P == PHY_BLE_1M) ? 1 : \
+    ((P == PHY_BLE_2M) ? 0.5 : \
+     ((P == PHY_BLE_500K) ? 2 : \
+      ((P == PHY_BLE_125K) ? 8 : \
+       ((P == PHY_IEEE) ? 4 : 0)))) \
   )
 
 #define OSF_PHY_BYTES_TO_USX(B, P)           (uint32_t)( ((B)<<3) * PHY_BIT_TIME_MULTIPLIER(P) )

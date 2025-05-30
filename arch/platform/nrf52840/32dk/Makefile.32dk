@@ -1,0 +1,2 @@
+CONTIKI_TARGET_DIRS += 32dk
+CONTIKI_TARGET_SOURCEFILES += board-leds.c board-buttons.c nrf52832dk-sensors.c

@@ -1,16 +1,16 @@
 /*
- * Copyright (c) 2014, Texas Instruments Incorporated - http://www.ti.com/
+ * Copyright (c) 2020, George Oikonomou - https://spd.gr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived
  *    from this software without specific prior written permission.
@@ -29,39 +29,30 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 /*---------------------------------------------------------------------------*/
+/**
+ * \addtogroup nrf52840dk-devices Device drivers
+ * @{
+ *
+ * \addtogroup nrf52840dk-devices-button Buttons driver
+ * @{
+ */
+/*---------------------------------------------------------------------------*/
 #include "contiki.h"
-#include "dev/slip.h"
-#include "dev/uart0.h"
-#include "usb/usb-serial.h"
+#include "boards.h"
+#include "dev/button-hal.h"
 /*---------------------------------------------------------------------------*/
-#ifndef SLIP_ARCH_CONF_USB
-#define SLIP_ARCH_CONF_USB 0
-#endif
-
-#if SLIP_ARCH_CONF_USB
-#define write_byte(b) usb_serial_writeb(b)
-#define set_input(f)  usb_serial_set_input(f)
-#define flush()       usb_serial_flush()
-#else
-#define write_byte(b) uart0_writeb(b)
-#define set_input(f)  uart0_set_input(f)
-#define flush()
-#endif
-
-#define SLIP_END     0300
+BUTTON_HAL_BUTTON(btn_1, "Button 1", 0, BUTTON_1, \
+                  GPIO_HAL_PIN_CFG_PULL_UP, BUTTON_HAL_ID_BUTTON_ZERO, true);
+BUTTON_HAL_BUTTON(btn_2, "Button 2", 0, BUTTON_2, \
+                  GPIO_HAL_PIN_CFG_PULL_UP, BUTTON_HAL_ID_BUTTON_ONE, true);
+BUTTON_HAL_BUTTON(btn_3, "Button 3", 0, BUTTON_3, \
+                  GPIO_HAL_PIN_CFG_PULL_UP, BUTTON_HAL_ID_BUTTON_TWO, true);
+BUTTON_HAL_BUTTON(btn_4, "Button 4", 0, BUTTON_4, \
+                  GPIO_HAL_PIN_CFG_PULL_UP, BUTTON_HAL_ID_BUTTON_THREE, true);
 /*---------------------------------------------------------------------------*/
-void
-slip_arch_writeb(unsigned char c)
-{
-  write_byte(c);
-  if(c == SLIP_END) {
-    flush();
-  }
-}
+BUTTON_HAL_BUTTONS(&btn_1, &btn_2, &btn_3, &btn_4);
 /*---------------------------------------------------------------------------*/
-void
-slip_arch_init()
-{
-  set_input(slip_input_byte);
-}
-/*---------------------------------------------------------------------------*/
+/**
+ * @}
+ * @}
+ */
