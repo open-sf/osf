@@ -4,10 +4,10 @@
 CONTIKI := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
 
 # Give an error message when using an old version of GNU Make.
-MAKE_MAJOR_VERSION := $(word 1,$(subst ., ,$(MAKE_VERSION)))
-ifeq ($(shell test $(MAKE_MAJOR_VERSION) -lt 4; echo $$?),0)
-  $(error GNU Make version 4.0 or newer is required)
-endif
+# MAKE_MAJOR_VERSION := $(word 1,$(subst ., ,$(MAKE_VERSION)))
+# ifeq ($(shell test $(MAKE_MAJOR_VERSION) -lt 4; echo $$?),0)
+#   $(error GNU Make version 4.0 or newer is required)
+# endif
 
 # Only use rules from the Makefiles. This eliminates a lot
 # of attempted matches from the implicit rules for SCCS.

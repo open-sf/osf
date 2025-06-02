@@ -1,0 +1,8 @@
+gitpython
+invoke
+rich
+pytest
+pytest-metadata
+pytest-reporter-html1
+pytest-rerunfailures
+pytest-flakefinder
