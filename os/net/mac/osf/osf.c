@@ -946,7 +946,9 @@ RADIO_IRQHandler_callback()
   // else if (((osf_phy_conf->mode != PHY_IEEE) && NRF_RADIO->EVENTS_ADDRESS)
   //           || ((osf_phy_conf->mode == PHY_IEEE) && NRF_RADIO->EVENTS_FRAMESTART)) {
     NRF_RADIO->EVENTS_ADDRESS = 0;
+#if NRF52840_WITH_IEEE_PHY
     NRF_RADIO->EVENTS_FRAMESTART = 0;
+#endif
     t_ev_addr_ts = NRF_TIMERX->CC[TIMESTAMP_REG];
     /* If we are a receiver who is waiting, we now have an base addr + prefix
        (or SFD if we are IEEE 802.15.4). Start to receive. */
@@ -1111,7 +1113,9 @@ osf_on()
   /* Debug info */
   LOG_INFO("- NVIC_GetPriority(RADIO_IRQn)  - %lu \n", NVIC_GetPriority(RADIO_IRQn));  // 0
   LOG_INFO("- NVIC_GetPriority(TIMERX_IRQn) - %lu \n", NVIC_GetPriority(TIMERX_IRQn)); // 1
+#if NRF52840_NATIVE_USB
   LOG_INFO("- NVIC_GetPriority(USBD_IRQn)   - %lu \n", NVIC_GetPriority(USBD_IRQn));   // NRFX_USBD_CONFIG_IRQ_PRIORITY 6
+#endif
   NVIC_SetPriority(TIMER0_IRQn, 2);
   LOG_INFO("- NVIC_GetPriority(TIMER0_IRQn) - %lu \n", NVIC_GetPriority(TIMER0_IRQn)); // 2
   NVIC_SetPriority(RTC0_IRQn, 5);

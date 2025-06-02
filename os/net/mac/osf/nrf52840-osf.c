@@ -99,11 +99,21 @@ static nrf_radio_packet_conf_t nrf_phy_conf_2M = {
   0, // lflen
   0, // s0len (bytes)
   0, // s1len (bits)
+#if defined(RADIO_PCNF0_S1INCL_Msk)
   RADIO_PCNF0_S1INCL_Automatic, // s1incl
+#endif
+#if defined(RADIO_PCNF0_CILEN_Msk)
   0, // cilen
+#endif
+#if defined(RADIO_PCNF0_PLEN_Msk)
   RADIO_PCNF0_PLEN_16bit,       // plen
+#endif
+#if defined(RADIO_PCNF0_CRCINC_Msk)
   RADIO_PCNF0_CRCINC_Exclude,   // crcincl
+#endif
+#if defined(RADIO_PCNF0_TERMLEN_Msk)
   0, // termlen
+#endif
   255, // maxlen
   255, // statlen
   2, // balen
@@ -131,11 +141,21 @@ static nrf_radio_packet_conf_t nrf_phy_conf_1M = {
   0, // lflen
   0, // s0len (bytes)
   0, // s1len (bits)
+#if defined(RADIO_PCNF0_S1INCL_Msk)
   RADIO_PCNF0_S1INCL_Automatic, // s1incl
+#endif
+#if defined(RADIO_PCNF0_CILEN_Msk)
   0, // cilen
+#endif
+#if defined(RADIO_PCNF0_PLEN_Msk)
   RADIO_PCNF0_PLEN_8bit,        // plen
+#endif
+#if defined(RADIO_PCNF0_CRCINC_Msk)
   RADIO_PCNF0_CRCINC_Exclude,   // crcincl
+#endif
+#if defined(RADIO_PCNF0_TERMLEN_Msk)
   0, // termlen
+#endif
   255, // maxlen
   255, // statlen
   2, // balen
@@ -158,6 +178,7 @@ osf_phy_conf_t osf_phy_conf_1M = {
   0                             // slot_duration
 };
 
+#if NRF52840_WITH_CODED_PHY
 /*---------------------------------------------------------------------------*/
 // NB: STATLEN only works for 500 when S0=1 or LF=8. This shouldn't be the case.
 //     IF STATLEN is set, then it doesn't appear to read LF. If STATLEN is
@@ -168,11 +189,21 @@ static nrf_radio_packet_conf_t nrf_phy_conf_500K = {
   0, // lflen
   0, // s0len (bytes)
   0, // s1len (bits)
+#if defined(RADIO_PCNF0_S1INCL_Msk)
   RADIO_PCNF0_S1INCL_Automatic, // s1incl
+#endif
+#if defined(RADIO_PCNF0_CILEN_Msk)
   2, // cilen
+#endif
+#if defined(RADIO_PCNF0_PLEN_Msk)
   RADIO_PCNF0_PLEN_LongRange,   // plen
+#endif
+#if defined(RADIO_PCNF0_CRCINC_Msk)
   RADIO_PCNF0_CRCINC_Exclude,   // crcincl
+#endif
+#if defined(RADIO_PCNF0_TERMLEN_Msk)
   3, // termlen
+#endif
   255, // maxlen
   255, // statlen
   3, // balen
@@ -204,11 +235,21 @@ static nrf_radio_packet_conf_t nrf_phy_conf_125K = {
   0, // lflen
   0, // s0len (bytes)
   0, // s1len (bits)
+#if defined(RADIO_PCNF0_S1INCL_Msk)
   RADIO_PCNF0_S1INCL_Automatic, // s1incl
+#endif
+#if defined(RADIO_PCNF0_CILEN_Msk)
   2, // cilen
+#endif
+#if defined(RADIO_PCNF0_PLEN_Msk)
   RADIO_PCNF0_PLEN_LongRange,   // plen
+#endif
+#if defined(RADIO_PCNF0_CRCINC_Msk)
   RADIO_PCNF0_CRCINC_Exclude,   // crcincl
+#endif
+#if defined(RADIO_PCNF0_TERMLEN_Msk)
   3, // termlen
+#endif
   255, // maxlen
   255, // statlen
   3, // balen
@@ -233,17 +274,29 @@ osf_phy_conf_t osf_phy_conf_125K = {
   0,                            // packet_air_ticks
   0                             // slot_duration
 };
+#endif
 
+#if NRF52840_WITH_IEEE_PHY
 /*---------------------------------------------------------------------------*/
 static nrf_radio_packet_conf_t nrf_phy_conf_802154 = {
   0, // lflen
   0, // s0len (bytes)
   0, // s1len (bits)
+#if defined(RADIO_PCNF0_S1INCL_Msk)
   RADIO_PCNF0_S1INCL_Automatic, // s1incl
+#endif
+#if defined(RADIO_PCNF0_CILEN_Msk)
   0, // cilen
+#endif
+#if defined(RADIO_PCNF0_PLEN_Msk)
   RADIO_PCNF0_PLEN_32bitZero,   // plen
+#endif
+#if defined(RADIO_PCNF0_CRCINC_Msk)
   RADIO_PCNF0_CRCINC_Exclude,   // crcincl
+#endif
+#if defined(RADIO_PCNF0_TERMLEN_Msk)
   0, // termlen
+#endif
   127, // maxlen
   127, // statlen
   0, // balen
@@ -266,6 +319,7 @@ osf_phy_conf_t osf_phy_conf_802154 = {
   0,                            // packet_air_ticks
   0                             // slot_duration
 };
+#endif
 
 /*---------------------------------------------------------------------------*/
 
@@ -338,6 +392,7 @@ configure_errata(osf_phy_conf_t *conf) {
       /* [191] */
       *(volatile uint32_t *)0x40001740 = ((*((volatile uint32_t *)0x40001740)) & 0x7FFFFFFFUL);
       break;
+#if NRF52840_WITH_CODED_PHY
     case PHY_BLE_500K:
     case PHY_BLE_125K:
       /* [164] */
@@ -346,10 +401,13 @@ configure_errata(osf_phy_conf_t *conf) {
       /* [191] */
       *(volatile uint32_t *)0x40001740 = ((*((volatile uint32_t *)0x40001740)) & 0x7FFF00FF) |  0x80000000 | (((uint32_t)(196)) << 8);
       break;
+#endif
+#if NRF52840_WITH_IEEE_PHY
     case PHY_IEEE:
       /* [191] */
       *(volatile uint32_t *)0x40001740 = ((*((volatile uint32_t *)0x40001740)) & 0x7FFFFFFF);
       break;
+#endif      
     default:
       break;
   }
@@ -366,13 +424,19 @@ configure_phy(osf_phy_conf_t *phy, uint8_t len, uint8_t statlen)
     case PHY_BLE_1M:
       NRF_RADIO->SHORTS |= RADIO_SHORTS_END_DISABLE_Msk;
       break;
+#if NRF52840_WITH_CODED_PHY
     case PHY_BLE_500K:
     case PHY_BLE_125K:
+#endif
+#if NRF52840_WITH_IEEE_PHY
     case PHY_IEEE:
+#endif
+#if (NRF52840_WITH_IEEE_PHY || NRF52840_WITH_CODED_PHY)
       NRF_RADIO->SHORTS |= RADIO_SHORTS_PHYEND_DISABLE_Msk;
       /* For BLE LR and IEEE only center frequency is valid */
       NRF_RADIO->MODECNF0 |= (RADIO_MODECNF0_DTX_Center << RADIO_MODECNF0_DTX_Pos);
       break;
+#endif
     default:
       LOG_ERR("Unknown PHY configuration (%u)!\n", phy->mode);
       break;
@@ -383,7 +447,9 @@ configure_phy(osf_phy_conf_t *phy, uint8_t len, uint8_t statlen)
   phy->conf->s1len = (!statlen && OSF_PACKET_WITH_S1) ? 1 : 0;
   phy->conf->statlen = (!statlen) ? 0 : len;
   phy->conf->maxlen = (!statlen) ? OSF_MAXLEN(phy->mode) : len;
+#if defined(RADIO_PCNF0_CRCINC_Msk)
   phy->conf->crcinc = (!statlen && phy->mode == PHY_IEEE) ? RADIO_PCNF0_CRCINC_Include : RADIO_PCNF0_CRCINC_Exclude;
+#endif
   /* For statlen our payload air ticks can be our actual length */
   if(!statlen) {
     if(phy->mode != PHY_IEEE) {
@@ -393,7 +459,9 @@ configure_phy(osf_phy_conf_t *phy, uint8_t len, uint8_t statlen)
       osf_buf_phy->ble.s1 = 1;
 #endif
     } else {
+#if defined(RADIO_PCNF0_CRCINC_Msk)
       phy->conf->crcinc = RADIO_PCNF0_CRCINC_Include;
+#endif
       osf_buf_phy->ieee.len = len + phy->crclen;
     }
   }
@@ -449,7 +517,9 @@ configure_address(osf_phy_conf_t *conf, uint8_t addr)
   } else {
     // TODO: What do we actually do for IEEE?
     // NRF_RADIO->SFD = 0xA7UL; // default SFD for 802.15.4, no need to set it explicitly
+#if NRF52840_WITH_IEEE_PHY
     NRF_RADIO->SFD = 0xAEUL; // custom SFD for 802.15.4
+#endif
   }
 }
 
@@ -462,12 +532,16 @@ my_radio_get_phy_conf(uint8_t mode)
       return &osf_phy_conf_2M;
     case PHY_BLE_1M:
       return &osf_phy_conf_1M;
+#if NRF52840_WITH_CODED_PHY
     case PHY_BLE_500K:
       return &osf_phy_conf_500K;
     case PHY_BLE_125K:
       return &osf_phy_conf_125K;
+#endif
+#if NRF52840_WITH_IEEE_PHY
     case PHY_IEEE:
       return &osf_phy_conf_802154;
+#endif
     default:
       LOG_ERR("Unknown PHY configuration!\n");
       return NULL;
@@ -686,8 +760,10 @@ my_radio_off_completely()
   NRF_RADIO->EVENTS_ADDRESS = 0UL;
   NRF_RADIO->EVENTS_PAYLOAD = 0UL;
   NRF_RADIO->EVENTS_READY = 0UL;
+#if NRF52840_WITH_IEEE_PHY /* Check if those are really tied to*/
   NRF_RADIO->EVENTS_FRAMESTART = 0UL;
   NRF_RADIO->EVENTS_PHYEND = 0UL;
+#endif
   NRF_RADIO->EVENTS_CRCOK = 0UL;
   NRF_RADIO->EVENTS_CRCERROR = 0UL;
 
@@ -742,8 +818,10 @@ my_radio_off_to_tx()
   NRF_RADIO->EVENTS_END = 0UL;
   NRF_RADIO->EVENTS_ADDRESS = 0UL;
   NRF_RADIO->EVENTS_READY = 0UL;
+#if NRF52840_WITH_IEEE_PHY /* Check if those are really tied to*/
   NRF_RADIO->EVENTS_FRAMESTART = 0UL;
   NRF_RADIO->EVENTS_PHYEND = 0UL;
+#endif
   NRF_RADIO->EVENTS_CRCOK = 0UL;
   NRF_RADIO->EVENTS_CRCERROR = 0UL;
 
@@ -822,8 +900,10 @@ my_radio_off_to_rx()
   NRF_RADIO->EVENTS_ADDRESS = 0UL;
   NRF_RADIO->EVENTS_PAYLOAD = 0UL;
   NRF_RADIO->EVENTS_READY = 0UL;
+#if NRF52840_WITH_IEEE_PHY /* Check if those are really tied to*/
   NRF_RADIO->EVENTS_FRAMESTART = 0UL;
   NRF_RADIO->EVENTS_PHYEND = 0UL;
+#endif
 
 #if OSF_DEBUG_GPIO
 #if RADIO_TXEN_PIN
@@ -860,7 +940,10 @@ print_radio_config()
   LOG_DBG("MCU.PACKAGE                : 0x%lX\n", NRF_FICR->INFO.PACKAGE);
   LOG_DBG("MCU.RAM : 0x%lX, MCU.FLASH : 0x%lX\n", NRF_FICR->INFO.RAM, NRF_FICR->INFO.FLASH);
 
+#if (defined(NRF52840_XXAA) || defined(NRF52833_XXAA))
   LOG_DBG("NRF_POWER->MAINREGSTATUS   : 0x%08lX\n", NRF_POWER->MAINREGSTATUS);
+#endif
+
   LOG_DBG("NRF_POWER->RESETREAS       : 0x%08lX\n", NRF_POWER->RESETREAS);
   if(NRF_POWER->RESETREAS & 0x00000001) {
     LOG_WARN("- Reset from pin-reset detected !\n");
@@ -876,12 +959,18 @@ print_radio_config()
   }
   NRF_POWER->RESETREAS = 0xFFFFFFFF;
   LOG_DBG("NRF_POWER->POFCON       : 0x%08lX\n", NRF_POWER->POFCON);
+
+#if (defined(NRF52840_XXAA) || defined(NRF52833_XXAA))
   LOG_DBG("NRF_POWER->USBREGSTATUS : 0x%08lX\n", NRF_POWER->USBREGSTATUS);
+#endif
 
   LOG_DBG("NRF_CLOCK->LFCLKSRC     : 0x%08lX\n", NRF_CLOCK->LFCLKSRC);
   LOG_DBG("NRF_CLOCK->LFCLKSTAT    : 0x%08lX\n", NRF_CLOCK->LFCLKSTAT);
   LOG_DBG("NRF_CLOCK->HFCLKSTAT    : 0x%08lX\n", NRF_CLOCK->HFCLKSTAT);
-  // LOG_DBG("NRF_CLOCK->LFRCMODE     : 0x%08lX\n", NRF_CLOCK->LFRCMODE);  // nrf52833 Port: commented out to avoid compile error, not needed
+
+#ifdef NRF52840_XXAA
+  LOG_DBG("NRF_CLOCK->LFRCMODE     : 0x%08lX\n", NRF_CLOCK->LFRCMODE);  // nrf52833 Port: commented out to avoid compile error, not needed
+#endif
 
   LOG_DBG("NRF_WDT->RUNSTATUS      : 0x%08lX\n", NRF_WDT->RUNSTATUS);
   LOG_DBG("NRF_WDT->CRV            : 0x%08lX\n", NRF_WDT->CRV);
@@ -907,7 +996,9 @@ print_radio_config()
   LOG_DBG("NRF_RADIO->BASE0        : 0x%08lX\n", NRF_RADIO->BASE0);
   LOG_DBG("NRF_RADIO->TXADDRESS    : 0x%08lX\n", NRF_RADIO->TXADDRESS);
   LOG_DBG("NRF_RADIO->RXADDRESSES  : 0x%08lX\n", NRF_RADIO->RXADDRESSES);
+#if NRF52840_WITH_IEEE_PHY
   LOG_DBG("NRF_RADIO->SFD          : 0x%08lX\n", NRF_RADIO->SFD);
+#endif
   LOG_DBG("NRF_RADIO->TIFS         : 0x%08lX\n", NRF_RADIO->TIFS);
   LOG_DBG("NRF_RADIO->INTENSET     : 0x%08lX\n", NRF_RADIO->INTENSET);
 

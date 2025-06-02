@@ -1,0 +1,2 @@
+CONTIKI_TARGET_DIRS += dwm1001
+CONTIKI_TARGET_SOURCEFILES += board-leds.c board-buttons.c dwm1001-sensors.c 
