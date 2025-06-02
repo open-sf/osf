@@ -112,7 +112,7 @@ def generate_package(board: str, target: str):
     pkg_name = f"netloc_{manifest['image']['board']}_{app_version}"
     logger.info(f"Generating package: {pkg_name}.zip")
 
-    build_path = path.join("examples", "osf-flock", "build", f"{target}", f"{board}")
+    build_path = path.join("examples", "osf", "build", f"{target}", f"{board}")
     
     file_paths = []
     file_paths.append(path.join(build_path, f"node.elf"))
