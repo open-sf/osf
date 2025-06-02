@@ -16,7 +16,8 @@ jobs:
             # dwm1001,
             # dwm3001cdk, 
             # bluebite,
-            uwpcie,
+            # uwpcie,
+            dk,
             # dc10",
           ]
       fail-fast: false  # Ensures all matrix jobs run even if one fails
@@ -64,12 +65,6 @@ jobs:
 
         #if CONTIKI_TARGET_NRF52840
         const struct id_mac deployment_nulltb[] = {
-            /* AD nodes */
-            {1, {{0xf4, 0xce, 0x36, 0xA5, 0xA4, 0x84, 0x99, 0x7A}}},
-            {2, {{0xf4, 0xce, 0x36, 0xA5, 0xA4, 0x84, 0x99, 0x71}}},
-            {3, {{0xf4, 0xce, 0x36, 0xA5, 0xA4, 0x84, 0x99, 0x7F}}},
-            {4, {{0xf4, 0xce, 0x36, 0xA5, 0xA4, 0x84, 0x99, 0x7B}}},
-            {5, {{0xf4, 0xce, 0x36, 0xA5, 0xA4, 0x84, 0x99, 0x7D}}},
             {0, {{0}}}};
         #else
         #warning "WARN: Unknown DEPLOYMENT target"

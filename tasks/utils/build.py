@@ -11,16 +11,16 @@ def build_project(board: str, target: str):
     # Clean build directory
     t = subprocess.run(
         ["make", "clean", f"TARGET={target}"],
-        cwd="examples/osf-flock"
+        cwd="examples/osf"
     )
 
-    # Compile app
+    # Compile app for STA
     t = subprocess.run(
         [
             "make", "-j16", "node", f"TARGET={target}", f"BOARD={board}",
-            "DEPLOYMENT=nulltb", "PERIOD=1000", "CHN=1", "LOGGING=0", "GPIO=0", "LEDS=1", "NTX=6", "NSLOTS=6", "PWR=ZerodBm", "PROTO=OSF_PROTO_STT"
+            "DEPLOYMENT=nulltb", "PERIOD=1000", "CHN=1", "LOGGING=0", "GPIO=0", "LEDS=1", "NTX=6", "NSLOTS=6", "PWR=ZerodBm", "PROTO=OSF_PROTO_STA"
         ],
-        cwd="examples/osf-flock"
+        cwd="examples/osf"
     )
 
     if t.returncode != 0:
@@ -29,14 +29,14 @@ def build_project(board: str, target: str):
     # Show build output
     t = subprocess.run(
         ["tree", "-L", "4"],
-        cwd="examples/osf-flock",
+        cwd="examples/osf",
         capture_output=False
     )
 
     # # Generate hex file from .elf
     # t = subprocess.run(
     #     ["arm-none-eabi-objcopy", "-O", "ihex", f"build/{target}/{board}/node.elf", f"build/nrf/{board}/node.hex"],
-    #     cwd="examples/osf-flock",
+    #     cwd="examples/osf",
     # )
 
     # if t.returncode != 0:

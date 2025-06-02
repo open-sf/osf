@@ -36,8 +36,9 @@ DEFAULT_BOARDS = [
     # ("dwm1001", "nrf52832"),
     # ("dwm3001cdk", "nrf52833"),
     # ("bluebite", "nrf52840"),
-    ("uwpcie", "nrf52840"),
+    # ("uwpcie", "nrf52840"),
     # ("dc10", "nrf52840"),
+    ("dk", "nrf52840")
 ]
 
 def _board_to_target(board: str) -> str:
