@@ -19,7 +19,7 @@ def build_project(board: str, target: str):
     t = subprocess.run(
         [
             "make", "-j16", "node", f"TARGET={target}", f"BOARD={board}",
-            "TESTBED=nulltb", "DEPLOYMENT=nulltb", "PERIOD=1000", "CHN=1", "LOGGING=1", "GPIO=1", "LEDS=1", "NTX=6", "NSLOTS=6", "PWR=ZerodBm", "PROTO=OSF_PROTO_STA"
+            "TESTBED=nulltb", "DEPLOYMENT=nulltb", "PERIOD=1000", "CHN=1", "LOGGING=0", "GPIO=0", "LEDS=1", "NTX=6", "NSLOTS=6", "PWR=ZerodBm", "PROTO=OSF_PROTO_STA"
         ],
         cwd="examples/osf"
     )
