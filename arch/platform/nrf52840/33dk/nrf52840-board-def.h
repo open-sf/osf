@@ -32,10 +32,10 @@
  * \addtogroup platform
  * @{
  *
- * \addtogroup nrf52833dk nRF52840 Development Kit
+ * \addtogroup nrf52840dk nRF52840 Development Kit
  * @{
  *
- * \addtogroup nrf52833dk-platform-conf Platform configuration
+ * \addtogroup nrf52840dk-platform-conf Platform configuration
  * @{
  * \file
  *         Platform features configuration.

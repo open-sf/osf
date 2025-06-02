@@ -30,13 +30,10 @@
  */
 /*---------------------------------------------------------------------------*/
 /**
- * \addtogroup dwm1001
+ * \addtogroup dwm1001-devices Device drivers
  * @{
  *
- * \addtogroup dwm1001 Device drivers
- * @{
- *
- * \addtogroup dwm1001 led LED driver
+ * \addtogroup dwm1001-devices-led LED driver
  * @{
  */
 /*---------------------------------------------------------------------------*/
