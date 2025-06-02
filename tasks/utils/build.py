@@ -34,11 +34,11 @@ def build_project(board: str, target: str):
         capture_output=False
     )
 
-    # # Generate hex file from .elf
-    # t = subprocess.run(
-    #     ["arm-none-eabi-objcopy", "-O", "ihex", f"build/{target}/{board}/node.elf", f"build/nrf/{board}/node.hex"],
-    #     cwd="examples/osf",
-    # )
+    # Generate hex file from .elf
+    t = subprocess.run(
+        ["arm-none-eabi-objcopy", "-O", "ihex", f"build/{target}/{board}/node.elf", f"build/nrf/{board}/node.hex"],
+        cwd="examples/osf",
+    )
 
-    # if t.returncode != 0:
-    #     raise Exception(f"Failed to generate hex file for board {board}")
+    if t.returncode != 0:
+        raise Exception(f"Failed to generate hex file for board {board}")
