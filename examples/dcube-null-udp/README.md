@@ -1,3 +1,5 @@
+# D-Cube Null-UDP Usage
+
 TARGET=nrf52840 BOARD=dk TESTBED=nulltb DEPLOYMENT=nulltb WITH_BORDER_ROUTER=1 BR=<my_br_id>
 
 sudo sysctl -w net.ipv6.conf.all.forwarding=1
