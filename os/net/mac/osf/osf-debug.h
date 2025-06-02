@@ -41,10 +41,8 @@
 /*---------------------------------------------------------------------------*/
 /* LEDs */
 /*---------------------------------------------------------------------------*/
-#define TS_LED                          LED_1
-#define ROUND_LED                       LED_2
-#define SYNCED_LED                      LED_3
-#define CRCERR_LED                      LED_4
+/* TODO: split this cleaner -> no more nrf code here! */
+#include "nrf_gpio.h"
 
 #if OSF_DEBUG_LEDS
 #define DEBUG_LEDS_ON(n)                nrf_gpio_pin_clear(n)

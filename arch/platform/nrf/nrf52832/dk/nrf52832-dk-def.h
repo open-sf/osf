@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Yago Fontoura do Rosario <yago.rosario@hotmail.com.br>
+ * Copyright (C) 2021 Yago Fontoura do Rosario <yago.rosario@hotmail.com.br>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,37 +29,52 @@
  */
 /*---------------------------------------------------------------------------*/
 /**
- * \addtogroup nrf
+ * \addtogroup nrf-platforms
+ * @{
+ *
+ * \addtogroup nrf52832-dk
  * @{
  *
  * \file
- *      Header with configuration defines common to all nrf platforms
+ *         nRF52832 DK specific configuration.
  * \author
- *      Yago Fontoura do Rosario <yago.rosario@hotmail.com.br>
+ *         Yago Fontoura do Rosario <yago.rosario@hotmail.com.br>
  */
 /*---------------------------------------------------------------------------*/
-#ifndef NRF_CONF_H_
-#define NRF_CONF_H_
+#ifndef NRF52832_DK_DEF_H
+#define NRF52832_DK_DEF_H
 /*---------------------------------------------------------------------------*/
-/* Include CPU Specific conf */
-#ifdef CPU_CONF_PATH
-#include CPU_CONF_PATH
-#else
-#error "CPU_CONF_PATH undefined"
-#endif /* BOARD_CONF_PATH */
+#define PLATFORM_HAS_BUTTON             1
+#define PLATFORM_SUPPORTS_BUTTON_HAL    1
 /*---------------------------------------------------------------------------*/
-#ifndef NETSTACK_CONF_RADIO
-#define NETSTACK_CONF_RADIO        nrf_radio_driver
-#endif /* NETSTACK_CONF_RADIO */
+#define NRF_BUTTON1_PIN     13
+#define NRF_BUTTON1_PORT    0
+#define NRF_BUTTON2_PIN     14
+#define NRF_BUTTON2_PORT    0
+#define NRF_BUTTON3_PIN     15
+#define NRF_BUTTON3_PORT    0
+#define NRF_BUTTON4_PIN     16
+#define NRF_BUTTON4_PORT    0
 /*---------------------------------------------------------------------------*/
-#ifdef NRF_CONF_HARDFAULT_HANDLER_EXTENDED
-#define NRF_HARDFAULT_HANDLER_EXTENDED NRF_CONF_HARDFAULT_HANDLER_EXTENDED
-#else /* NRF_CONF_HARDFAULT_HANDLER_EXTENDED */
-#define NRF_HARDFAULT_HANDLER_EXTENDED 0
-#endif /* NRF_CONF_HARDFAULT_HANDLER_EXTENDED */
+#define NRF_LED1_PIN        17
+#define NRF_LED1_PORT       0
+#define NRF_LED2_PIN        18
+#define NRF_LED2_PORT       0
+#define NRF_LED3_PIN        19
+#define NRF_LED3_PORT       0
+#define NRF_LED4_PIN        20
+#define NRF_LED4_PORT       0
 /*---------------------------------------------------------------------------*/
-#endif /* NRF_CONF_H_ */
+#define LEDS_CONF_COUNT     4
+/*---------------------------------------------------------------------------*/
+#define NRF_UARTE0_TX_PIN   6
+#define NRF_UARTE0_TX_PORT  0
+#define NRF_UARTE0_RX_PIN   8
+#define NRF_UARTE0_RX_PORT  0
+/*---------------------------------------------------------------------------*/
+#endif /* NRF52832_DK_DEF_H */
 /*---------------------------------------------------------------------------*/
 /** 
+ * @} 
  * @} 
  */

@@ -1,0 +1,26 @@
+include $(CONTIKI_CPU)/Makefile.libs  
+
+LDSCRIPT ?= $(CONTIKI_CPU)/lib/nrfx/mdk/nrf52833_xxaa.ld
+
+CFLAGS += -DNRF52833_XXAA
+
+NRFX_ASM_SRCS += $(NRFX_ROOT)/mdk/gcc_startup_nrf52833.s
+
+NRFX_C_SRCS += $(NRFX_ROOT)/mdk/system_nrf52833.c
+
+EXTERNALDIRS += $(NRFX_ROOT)/mdk/
+
+CFLAGS += -DCPU_CONF_PATH=\"nrf52833-conf.h\"
+CFLAGS += -DCPU_DEF_PATH=\"nrf52833-def.h\"
+
+CFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
+
+LDFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
+
+include $(CONTIKI)/$(CONTIKI_NG_CM4_DIR)/Makefile.cm4
+
+NRF_FALLBACK_RADIO?=0
+NRF_WITH_IEEE_PHY?=1
+NRF_WITH_CODED_PHY?=1
+
+include $(CONTIKI_CPU)/Makefile.nrf

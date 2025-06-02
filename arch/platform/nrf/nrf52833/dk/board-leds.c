@@ -29,37 +29,46 @@
  */
 /*---------------------------------------------------------------------------*/
 /**
- * \addtogroup nrf
+ * \addtogroup nrf-platforms
+ * @{
+ *
+ * \addtogroup nrf52840-dk
  * @{
  *
  * \file
- *      Header with configuration defines common to all nrf platforms
+ *         nRF52840 DK specific LED driver implementation.
  * \author
- *      Yago Fontoura do Rosario <yago.rosario@hotmail.com.br>
+ *         Yago Fontoura do Rosario <yago.rosario@hotmail.com.br>
  */
 /*---------------------------------------------------------------------------*/
-#ifndef NRF_CONF_H_
-#define NRF_CONF_H_
+#include "contiki.h"
+
+#include "dev/leds.h"
 /*---------------------------------------------------------------------------*/
-/* Include CPU Specific conf */
-#ifdef CPU_CONF_PATH
-#include CPU_CONF_PATH
-#else
-#error "CPU_CONF_PATH undefined"
-#endif /* BOARD_CONF_PATH */
+const leds_t leds_arch_leds[] = {
+  {
+    .port = NRF_LED1_PORT,
+    .pin = NRF_LED1_PIN,
+    .negative_logic = true
+  },
+  {
+    .port = NRF_LED2_PORT,
+    .pin = NRF_LED2_PIN,
+    .negative_logic = true
+  },
+  {
+    .port = NRF_LED3_PORT,
+    .pin = NRF_LED3_PIN,
+    .negative_logic = true
+  },
+  {
+    .port = NRF_LED4_PORT,
+    .pin = NRF_LED4_PIN,
+    .negative_logic = true
+  },
+};
 /*---------------------------------------------------------------------------*/
-#ifndef NETSTACK_CONF_RADIO
-#define NETSTACK_CONF_RADIO        nrf_radio_driver
-#endif /* NETSTACK_CONF_RADIO */
-/*---------------------------------------------------------------------------*/
-#ifdef NRF_CONF_HARDFAULT_HANDLER_EXTENDED
-#define NRF_HARDFAULT_HANDLER_EXTENDED NRF_CONF_HARDFAULT_HANDLER_EXTENDED
-#else /* NRF_CONF_HARDFAULT_HANDLER_EXTENDED */
-#define NRF_HARDFAULT_HANDLER_EXTENDED 0
-#endif /* NRF_CONF_HARDFAULT_HANDLER_EXTENDED */
-/*---------------------------------------------------------------------------*/
-#endif /* NRF_CONF_H_ */
-/*---------------------------------------------------------------------------*/
-/** 
- * @} 
+/**
+ * @}
+ * @}
  */

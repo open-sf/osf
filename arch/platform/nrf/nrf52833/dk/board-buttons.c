@@ -29,37 +29,33 @@
  */
 /*---------------------------------------------------------------------------*/
 /**
- * \addtogroup nrf
+ * \addtogroup nrf-platforms
+ * @{
+ *
+ * \addtogroup nrf52840-dk
  * @{
  *
  * \file
- *      Header with configuration defines common to all nrf platforms
+ *         nRF52840 DK specific buttons driver implementation.
  * \author
- *      Yago Fontoura do Rosario <yago.rosario@hotmail.com.br>
+ *         Yago Fontoura do Rosario <yago.rosario@hotmail.com.br>
  */
 /*---------------------------------------------------------------------------*/
-#ifndef NRF_CONF_H_
-#define NRF_CONF_H_
+#include "contiki.h"
+#include "dev/button-hal.h"
 /*---------------------------------------------------------------------------*/
-/* Include CPU Specific conf */
-#ifdef CPU_CONF_PATH
-#include CPU_CONF_PATH
-#else
-#error "CPU_CONF_PATH undefined"
-#endif /* BOARD_CONF_PATH */
+BUTTON_HAL_BUTTON(btn_1, "Button 1", NRF_BUTTON1_PORT, NRF_BUTTON1_PIN, \
+                  GPIO_HAL_PIN_CFG_PULL_UP, BUTTON_HAL_ID_BUTTON_ZERO, true);
+BUTTON_HAL_BUTTON(btn_2, "Button 2", NRF_BUTTON2_PORT, NRF_BUTTON2_PIN, \
+                  GPIO_HAL_PIN_CFG_PULL_UP, BUTTON_HAL_ID_BUTTON_ONE, true);
+BUTTON_HAL_BUTTON(btn_3, "Button 3", NRF_BUTTON3_PORT, NRF_BUTTON3_PIN, \
+                  GPIO_HAL_PIN_CFG_PULL_UP, BUTTON_HAL_ID_BUTTON_TWO, true);
+BUTTON_HAL_BUTTON(btn_4, "Button 4", NRF_BUTTON4_PORT, NRF_BUTTON4_PIN, \
+                  GPIO_HAL_PIN_CFG_PULL_UP, BUTTON_HAL_ID_BUTTON_THREE, true);
 /*---------------------------------------------------------------------------*/
-#ifndef NETSTACK_CONF_RADIO
-#define NETSTACK_CONF_RADIO        nrf_radio_driver
-#endif /* NETSTACK_CONF_RADIO */
-/*---------------------------------------------------------------------------*/
-#ifdef NRF_CONF_HARDFAULT_HANDLER_EXTENDED
-#define NRF_HARDFAULT_HANDLER_EXTENDED NRF_CONF_HARDFAULT_HANDLER_EXTENDED
-#else /* NRF_CONF_HARDFAULT_HANDLER_EXTENDED */
-#define NRF_HARDFAULT_HANDLER_EXTENDED 0
-#endif /* NRF_CONF_HARDFAULT_HANDLER_EXTENDED */
-/*---------------------------------------------------------------------------*/
-#endif /* NRF_CONF_H_ */
+BUTTON_HAL_BUTTONS(&btn_1, &btn_2, &btn_3, &btn_4);
 /*---------------------------------------------------------------------------*/
 /** 
+ * @} 
  * @} 
  */

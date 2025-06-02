@@ -13,12 +13,30 @@ CONTIKI_CPU_SOURCEFILES += dbg-arch.c
 CONTIKI_CPU_SOURCEFILES += gpio-hal-arch.c
 CONTIKI_CPU_SOURCEFILES += int-master-arch.c
 CONTIKI_CPU_SOURCEFILES += random-arch.c
-CONTIKI_CPU_SOURCEFILES += nrf-ieee-driver-arch.c
 CONTIKI_CPU_SOURCEFILES += uarte-arch.c
 CONTIKI_CPU_SOURCEFILES += temp-arch.c
 CONTIKI_CPU_SOURCEFILES += linkaddr-arch.c
 CONTIKI_CPU_SOURCEFILES += reset-arch.c
 CONTIKI_CPU_SOURCEFILES += slip-arch.c
+
+# Infrom the radio stack about the available modes
+ifeq ($(NRF_WITH_IEEE_PHY), 1)
+  CFLAGS += -DNRF_WITH_IEEE_PHY=1
+else
+  CFLAGS += -DNRF_WITH_IEEE_PHY=0
+endif
+
+ifeq ($(NRF_WITH_CODED_PHY), 1)
+  CFLAGS += -DNRF_WITH_CODED_PHY=1
+else
+  CFLAGS += -DNRF_WITH_CODED_PHY=0
+endif
+
+ifeq ($(NRF_FALLBACK_RADIO), 0)
+CONTIKI_CPU_SOURCEFILES += nrf-ieee-driver-arch.c
+else
+CONTIKI_CPU_SOURCEFILES += nrf-esb-driver-arch.c
+endif
 
 # Overrides
 CONTIKI_CPU_SOURCEFILES += random.c

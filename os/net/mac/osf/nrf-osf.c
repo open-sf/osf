@@ -38,7 +38,7 @@
  *         Beshr Al Nahas <beshr@chalmers.se>
  */
 
-#if CONTIKI_TARGET_NRF52840
+#if CONTIKI_TARGET_NRF
 
 #include <inttypes.h>
 
@@ -52,7 +52,7 @@
 #include "nrf_ppi.h"
 #include "nrf_timer.h"
 #include "nrf_clock.h"
-#include "net/mac/osf/nrf52840-osf.h"
+#include "net/mac/osf/nrf-osf.h"
 
 #include "net/mac/osf/osf.h"
 #include "net/mac/osf/osf-packet.h"
@@ -63,7 +63,7 @@
 
 /* Log configuration */
 #include "sys/log.h"
-#define LOG_MODULE "NRF52840-OSF"
+#define LOG_MODULE "NRF-OSF"
 #define LOG_LEVEL LOG_LEVEL_NONE
 
 #define UNUSED(x) (void)(x)
@@ -180,7 +180,7 @@ osf_phy_conf_t osf_phy_conf_1M = {
   0                             // slot_duration
 };
 
-#if NRF52840_WITH_CODED_PHY
+#if NRF_WITH_CODED_PHY
 /*---------------------------------------------------------------------------*/
 // NB: STATLEN only works for 500 when S0=1 or LF=8. This shouldn't be the case.
 //     IF STATLEN is set, then it doesn't appear to read LF. If STATLEN is
@@ -278,7 +278,7 @@ osf_phy_conf_t osf_phy_conf_125K = {
 };
 #endif
 
-#if NRF52840_WITH_IEEE_PHY
+#if NRF_WITH_IEEE_PHY
 /*---------------------------------------------------------------------------*/
 static nrf_radio_packet_conf_t nrf_phy_conf_802154 = {
   0, // lflen
@@ -394,7 +394,7 @@ configure_errata(osf_phy_conf_t *conf) {
       /* [191] */
       *(volatile uint32_t *)0x40001740 = ((*((volatile uint32_t *)0x40001740)) & 0x7FFFFFFFUL);
       break;
-#if NRF52840_WITH_CODED_PHY
+#if NRF_WITH_CODED_PHY
     case PHY_BLE_500K:
     case PHY_BLE_125K:
       /* [164] */
@@ -404,7 +404,7 @@ configure_errata(osf_phy_conf_t *conf) {
       *(volatile uint32_t *)0x40001740 = ((*((volatile uint32_t *)0x40001740)) & 0x7FFF00FF) |  0x80000000 | (((uint32_t)(196)) << 8);
       break;
 #endif
-#if NRF52840_WITH_IEEE_PHY
+#if NRF_WITH_IEEE_PHY
     case PHY_IEEE:
       /* [191] */
       *(volatile uint32_t *)0x40001740 = ((*((volatile uint32_t *)0x40001740)) & 0x7FFFFFFF);
@@ -426,14 +426,14 @@ configure_phy(osf_phy_conf_t *phy, uint8_t len, uint8_t statlen)
     case PHY_BLE_1M:
       NRF_RADIO->SHORTS |= RADIO_SHORTS_END_DISABLE_Msk;
       break;
-#if NRF52840_WITH_CODED_PHY
+#if NRF_WITH_CODED_PHY
     case PHY_BLE_500K:
     case PHY_BLE_125K:
 #endif
-#if NRF52840_WITH_IEEE_PHY
+#if NRF_WITH_IEEE_PHY
     case PHY_IEEE:
 #endif
-#if (NRF52840_WITH_IEEE_PHY || NRF52840_WITH_CODED_PHY)
+#if (NRF_WITH_IEEE_PHY || NRF_WITH_CODED_PHY)
       NRF_RADIO->SHORTS |= RADIO_SHORTS_PHYEND_DISABLE_Msk;
       /* For BLE LR and IEEE only center frequency is valid */
       NRF_RADIO->MODECNF0 |= (RADIO_MODECNF0_DTX_Center << RADIO_MODECNF0_DTX_Pos);
@@ -475,9 +475,9 @@ configure_phy(osf_phy_conf_t *phy, uint8_t len, uint8_t statlen)
                           + phy->footer_air_ticks;
   phy->slot_duration = phy->packet_air_ticks + OSF_TIFS_TICKS;
   /* Configure CRC */
-  nrf_radio_packet_configure(phy->conf);
-  nrf_radio_crc_configure(phy->crclen, phy->crcaddr, phy->crcpoly);
-  nrf_radio_crcinit_set(phy->crcinit);
+  nrf_radio_packet_configure(NRF_RADIO, phy->conf);
+  nrf_radio_crc_configure(NRF_RADIO, phy->crclen, phy->crcaddr, phy->crcpoly);
+  nrf_radio_crcinit_set(NRF_RADIO, phy->crcinit);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -519,7 +519,7 @@ configure_address(osf_phy_conf_t *conf, uint8_t addr)
   } else {
     // TODO: What do we actually do for IEEE?
     // NRF_RADIO->SFD = 0xA7UL; // default SFD for 802.15.4, no need to set it explicitly
-#if NRF52840_WITH_IEEE_PHY
+#if NRF_WITH_IEEE_PHY
     NRF_RADIO->SFD = 0xAEUL; // custom SFD for 802.15.4
 #endif
   }
@@ -534,13 +534,13 @@ my_radio_get_phy_conf(uint8_t mode)
       return &osf_phy_conf_2M;
     case PHY_BLE_1M:
       return &osf_phy_conf_1M;
-#if NRF52840_WITH_CODED_PHY
+#if NRF_WITH_CODED_PHY
     case PHY_BLE_500K:
       return &osf_phy_conf_500K;
     case PHY_BLE_125K:
       return &osf_phy_conf_125K;
 #endif
-#if NRF52840_WITH_IEEE_PHY
+#if NRF_WITH_IEEE_PHY
     case PHY_IEEE:
       return &osf_phy_conf_802154;
 #endif
@@ -617,7 +617,7 @@ my_radio_init(osf_phy_conf_t *phy_conf, void *my_tx_buffer, uint8_t len, uint8_t
 
   /* Disable and clear all interrupts */
   NVIC_DisableIRQ(RADIO_IRQn);
-  nrf_radio_int_disable(0xFFFFFFFF);
+  nrf_radio_int_disable(NRF_RADIO, 0xFFFFFFFF);
   NVIC_ClearPendingIRQ(RADIO_IRQn);
   NVIC_SetPriority(RADIO_IRQn, 0);
 
@@ -728,7 +728,7 @@ schedule_tx_abs(uint8_t *buf, uint8_t channel, rtimer_clock_t t_abs)
     NRF_RADIO->PACKETPTR = (uint32_t)buf;
     r = RTIMER_OK;
 
-    nrf_radio_int_enable(RADIO_INTENSET_READY_Msk | RADIO_INTENSET_END_Msk | RADIO_INTENSET_ADDRESS_Msk);
+    nrf_radio_int_enable(NRF_RADIO, RADIO_INTENSET_READY_Msk | RADIO_INTENSET_END_Msk | RADIO_INTENSET_ADDRESS_Msk);
     NVIC_EnableIRQ(RADIO_IRQn);
   }
 
@@ -740,7 +740,7 @@ my_radio_off_completely()
 {
   /* Disable RADIO_IRQ */
   NVIC_DisableIRQ(RADIO_IRQn);
-  nrf_radio_int_disable(0xFFFFFFFF);
+  nrf_radio_int_disable(NRF_RADIO, 0xFFFFFFFF);
   NVIC_ClearPendingIRQ(RADIO_IRQn);
 
   /* Disable scheduled TX/RX */
@@ -762,7 +762,7 @@ my_radio_off_completely()
   NRF_RADIO->EVENTS_ADDRESS = 0UL;
   NRF_RADIO->EVENTS_PAYLOAD = 0UL;
   NRF_RADIO->EVENTS_READY = 0UL;
-#if NRF52840_WITH_IEEE_PHY /* Check if those are really tied to*/
+#if NRF_WITH_IEEE_PHY /* Check if those are really tied to*/
   NRF_RADIO->EVENTS_FRAMESTART = 0UL;
   NRF_RADIO->EVENTS_PHYEND = 0UL;
 #endif
@@ -790,7 +790,7 @@ my_radio_off_to_tx()
 {
   /* Disable and clear all interrupts */
   NVIC_DisableIRQ(RADIO_IRQn);
-  nrf_radio_int_disable(0xFFFFFFFF);
+  nrf_radio_int_disable(NRF_RADIO, 0xFFFFFFFF);
   NVIC_ClearPendingIRQ(RADIO_IRQn);
 
   /* Enable scheduled TX : TimerX-compare[0] -> TxEn */
@@ -820,7 +820,7 @@ my_radio_off_to_tx()
   NRF_RADIO->EVENTS_END = 0UL;
   NRF_RADIO->EVENTS_ADDRESS = 0UL;
   NRF_RADIO->EVENTS_READY = 0UL;
-#if NRF52840_WITH_IEEE_PHY /* Check if those are really tied to*/
+#if NRF_WITH_IEEE_PHY /* Check if those are really tied to*/
   NRF_RADIO->EVENTS_FRAMESTART = 0UL;
   NRF_RADIO->EVENTS_PHYEND = 0UL;
 #endif
@@ -858,7 +858,7 @@ schedule_rx_abs(uint8_t *buf, uint8_t channel, rtimer_clock_t t_abs)
     NRF_RADIO->PACKETPTR = (uint32_t)buf;
     r = RTIMER_OK;
 
-    nrf_radio_int_enable(RADIO_INTENSET_READY_Msk | RADIO_INTENSET_END_Msk | RADIO_INTENSET_ADDRESS_Msk);
+    nrf_radio_int_enable(NRF_RADIO, RADIO_INTENSET_READY_Msk | RADIO_INTENSET_END_Msk | RADIO_INTENSET_ADDRESS_Msk);
     NVIC_EnableIRQ(RADIO_IRQn);
   }
 
@@ -883,7 +883,7 @@ my_radio_off_to_rx()
 {
   /* Disable and clear all interrupts */
   NVIC_DisableIRQ(RADIO_IRQn);
-  nrf_radio_int_disable(0xFFFFFFFF);
+  nrf_radio_int_disable(NRF_RADIO, 0xFFFFFFFF);
   NVIC_ClearPendingIRQ(RADIO_IRQn);
 
   /* Enable scheduled RX */
@@ -902,7 +902,7 @@ my_radio_off_to_rx()
   NRF_RADIO->EVENTS_ADDRESS = 0UL;
   NRF_RADIO->EVENTS_PAYLOAD = 0UL;
   NRF_RADIO->EVENTS_READY = 0UL;
-#if NRF52840_WITH_IEEE_PHY /* Check if those are really tied to*/
+#if NRF_WITH_IEEE_PHY /* Check if those are really tied to*/
   NRF_RADIO->EVENTS_FRAMESTART = 0UL;
   NRF_RADIO->EVENTS_PHYEND = 0UL;
 #endif
@@ -998,7 +998,7 @@ print_radio_config()
   LOG_DBG("NRF_RADIO->BASE0        : 0x%08lX\n", NRF_RADIO->BASE0);
   LOG_DBG("NRF_RADIO->TXADDRESS    : 0x%08lX\n", NRF_RADIO->TXADDRESS);
   LOG_DBG("NRF_RADIO->RXADDRESSES  : 0x%08lX\n", NRF_RADIO->RXADDRESSES);
-#if NRF52840_WITH_IEEE_PHY
+#if NRF_WITH_IEEE_PHY
   LOG_DBG("NRF_RADIO->SFD          : 0x%08lX\n", NRF_RADIO->SFD);
 #endif
   LOG_DBG("NRF_RADIO->TIFS         : 0x%08lX\n", NRF_RADIO->TIFS);
@@ -1011,20 +1011,22 @@ print_radio_config()
   LOG_DBG("0x40001740              : 0x%08lX\n", *(volatile uint32_t *)0x40001740);
 }
 
-void nrf52840_hal_start() {
+void
+nrf_hal_start() {
   NVIC_DisableIRQ(RADIO_IRQn);
-  nrf_radio_int_disable(0xFFFFFFFF);
+  nrf_radio_int_disable(NRF_RADIO, 0xFFFFFFFF);
   NVIC_ClearPendingIRQ(RADIO_IRQn);
   OSF_RADIO_IRQ_REGISTER_HANDLER(RADIO_IRQHandler_callback);
 }
 
-void nrf52840_hal_stop() {
+void
+nrf_hal_stop() {
     /* Free the handler for other MACs */
   // FIXME: Radio stuff should really not go here
   NVIC_DisableIRQ(RADIO_IRQn);
-  nrf_radio_int_disable(0xFFFFFFFF);
+  nrf_radio_int_disable(NRF_RADIO, 0xFFFFFFFF);
   NVIC_ClearPendingIRQ(RADIO_IRQn);
   OSF_RADIO_IRQ_REGISTER_HANDLER(NULL);
 }
 
-#endif /* CONTIKI_TARGET_NRF52840 */
+#endif /* CONTIKI_TARGET_NRF */

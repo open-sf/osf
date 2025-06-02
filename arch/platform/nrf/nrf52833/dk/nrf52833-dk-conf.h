@@ -29,37 +29,32 @@
  */
 /*---------------------------------------------------------------------------*/
 /**
- * \addtogroup nrf
+ * \addtogroup nrf-platforms
+ * @{
+ *
+ * \addtogroup nrf52833-dk
  * @{
  *
  * \file
- *      Header with configuration defines common to all nrf platforms
+ *         nRF52833 DK specific configuration.
  * \author
- *      Yago Fontoura do Rosario <yago.rosario@hotmail.com.br>
+ *         Yago Fontoura do Rosario <yago.rosario@hotmail.com.br>
  */
 /*---------------------------------------------------------------------------*/
-#ifndef NRF_CONF_H_
-#define NRF_CONF_H_
+#ifndef NRF52833_DK_CONF_H
+#define NRF52833_DK_CONF_H
 /*---------------------------------------------------------------------------*/
-/* Include CPU Specific conf */
-#ifdef CPU_CONF_PATH
-#include CPU_CONF_PATH
-#else
-#error "CPU_CONF_PATH undefined"
-#endif /* BOARD_CONF_PATH */
+#ifndef PLAFTORM_SLIP_ARCH_CONF_USB
+#define PLAFTORM_SLIP_ARCH_CONF_USB 0
+#endif
 /*---------------------------------------------------------------------------*/
-#ifndef NETSTACK_CONF_RADIO
-#define NETSTACK_CONF_RADIO        nrf_radio_driver
-#endif /* NETSTACK_CONF_RADIO */
+#ifndef PLATFORM_DBG_CONF_USB
+#define PLATFORM_DBG_CONF_USB   0
+#endif
 /*---------------------------------------------------------------------------*/
-#ifdef NRF_CONF_HARDFAULT_HANDLER_EXTENDED
-#define NRF_HARDFAULT_HANDLER_EXTENDED NRF_CONF_HARDFAULT_HANDLER_EXTENDED
-#else /* NRF_CONF_HARDFAULT_HANDLER_EXTENDED */
-#define NRF_HARDFAULT_HANDLER_EXTENDED 0
-#endif /* NRF_CONF_HARDFAULT_HANDLER_EXTENDED */
-/*---------------------------------------------------------------------------*/
-#endif /* NRF_CONF_H_ */
+#endif /* NRF52833_DK_CONF_H */
 /*---------------------------------------------------------------------------*/
 /** 
+ * @} 
  * @} 
  */

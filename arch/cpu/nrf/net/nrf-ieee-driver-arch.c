@@ -61,6 +61,8 @@
 #include <string.h>
 #include <math.h>
 
+#include "nrf-radio-driver.h"
+
 #include "nrf.h"
 
 /* Only compile the below if NRF_RADIO exists */
@@ -999,7 +1001,7 @@ set_object(radio_param_t param, const void *src, size_t size)
   return RADIO_RESULT_NOT_SUPPORTED;
 }
 /*---------------------------------------------------------------------------*/
-const struct radio_driver nrf_ieee_driver = {
+const struct radio_driver nrf_radio_driver = {
   init,
   prepare,
   transmit,
@@ -1048,18 +1050,30 @@ PROCESS_THREAD(nrf_ieee_rf_process, ev, data)
   PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
+static nrf_radioirq_callback_t irq_handler = (nrf_radioirq_callback_t) NULL;
+/*---------------------------------------------------------------------------*/
+void
+nrf_radioirq_register_handler(nrf_radioirq_callback_t handler)
+{
+  irq_handler = handler;
+}
+/*---------------------------------------------------------------------------*/
 void
 RADIO_IRQHandler(void)
 {
-  if(!rf_config.poll_mode) {
-    if(nrf_radio_event_check(NRF_RADIO, NRF_RADIO_EVENT_CRCOK)) {
-      nrf_radio_event_clear(NRF_RADIO, NRF_RADIO_EVENT_CRCOK);
-      rx_buf.full = true;
-      process_poll(&nrf_ieee_rf_process);
-    } else if(nrf_radio_event_check(NRF_RADIO, NRF_RADIO_EVENT_CRCERROR)) {
-      nrf_radio_event_clear(NRF_RADIO, NRF_RADIO_EVENT_CRCERROR);
-      rx_buf_clear();
-      enter_rx();
+  if(irq_handler) {
+    irq_handler();
+  } else {
+    if(!rf_config.poll_mode) {
+      if(nrf_radio_event_check(NRF_RADIO, NRF_RADIO_EVENT_CRCOK)) {
+        nrf_radio_event_clear(NRF_RADIO, NRF_RADIO_EVENT_CRCOK);
+        rx_buf.full = true;
+        process_poll(&nrf_ieee_rf_process);
+      } else if(nrf_radio_event_check(NRF_RADIO, NRF_RADIO_EVENT_CRCERROR)) {
+        nrf_radio_event_clear(NRF_RADIO, NRF_RADIO_EVENT_CRCERROR);
+        rx_buf_clear();
+        enter_rx();
+      }
     }
   }
 }

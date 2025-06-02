@@ -32,34 +32,21 @@
  * \addtogroup nrf
  * @{
  *
+ * \addtogroup nrf-52832 nRF52832
+ * @{
+ *
  * \file
- *      Header with configuration defines common to all nrf platforms
+ *      Header with configuration defines to nrf 52832
  * \author
  *      Yago Fontoura do Rosario <yago.rosario@hotmail.com.br>
  */
 /*---------------------------------------------------------------------------*/
-#ifndef NRF_CONF_H_
-#define NRF_CONF_H_
+#ifndef NRF52832_CONF_H_
+#define NRF52832_CONF_H_
 /*---------------------------------------------------------------------------*/
-/* Include CPU Specific conf */
-#ifdef CPU_CONF_PATH
-#include CPU_CONF_PATH
-#else
-#error "CPU_CONF_PATH undefined"
-#endif /* BOARD_CONF_PATH */
-/*---------------------------------------------------------------------------*/
-#ifndef NETSTACK_CONF_RADIO
-#define NETSTACK_CONF_RADIO        nrf_radio_driver
-#endif /* NETSTACK_CONF_RADIO */
-/*---------------------------------------------------------------------------*/
-#ifdef NRF_CONF_HARDFAULT_HANDLER_EXTENDED
-#define NRF_HARDFAULT_HANDLER_EXTENDED NRF_CONF_HARDFAULT_HANDLER_EXTENDED
-#else /* NRF_CONF_HARDFAULT_HANDLER_EXTENDED */
-#define NRF_HARDFAULT_HANDLER_EXTENDED 0
-#endif /* NRF_CONF_HARDFAULT_HANDLER_EXTENDED */
-/*---------------------------------------------------------------------------*/
-#endif /* NRF_CONF_H_ */
+#endif /* NRF52832_CONF_H_ */
 /*---------------------------------------------------------------------------*/
 /** 
+ * @} 
  * @} 
  */

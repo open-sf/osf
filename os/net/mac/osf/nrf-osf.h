@@ -37,7 +37,7 @@
  *         Yevgen Gyl <yevgen.gyl@unikie.com>
  *         Beshr Al Nahas <beshr@chalmers.se>
  */
-#if CONTIKI_TARGET_NRF52840
+#if CONTIKI_TARGET_NRF
 
 #ifndef _NRF_RADIO_DRIVER_H_
 #define _NRF_RADIO_DRIVER_H_
@@ -45,22 +45,22 @@
 #include "contiki.h"
 #include "nrf_radio.h"
 #include "net/mac/osf/osf-timer.h"
-#include "nrf52840-ieee.h"
+#include "nrf-radio-driver.h"
 
 /*---------------------------------------------------------------------------*/
 /* HAL split */
 /*---------------------------------------------------------------------------*/
-#define OSF_RADIO_IRQ_REGISTER_HANDLER nrf52840_radioirq_register_handler
-#define OSF_RADIO_HAL_START nrf52840_hal_start
-#define OSF_RADIO_HAL_STOP nrf52840_hal_stop
+#define OSF_RADIO_IRQ_REGISTER_HANDLER nrf_radioirq_register_handler
+#define OSF_RADIO_HAL_START nrf_hal_start
+#define OSF_RADIO_HAL_STOP nrf_hal_stop
 
-void nrf52840_hal_start();
-void nrf52840_hal_stop();
+void nrf_hal_start();
+void nrf_hal_stop();
 
-#define TS_LED                          LED_1
-#define ROUND_LED                       LED_2
-#define SYNCED_LED                      LED_3
-#define CRCERR_LED                      LED_4
+#define TS_LED                          NRF_GPIO_PIN_MAP(NRF_LED1_PORT,NRF_LED1_PIN)
+#define ROUND_LED                       NRF_GPIO_PIN_MAP(NRF_LED2_PORT,NRF_LED2_PIN)
+#define SYNCED_LED                      NRF_GPIO_PIN_MAP(NRF_LED3_PORT,NRF_LED3_PIN)
+#define CRCERR_LED                      NRF_GPIO_PIN_MAP(NRF_LED4_PORT,NRF_LED4_PIN)
 
 /*---------------------------------------------------------------------------*/
 /* TX POWER */
@@ -122,14 +122,14 @@ void nrf52840_hal_stop();
 #define PHY_BLE_1M                RADIO_MODE_MODE_Ble_1Mbit          // 3
 #define PHY_BLE_2M                RADIO_MODE_MODE_Ble_2Mbit          // 4
 
-#if NRF52840_WITH_CODED_PHY
+#if NRF_WITH_CODED_PHY
 #define PHY_BLE_500K              RADIO_MODE_MODE_Ble_LR500Kbit      // 5
 #define PHY_BLE_125K              RADIO_MODE_MODE_Ble_LR125Kbit      // 6
 #else
 #define PHY_BLE_500K              (PHY_NRF_UNSUPPORTED+5UL)
 #define PHY_BLE_125K              (PHY_NRF_UNSUPPORTED+6UL)
 #endif
-#if NRF52840_WITH_IEEE_PHY
+#if NRF_WITH_IEEE_PHY
 #define PHY_IEEE                  RADIO_MODE_MODE_Ieee802154_250Kbit // 15
 #else
 
@@ -223,4 +223,4 @@ void my_radio_set_maxlen(uint8_t maxlen);
 
 #endif /* _NRF_RADIO_DRIVER_H_ */
 
-#endif /* CONTIKI_TARGET_NRF52840 */
+#endif /* CONTIKI_TARGET_NRF */
