@@ -327,7 +327,8 @@ schedule_ch_timeout(rtimer_clock_t now)
     n_ch_timeouts++;
     /* Print so we know we are still alive */
     if(n_ch_timeouts && !(n_ch_timeouts % 20)) {
-      LOG_INFO("{%u|syn-%-4u} <3\n", node_id, n_ch_timeouts);
+      osf_log_s("INFO","<3\n");
+      process_poll(&osf_log_process);
     }
   /* If we are synced, we want to try and hop with the initiator(s) */
   } else {
@@ -856,9 +857,7 @@ PROCESS_THREAD(osf_post_epoch_process, ev, ev_data)
 
     /* Print logs */
 #if OSF_LOGGING
-    osf_buf_log_print();
-    osf_log_print();
-    osf_buf_log_init();
+    process_poll(&osf_log_process);
 #endif
 
     /* One more check if data in buffer */
@@ -1125,6 +1124,8 @@ osf_on()
   process_start(&osf_post_round_process, NULL);
   /* Start the post epoch process (e.g., for logging)*/
   process_start(&osf_post_epoch_process, NULL);
+  /* Start the OSF log process */
+  process_start(&osf_log_process, NULL);
   /* Set time for first round to start */
   osf.t_epoch_ref = RTIMERX_NOW();
   /* Schedule the first epoch (will continute running in an ISR context
