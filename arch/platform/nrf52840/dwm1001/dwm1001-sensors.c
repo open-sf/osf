@@ -53,5 +53,4 @@ SENSORS(&temperature_sensor);
 /**
  * @}
  * @}
- * @}
  */

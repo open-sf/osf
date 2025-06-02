@@ -71,5 +71,4 @@ const leds_t leds_arch_leds[] = {
 /**
  * @}
  * @}
- * @}
  */
