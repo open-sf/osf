@@ -117,7 +117,7 @@ def generate_package(board: str, target: str):
     file_paths = []
     file_paths.append(path.join(build_path, f"node.elf"))
     file_paths.append(path.join(build_path, f"node.hex"))
-    file_paths.append(path.join(build_path, f"node.bin"))
+    # file_paths.append(path.join(build_path, f"node.bin"))
     file_paths.append(path.join(build_path, f"node.{target}"))
 
     manifest["image"]["hex_path"] = "node.hex"

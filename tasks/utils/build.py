@@ -36,7 +36,7 @@ def build_project(board: str, target: str):
 
     # Generate hex file from .elf
     t = subprocess.run(
-        ["arm-none-eabi-objcopy", "-O", "ihex", f"build/{target}/{board}/node.elf", f"build/nrf/{board}/node.hex"],
+        ["arm-none-eabi-objcopy", "-O", "ihex", f"build/{target}/{board}/node.elf", f"build/{target}/{board}/node.hex"],
         cwd="examples/osf",
     )
 
