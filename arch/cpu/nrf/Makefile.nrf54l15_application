@@ -28,6 +28,10 @@ LDFLAGS += -mfpu=fpv5-sp-d16
 LDGENFLAGS += $(CFLAGS)
 LDGENFLAGS += -x c -P -E
 
+ifeq ($(NRF_USE_RTT),1)
+  MAKE_WITH_LIB_DBG_IO = 0
+endif
+
 include $(CONTIKI)/$(CONTIKI_NG_CM33_DIR)/Makefile.cm33
 
 NRF_FALLBACK_RADIO?=0

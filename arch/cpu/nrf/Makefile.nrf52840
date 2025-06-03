@@ -22,6 +22,10 @@ CFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
 
 LDFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
 
+ifeq ($(NRF_USE_RTT),1)
+  MAKE_WITH_LIB_DBG_IO = 0
+endif
+
 include $(CONTIKI)/$(CONTIKI_NG_CM4_DIR)/Makefile.cm4
 
 NRF_FALLBACK_RADIO?=0
