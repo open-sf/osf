@@ -44,10 +44,11 @@
 #include "net/mac/osf/osf-ch.h"
 #include "net/mac/osf/osf-packet.h"
 #include "net/mac/osf/osf-debug.h"
+#include "net/mac/osf/osf-buffer.h" // FIXME: Why is this not in osf-log?
 #include "net/mac/osf/osf-log.h"
 
 /* TODO: These should not be here. Move to radio driver and use get() functions */
-#include "net/mac/osf/nrf52840-osf.h"
+//#include "net/mac/osf/nrf52840-osf.h"
 
 /* Log configuration */
 #include "sys/log.h"
@@ -78,6 +79,9 @@ static radio_buffer_t  radio_buf[OST_PBUF_N_MAX * OSF_SCHEDULE_LEN_MAX] = {0};
 static uint8_t         radio_buf_index = 0;
 #endif
 
+/*---------------------------------------------------------------------------*/
+/* Logging Process */
+PROCESS(osf_log_process, "OSF Log Process");
 /*---------------------------------------------------------------------------*/
 void
 osf_log_init()
@@ -253,8 +257,7 @@ print_msg_log()
       printf("{%u|ep-%u|r-%u|s-%u} ", node_id, l->epoch, l->index, l->slot);
       switch(l->type) {
         case OSF_LOG_MSG_S:
-          /* With %s no need for # of bytes (len) */
-          printf("%s", l->msg);
+          printf("%.*s", l->len, l->msg);
           break;
         case OSF_LOG_MSG_U:
           for(i = 0; i < l->len; i++) {
@@ -478,15 +481,33 @@ print_heartbeat()
 void
 osf_log_print()
 {
-  print_rx_stats();
-  print_slots_state();
-  print_slots_node();
-  print_slots_rssi();
-  print_slots_td();
-  print_slots_ch();
-  print_last_packet();
+  if(node_is_synced){
+    print_rx_stats();
+    print_slots_state();
+    print_slots_node();
+    print_slots_rssi();
+    print_slots_td();
+    print_slots_ch();
+    print_last_packet();
+  }
   print_msg_log();
   print_heartbeat();
   /* Clear logs */
   osf_log_init();
+}
+
+/*---------------------------------------------------------------------------*/
+
+PROCESS_THREAD(osf_log_process, ev, ev_data)
+{
+  PROCESS_BEGIN();
+
+  while(1){
+    PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
+    osf_buf_log_print();
+    osf_log_print();
+    osf_buf_log_init();
+  }
+
+  PROCESS_END();
 }

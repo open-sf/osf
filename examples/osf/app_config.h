@@ -61,10 +61,6 @@
 #define NRFX_USBD_CONFIG_LOG_ENABLED 1
 #define NRFX_USBD_CONFIG_LOG_LEVEL 3
 
-// #define DBG_CONF_USB 1
-#define DBG_CONF_USB 0    /* debug output to UART0 */
-#define SLIP_ARCH_CONF_USB 1 /* SLIP over USB */
-
 #endif /* NRF52840_NATIVE_USB */
 
 #endif /* APP_CONFIG_H */
