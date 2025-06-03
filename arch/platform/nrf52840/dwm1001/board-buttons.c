@@ -30,10 +30,10 @@
  */
 /*---------------------------------------------------------------------------*/
 /**
- * \addtogroup dwm1001 Device drivers
+ * \addtogroup dwm1001-devices Device drivers
  * @{
  *
- * \addtogroup dwm1001 Buttons driver
+ * \addtogroup dwm1001-devices-button Buttons driver
  * @{
  */
 /*---------------------------------------------------------------------------*/

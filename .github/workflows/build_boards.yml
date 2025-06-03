@@ -41,7 +41,11 @@ jobs:
     - name: Configure Git
       run: git config --global --add safe.directory /__w/flock/flock
 
-    # Only clone submodules we need
+      # Prevent an issue with an error on the repository ownership
+    - name: Fix repository ownership
+      run: git config --global --add safe.directory /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
+    
+      # Only clone submodules we need
     - name: Checkout submodules
       run: |
         git submodule update --init arch/cpu/arm/CMSIS

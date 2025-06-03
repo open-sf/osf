@@ -29,13 +29,13 @@
  */
 
 /**
- * \addtogroup nrf52840dk
+ * \addtogroup nrf52833dk
  * @{
  *
- * \addtogroup nrf52840dk-devices Device drivers
+ * \addtogroup nrf52833dk-devices Device drivers
  * @{
  *
- * \addtogroup nrf52840dk-sensors Sensors
+ * \addtogroup nrf52833dk-sensors Sensors
  *  The nRF52 DK exports 4 button sensors and an internal temperature sensor.
  * @{
  *

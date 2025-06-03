@@ -30,10 +30,10 @@
  */
 /*---------------------------------------------------------------------------*/
 /**
- * \addtogroup nrf52840dk-devices Device drivers
+ * \addtogroup nrf52832dk-devices Device drivers
  * @{
  *
- * \addtogroup nrf52840dk-devices-button Buttons driver
+ * \addtogroup nrf52832dk-devices-button Buttons driver
  * @{
  */
 /*---------------------------------------------------------------------------*/

@@ -29,13 +29,10 @@
  */
 
 /**
- * \addtogroup dwm1001
+ * \addtogroup dwm1001-devices Device drivers
  * @{
  *
- * \addtogroup dwm1001 Device drivers
- * @{
- *
- * \addtogroup dwm1001 Sensors
+ * \addtogroup dwm1001-devices-sensors Sensors
  *  The dwm1001 exports 1 button sensors and an internal temperature sensor.
  * @{
  *
@@ -54,7 +51,6 @@
 SENSORS(&temperature_sensor);
 /*---------------------------------------------------------------------------*/
 /**
- * @}
  * @}
  * @}
  */

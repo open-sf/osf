@@ -30,13 +30,13 @@
  */
 /*---------------------------------------------------------------------------*/
 /**
- * \addtogroup nrf52840dk
+ * \addtogroup nrf52833dk
  * @{
  *
- * \addtogroup nrf52840dk-devices Device drivers
+ * \addtogroup nrf52833dk-devices Device drivers
  * @{
  *
- * \addtogroup nrf52840dk-devices-led LED driver
+ * \addtogroup nrf52833dk-devices-led LED driver
  * @{
  */
 /*---------------------------------------------------------------------------*/

@@ -32,10 +32,10 @@
  * \addtogroup platform
  * @{
  *
- * \addtogroup nrf52840dk nRF52840 Development Kit
+ * \addtogroup nrf52832dk nRF52832 Development Kit
  * @{
  *
- * \addtogroup nrf52840dk-platform-conf Platform configuration
+ * \addtogroup nrf52832dk-platform-conf Platform configuration
  * @{
  * \file
  *         Platform features configuration.
@@ -63,6 +63,7 @@
 #define LEDS_CONF_COUNT                         4
 
 #define LEDS_CONF_GREEN     1
+/** @} */
 
 /**
  * \name Button configurations
@@ -96,8 +97,7 @@
 
 /** @} */
 /*---------------------------------------------------------------------------*/
-/** @}
- *  @}
- *  @}
- */
+/** @} */ /* End of nrf52832dk-platform-conf */
+/** @} */ /* End of nrf52832dk */
+/** @} */ /* End of platform */
 #endif /* NRF52832_BOARD_DEF_H_ */
