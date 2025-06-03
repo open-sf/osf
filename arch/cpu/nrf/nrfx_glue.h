@@ -118,6 +118,18 @@ _NRFX_IRQ_DISABLE(IRQn_Type irq_number)
 {
   NVIC_DisableIRQ(irq_number);
 }
+
+/**
+ * @brief Macro for setting a specific IRQ as pending.
+ *
+ * @param irq_number IRQ number.
+ */
+#define NRFX_IRQ_PENDING_SET(irq_number) _NVIC_GetPendingIRQ(irq_number)
+static inline void
+_NVIC_GetPendingIRQ(IRQn_Type irq_number)
+{
+  NVIC_GetPendingIRQ(irq_number);
+}
 /**
  * @brief Macro for clearing the pending status of a specific IRQ.
  *
@@ -159,7 +171,27 @@ _NVIC_ClearPendingIRQ(IRQn_Type irq_number)
  */
 #define NRFX_ATOMIC_FETCH_AND(p_data, value) nrfx_atomic_u32_fetch_and(p_data, value)
 
+/**
+ * @brief Macro for running a bitwise OR operation on an atomic object and returning its previous value.
+ *
+ * @param[in] p_data Atomic memory pointer.
+ * @param[in] value  Value of the second operand in the OR operation.
+ *
+ * @return Previous value of the atomic object.
+ */
+#define NRFX_ATOMIC_FETCH_OR(p_data, value) nrfx_atomic_u32_fetch_or(p_data, value)
+
 /*------------------------------------------------------------------------------ */
+
+/**
+ * @brief Macro for invalidating cache lines associated with the specified buffer.
+ *
+ * @note Macro should be empty if data cache is disabled or not present.
+ *
+ * @param[in] p_buffer Pointer to the buffer.
+ * @param[in] size     Size of the buffer.
+ */
+#define NRFY_CACHE_INV(p_buffer, size) memset(p_buffer,0,size)
 
 /** @} */
 

@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2020, Toshiba BRIL
- * Copyright (C) 2020 Yago Fontoura do Rosario <yago.rosario@hotmail.com.br>
+ * Copyright (C) 2021 Yago Fontoura do Rosario <yago.rosario@hotmail.com.br>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,74 +32,26 @@
  * \addtogroup nrf
  * @{
  *
- * \addtogroup nrf-sys System drivers
- * @{
- *
- * \addtogroup nrf-rtimer Rtimer driver
+ * \addtogroup nrf-54l15-application nRF54L15 Application Core
  * @{
  *
  * \file
- *         Implementation of the architecture dependent rtimer functions for the nRF
+ *      Header with configuration defines to nrf 54l15 application core
  * \author
- *         Yago Fontoura do Rosario <yago.rosario@hotmail.com.br>
- *
+ *      Yago Fontoura do Rosario <yago.rosario@hotmail.com.br>
  */
 /*---------------------------------------------------------------------------*/
-#include "contiki.h"
-
-#include "nrf.h"
-#include "hal/nrf_timer.h"
-
-#ifndef NRF_RTIMER_TIMER 
-#define NRF_RTIMER_TIMER NRF_TIMER0
-#endif
-
-#ifndef NRF_RTIMER_TIMER_IRQn
-#define NRF_RTIMER_TIMER_IRQn TIMER0_IRQn
-#endif
-
+#ifndef NRF54L15_APPLICATION_DEF_H_
+#define NRF54L15_APPLICATION_DEF_H_
 /*---------------------------------------------------------------------------*/
-void
-rtimer_arch_init(void)
-{
-  nrf_timer_event_clear(NRF_RTIMER_TIMER, NRF_TIMER_EVENT_COMPARE0);
-
-  nrf_timer_prescaler_set(NRF_RTIMER_TIMER, NRF_TIMER_FREQ_62500Hz);
-  nrf_timer_bit_width_set(NRF_RTIMER_TIMER, NRF_TIMER_BIT_WIDTH_32);
-  nrf_timer_mode_set(NRF_RTIMER_TIMER, NRF_TIMER_MODE_TIMER);
-  nrf_timer_int_enable(NRF_RTIMER_TIMER, NRF_TIMER_INT_COMPARE0_MASK);
-  NVIC_ClearPendingIRQ(NRF_RTIMER_TIMER_IRQn);
-  NVIC_EnableIRQ(NRF_RTIMER_TIMER_IRQn);
-  nrf_timer_task_trigger(NRF_RTIMER_TIMER, NRF_TIMER_TASK_START);
-}
+#define NETSTACK_CONF_RADIO        nullradio_driver
 /*---------------------------------------------------------------------------*/
-void
-rtimer_arch_schedule(rtimer_clock_t t)
-{
-  /* 
-   * This function schedules a one-shot event with the nRF RTC.
-   */
-  nrf_timer_cc_set(NRF_RTIMER_TIMER, NRF_TIMER_CC_CHANNEL0, t);
-}
+#define NRF_HAS_USB     0
+#define NRF_HAS_UARTE   1
 /*---------------------------------------------------------------------------*/
-rtimer_clock_t
-rtimer_arch_now()
-{
-  nrf_timer_task_trigger(NRF_RTIMER_TIMER, NRF_TIMER_TASK_CAPTURE1);
-  return nrf_timer_cc_get(NRF_RTIMER_TIMER, NRF_TIMER_CC_CHANNEL1);
-}
+#endif /* NRF54L15_APPLICATION_DEF_H_ */
 /*---------------------------------------------------------------------------*/
-void
-TIMER0_IRQHandler(void)
-{
-  if(nrf_timer_event_check(NRF_RTIMER_TIMER, NRF_TIMER_EVENT_COMPARE0)) {
-    nrf_timer_event_clear(NRF_RTIMER_TIMER, NRF_TIMER_EVENT_COMPARE0);
-    rtimer_run_next();
-  }
-}
-/*---------------------------------------------------------------------------*/
-/**
- * @}
+/** 
  * @}
  * @}
  */

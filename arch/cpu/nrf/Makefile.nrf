@@ -32,10 +32,10 @@ else
   CFLAGS += -DNRF_WITH_CODED_PHY=0
 endif
 
-ifeq ($(NRF_FALLBACK_RADIO), 0)
-CONTIKI_CPU_SOURCEFILES += nrf-ieee-driver-arch.c
-else
+ifeq ($(NRF_FALLBACK_RADIO), 1)
 CONTIKI_CPU_SOURCEFILES += nrf-esb-driver-arch.c
+else ifeq ($(NRF_WITH_IEEE_PHY), 1)
+CONTIKI_CPU_SOURCEFILES += nrf-ieee-driver-arch.c
 endif
 
 # Overrides
@@ -82,6 +82,7 @@ NRFX_C_SRCS += $(NRFX_ROOT)/drivers/src/nrfx_ipc.c
 NRFX_C_SRCS += $(NRFX_ROOT)/soc/nrfx_atomic.c
 
 NRFX_C_SRCS += $(NRFX_ROOT)/helpers/nrfx_flag32_allocator.c
+NRFX_C_SRCS += $(NRFX_ROOT)/helpers/nrfx_gppi_ppi.c
 
 #assembly files common to all targets
 NRFX_ASM_SRCS += 

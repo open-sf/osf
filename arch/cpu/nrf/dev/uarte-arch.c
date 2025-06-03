@@ -55,6 +55,11 @@
 /*---------------------------------------------------------------------------*/
 static int (*input_handler)(unsigned char c) = NULL;
 /*---------------------------------------------------------------------------*/
+
+#ifndef NRF_UARTE_INSTANCE_ID
+#define NRF_UARTE_INSTANCE_ID 0
+#endif
+
 static nrfx_uarte_t instance = NRFX_UARTE_INSTANCE(0);
 static uint8_t uarte_buffer;
 /*---------------------------------------------------------------------------*/
@@ -63,7 +68,7 @@ uarte_write(unsigned char data)
 {
   do {
   }  while(nrfx_uarte_tx_in_progress(&instance));
-  nrfx_uarte_tx(&instance, &data, sizeof(data));
+  nrfx_uarte_tx(&instance, &data, sizeof(data),0);
 }
 /*---------------------------------------------------------------------------*/
 /**
@@ -82,8 +87,8 @@ uarte_handler(nrfx_uarte_event_t const *p_event, void *p_context)
   /* Don't spend time in interrupt if the input_handler is not set */
   if(p_event->type == NRFX_UARTE_EVT_RX_DONE) {
     if(input_handler) {
-      p_data = p_event->data.rxtx.p_data;
-      bytes = p_event->data.rxtx.bytes;
+      p_data = p_event->data.rx.p_buffer;
+      bytes = p_event->data.rx.length;
       for(i = 0; i < bytes; i++) {
         input_handler(p_data[i]);
       }

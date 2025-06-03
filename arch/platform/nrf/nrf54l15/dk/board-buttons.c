@@ -1,5 +1,4 @@
 /*
- * Copyright (c) 2020, Toshiba BRIL
  * Copyright (C) 2020 Yago Fontoura do Rosario <yago.rosario@hotmail.com.br>
  * All rights reserved.
  *
@@ -30,77 +29,33 @@
  */
 /*---------------------------------------------------------------------------*/
 /**
- * \addtogroup nrf
+ * \addtogroup nrf-platforms
  * @{
  *
- * \addtogroup nrf-sys System drivers
- * @{
- *
- * \addtogroup nrf-rtimer Rtimer driver
+ * \addtogroup nrf5340-dk
  * @{
  *
  * \file
- *         Implementation of the architecture dependent rtimer functions for the nRF
+ *         nRF5340 DK specific buttons driver implementation.
  * \author
  *         Yago Fontoura do Rosario <yago.rosario@hotmail.com.br>
- *
  */
 /*---------------------------------------------------------------------------*/
 #include "contiki.h"
-
-#include "nrf.h"
-#include "hal/nrf_timer.h"
-
-#ifndef NRF_RTIMER_TIMER 
-#define NRF_RTIMER_TIMER NRF_TIMER0
-#endif
-
-#ifndef NRF_RTIMER_TIMER_IRQn
-#define NRF_RTIMER_TIMER_IRQn TIMER0_IRQn
-#endif
-
+#include "dev/button-hal.h"
 /*---------------------------------------------------------------------------*/
-void
-rtimer_arch_init(void)
-{
-  nrf_timer_event_clear(NRF_RTIMER_TIMER, NRF_TIMER_EVENT_COMPARE0);
-
-  nrf_timer_prescaler_set(NRF_RTIMER_TIMER, NRF_TIMER_FREQ_62500Hz);
-  nrf_timer_bit_width_set(NRF_RTIMER_TIMER, NRF_TIMER_BIT_WIDTH_32);
-  nrf_timer_mode_set(NRF_RTIMER_TIMER, NRF_TIMER_MODE_TIMER);
-  nrf_timer_int_enable(NRF_RTIMER_TIMER, NRF_TIMER_INT_COMPARE0_MASK);
-  NVIC_ClearPendingIRQ(NRF_RTIMER_TIMER_IRQn);
-  NVIC_EnableIRQ(NRF_RTIMER_TIMER_IRQn);
-  nrf_timer_task_trigger(NRF_RTIMER_TIMER, NRF_TIMER_TASK_START);
-}
+BUTTON_HAL_BUTTON(btn_1, "Button 1", NRF_BUTTON1_PORT, NRF_BUTTON1_PIN, \
+                  GPIO_HAL_PIN_CFG_PULL_UP, BUTTON_HAL_ID_BUTTON_ZERO, true);
+BUTTON_HAL_BUTTON(btn_2, "Button 2", NRF_BUTTON2_PORT, NRF_BUTTON2_PIN, \
+                  GPIO_HAL_PIN_CFG_PULL_UP, BUTTON_HAL_ID_BUTTON_ONE, true);
+BUTTON_HAL_BUTTON(btn_3, "Button 3", NRF_BUTTON3_PORT, NRF_BUTTON3_PIN, \
+                  GPIO_HAL_PIN_CFG_PULL_UP, BUTTON_HAL_ID_BUTTON_TWO, true);
+BUTTON_HAL_BUTTON(btn_4, "Button 4", NRF_BUTTON4_PORT, NRF_BUTTON4_PIN, \
+                  GPIO_HAL_PIN_CFG_PULL_UP, BUTTON_HAL_ID_BUTTON_THREE, true);
 /*---------------------------------------------------------------------------*/
-void
-rtimer_arch_schedule(rtimer_clock_t t)
-{
-  /* 
-   * This function schedules a one-shot event with the nRF RTC.
-   */
-  nrf_timer_cc_set(NRF_RTIMER_TIMER, NRF_TIMER_CC_CHANNEL0, t);
-}
+BUTTON_HAL_BUTTONS(&btn_1, &btn_2, &btn_3, &btn_4);
 /*---------------------------------------------------------------------------*/
-rtimer_clock_t
-rtimer_arch_now()
-{
-  nrf_timer_task_trigger(NRF_RTIMER_TIMER, NRF_TIMER_TASK_CAPTURE1);
-  return nrf_timer_cc_get(NRF_RTIMER_TIMER, NRF_TIMER_CC_CHANNEL1);
-}
-/*---------------------------------------------------------------------------*/
-void
-TIMER0_IRQHandler(void)
-{
-  if(nrf_timer_event_check(NRF_RTIMER_TIMER, NRF_TIMER_EVENT_COMPARE0)) {
-    nrf_timer_event_clear(NRF_RTIMER_TIMER, NRF_TIMER_EVENT_COMPARE0);
-    rtimer_run_next();
-  }
-}
-/*---------------------------------------------------------------------------*/
-/**
- * @}
- * @}
- * @}
+/** 
+ * @} 
+ * @} 
  */

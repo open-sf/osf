@@ -1,0 +1,37 @@
+include $(CONTIKI_CPU)/Makefile.libs  
+
+SOURCE_LDSCRIPT ?= $(NRFX_ROOT)/mdk/nrf54l15_xxaa_application.ld
+CFLAGS += -DNRF54L15_XXAA
+CFLAGS += -DNRF_APPLICATION
+
+NRFX_ASM_SRCS += $(NRFX_ROOT)/mdk/gcc_startup_nrf54l15_application.S
+
+NRFX_C_SRCS += $(NRFX_ROOT)/mdk/system_nrf54l.c
+
+EXTERNALDIRS += $(NRFX_ROOT)/mdk/
+
+NRFJPROG_OPTIONS=-f NRF54 --coprocessor CP_APPLICATION 
+
+CFLAGS += -DCPU_CONF_PATH=\"nrf54l15-application-conf.h\"
+CFLAGS += -DCPU_DEF_PATH=\"nrf54l15-application-def.h\"
+
+CFLAGS += -mfloat-abi=hard 
+CFLAGS += -mfpu=fpv5-sp-d16
+
+# GCC automatically invokes the linker with this flag, Clang does not.
+ifeq ($(CLANG),1)
+  LDFLAGS += -L$(NRFX_ROOT)/mdk
+endif
+LDFLAGS += -mfloat-abi=hard 
+LDFLAGS += -mfpu=fpv5-sp-d16
+
+LDGENFLAGS += $(CFLAGS)
+LDGENFLAGS += -x c -P -E
+
+include $(CONTIKI)/$(CONTIKI_NG_CM33_DIR)/Makefile.cm33
+
+NRF_FALLBACK_RADIO?=0
+NRF_WITH_IEEE_PHY?=0
+NRF_WITH_CODED_PHY?=0
+
+include $(CONTIKI_CPU)/Makefile.nrf

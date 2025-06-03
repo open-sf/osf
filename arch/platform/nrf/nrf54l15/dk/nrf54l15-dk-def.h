@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2020, George Oikonomou - https://spd.gr
- * Copyright (C) 2020 Yago Fontoura do Rosario <yago.rosario@hotmail.com.br>
+ * Copyright (C) 2021 Yago Fontoura do Rosario <yago.rosario@hotmail.com.br>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,49 +27,54 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
+/*---------------------------------------------------------------------------*/
 /**
- * \addtogroup nrf
+ * \addtogroup nrf-platforms
  * @{
  *
- * \addtogroup nrf-dev Device drivers
+ * \addtogroup nrf5340-dk
  * @{
  *
- * \addtogroup nrf-gpio GPIO HAL driver
- * @{
- * 
  * \file
- *     GPIO HAL header file for the nRF
+ *         nRF5340 DK specific defines.
  * \author
- *     Yago Fontoura do Rosario <yago.rosario@hotmail.com.br>
- *
+ *         Yago Fontoura do Rosario <yago.rosario@hotmail.com.br>
  */
 /*---------------------------------------------------------------------------*/
-#ifndef GPIO_HAL_ARCH_H_
-#define GPIO_HAL_ARCH_H_
+#ifndef NRF53_DK_DEF_H
+#define NRF53_DK_DEF_H
 /*---------------------------------------------------------------------------*/
-#include "contiki.h"
-
-#include "nrfx_gpiote.h"
-
-extern const nrfx_gpiote_t gpiote;
-
+#define PLATFORM_HAS_BUTTON             1
+#define PLATFORM_SUPPORTS_BUTTON_HAL    1
 /*---------------------------------------------------------------------------*/
-#define gpio_hal_arch_interrupt_enable(port, pin)  nrfx_gpiote_trigger_enable(&gpiote, NRF_GPIO_PIN_MAP(port, pin), true)
-#define gpio_hal_arch_interrupt_disable(port, pin) nrfx_gpiote_trigger_disable(&gpiote, NRF_GPIO_PIN_MAP(port, pin))
+#define NRF_BUTTON1_PIN     13
+#define NRF_BUTTON1_PORT    1
+#define NRF_BUTTON2_PIN     9
+#define NRF_BUTTON2_PORT    1
+#define NRF_BUTTON3_PIN     8
+#define NRF_BUTTON3_PORT    1
+#define NRF_BUTTON4_PIN     4
+#define NRF_BUTTON4_PORT    0
 /*---------------------------------------------------------------------------*/
-#define gpio_hal_arch_pin_set_input(port, pin)     nrf_gpio_cfg_input(NRF_GPIO_PIN_MAP(port, pin), NRF_GPIO_PIN_NOPULL)
-#define gpio_hal_arch_pin_set_output(port, pin)    nrf_gpio_cfg_output(NRF_GPIO_PIN_MAP(port, pin))
+#define NRF_LED1_PIN        9
+#define NRF_LED1_PORT       2
+#define NRF_LED2_PIN        10
+#define NRF_LED2_PORT       1
+#define NRF_LED3_PIN        7
+#define NRF_LED3_PORT       2
+#define NRF_LED4_PIN        13
+#define NRF_LED4_PORT       1
 /*---------------------------------------------------------------------------*/
-#define gpio_hal_arch_set_pin(port, pin)           nrf_gpio_pin_set(NRF_GPIO_PIN_MAP(port, pin))
-#define gpio_hal_arch_clear_pin(port, pin)         nrf_gpio_pin_clear(NRF_GPIO_PIN_MAP(port, pin))
-#define gpio_hal_arch_toggle_pin(port, pin)        nrf_gpio_pin_toggle(NRF_GPIO_PIN_MAP(port, pin))
-#define gpio_hal_arch_write_pin(port, pin, v)      nrf_gpio_pin_write(NRF_GPIO_PIN_MAP(port, pin), v)
+#define LEDS_CONF_COUNT     4
 /*---------------------------------------------------------------------------*/
-#endif /* GPIO_HAL_ARCH_H_ */
+#define NRF_UARTE0_TX_PIN   0
+#define NRF_UARTE0_TX_PORT  0
+#define NRF_UARTE0_RX_PIN   1
+#define NRF_UARTE0_RX_PORT  0
 /*---------------------------------------------------------------------------*/
-/**
- * @}
- * @}
- * @}
+#endif /* NRF53_DK_DEF_H */
+/*---------------------------------------------------------------------------*/
+/** 
+ * @} 
+ * @} 
  */
