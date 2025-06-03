@@ -178,7 +178,7 @@
  * Boolean. Accepted values: 0 and 1.
  */
 #ifndef NRFX_DPPI_ENABLED
-#define NRFX_DPPI_ENABLED 0
+#define NRFX_DPPI_ENABLED 1
 #endif
 
 /**
@@ -211,7 +211,7 @@
  * Boolean. Accepted values: 0 and 1.
  */
 #ifndef NRFX_DPPI00_ENABLED
-#define NRFX_DPPI00_ENABLED 0
+#define NRFX_DPPI00_ENABLED 1
 #endif
 
 /**
@@ -220,7 +220,7 @@
  * Boolean. Accepted values: 0 and 1.
  */
 #ifndef NRFX_DPPI10_ENABLED
-#define NRFX_DPPI10_ENABLED 0
+#define NRFX_DPPI10_ENABLED 1
 #endif
 
 /**
@@ -229,7 +229,7 @@
  * Boolean. Accepted values: 0 and 1.
  */
 #ifndef NRFX_DPPI20_ENABLED
-#define NRFX_DPPI20_ENABLED 0
+#define NRFX_DPPI20_ENABLED 1
 #endif
 
 /**
@@ -238,7 +238,7 @@
  * Boolean. Accepted values: 0 and 1.
  */
 #ifndef NRFX_DPPI30_ENABLED
-#define NRFX_DPPI30_ENABLED 0
+#define NRFX_DPPI30_ENABLED 1
 #endif
 
 /**
@@ -668,7 +668,7 @@
  * Boolean. Accepted values: 0 and 1.
  */
 #ifndef NRFX_PPIB_ENABLED
-#define NRFX_PPIB_ENABLED 0
+#define NRFX_PPIB_ENABLED 1
 #endif
 
 /**
@@ -701,7 +701,7 @@
  * Boolean. Accepted values: 0 and 1.
  */
 #ifndef NRFX_PPIB00_ENABLED
-#define NRFX_PPIB00_ENABLED 0
+#define NRFX_PPIB00_ENABLED 1
 #endif
 
 /**
@@ -710,7 +710,7 @@
  * Boolean. Accepted values: 0 and 1.
  */
 #ifndef NRFX_PPIB01_ENABLED
-#define NRFX_PPIB01_ENABLED 0
+#define NRFX_PPIB01_ENABLED 1
 #endif
 
 /**
@@ -719,7 +719,7 @@
  * Boolean. Accepted values: 0 and 1.
  */
 #ifndef NRFX_PPIB10_ENABLED
-#define NRFX_PPIB10_ENABLED 0
+#define NRFX_PPIB10_ENABLED 1
 #endif
 
 /**
@@ -728,7 +728,7 @@
  * Boolean. Accepted values: 0 and 1.
  */
 #ifndef NRFX_PPIB11_ENABLED
-#define NRFX_PPIB11_ENABLED 0
+#define NRFX_PPIB11_ENABLED 1
 #endif
 
 /**
@@ -737,7 +737,7 @@
  * Boolean. Accepted values: 0 and 1.
  */
 #ifndef NRFX_PPIB20_ENABLED
-#define NRFX_PPIB20_ENABLED 0
+#define NRFX_PPIB20_ENABLED 1
 #endif
 
 /**
@@ -746,7 +746,7 @@
  * Boolean. Accepted values: 0 and 1.
  */
 #ifndef NRFX_PPIB21_ENABLED
-#define NRFX_PPIB21_ENABLED 0
+#define NRFX_PPIB21_ENABLED 1
 #endif
 
 /**
@@ -755,7 +755,7 @@
  * Boolean. Accepted values: 0 and 1.
  */
 #ifndef NRFX_PPIB22_ENABLED
-#define NRFX_PPIB22_ENABLED 0
+#define NRFX_PPIB22_ENABLED 1
 #endif
 
 /**
@@ -764,7 +764,7 @@
  * Boolean. Accepted values: 0 and 1.
  */
 #ifndef NRFX_PPIB30_ENABLED
-#define NRFX_PPIB30_ENABLED 0
+#define NRFX_PPIB30_ENABLED 1
 #endif
 
 /**
@@ -1646,7 +1646,7 @@
  * Boolean. Accepted values: 0 and 1.
  */
 #ifndef NRFX_UARTE00_ENABLED
-#define NRFX_UARTE00_ENABLED 1
+#define NRFX_UARTE00_ENABLED 0
 #endif
 
 /**
@@ -1655,7 +1655,7 @@
  * Boolean. Accepted values: 0 and 1.
  */
 #ifndef NRFX_UARTE20_ENABLED
-#define NRFX_UARTE20_ENABLED 0
+#define NRFX_UARTE20_ENABLED 1
 #endif
 
 /**

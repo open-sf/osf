@@ -35,7 +35,7 @@
  * \addtogroup nrf-sys System drivers
  * @{
  *
- * \addtogroup nrf-clock Clock driver
+ * \addtogroup nrf-clock RTC based Clock driver
  * @{
  *
  * \file

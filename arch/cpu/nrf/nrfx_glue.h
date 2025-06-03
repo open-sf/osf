@@ -181,6 +181,16 @@ _NVIC_ClearPendingIRQ(IRQn_Type irq_number)
  */
 #define NRFX_ATOMIC_FETCH_OR(p_data, value) nrfx_atomic_u32_fetch_or(p_data, value)
 
+/**
+ * @brief Macro for counting trailing zeros.
+ *
+ * @param[in] value A word value.
+ *
+ * @return Number of trailing 0-bits in @p value, starting at the least significant bit position.
+ *         If x is 0, the result is undefined.
+ */
+#define NRFX_CTZ(value) __builtin_ctz(value)
+
 /*------------------------------------------------------------------------------ */
 
 /**

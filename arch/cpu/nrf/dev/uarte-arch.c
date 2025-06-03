@@ -60,7 +60,7 @@ static int (*input_handler)(unsigned char c) = NULL;
 #define NRF_UARTE_INSTANCE_ID 0
 #endif
 
-static nrfx_uarte_t instance = NRFX_UARTE_INSTANCE(0);
+static nrfx_uarte_t instance = NRFX_UARTE_INSTANCE(NRF_UARTE_INSTANCE_ID);
 static uint8_t uarte_buffer;
 /*---------------------------------------------------------------------------*/
 void

@@ -50,22 +50,22 @@ const leds_t leds_arch_leds[] = {
   {
     .port = NRF_LED1_PORT,
     .pin = NRF_LED1_PIN,
-    .negative_logic = true
+    .negative_logic = false
   },
   {
     .port = NRF_LED2_PORT,
     .pin = NRF_LED2_PIN,
-    .negative_logic = true
+    .negative_logic = false
   },
   {
     .port = NRF_LED3_PORT,
     .pin = NRF_LED3_PIN,
-    .negative_logic = true
+    .negative_logic = false
   },
   {
     .port = NRF_LED4_PORT,
     .pin = NRF_LED4_PIN,
-    .negative_logic = true
+    .negative_logic = false
   },
 };
 /*---------------------------------------------------------------------------*/

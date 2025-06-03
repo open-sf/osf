@@ -62,15 +62,15 @@
 #define NRF_LED2_PORT       1
 #define NRF_LED3_PIN        7
 #define NRF_LED3_PORT       2
-#define NRF_LED4_PIN        13
+#define NRF_LED4_PIN        14
 #define NRF_LED4_PORT       1
 /*---------------------------------------------------------------------------*/
 #define LEDS_CONF_COUNT     4
 /*---------------------------------------------------------------------------*/
-#define NRF_UARTE0_TX_PIN   0
-#define NRF_UARTE0_TX_PORT  0
-#define NRF_UARTE0_RX_PIN   1
-#define NRF_UARTE0_RX_PORT  0
+#define NRF_UARTE0_TX_PIN   4
+#define NRF_UARTE0_TX_PORT  1
+#define NRF_UARTE0_RX_PIN   5
+#define NRF_UARTE0_RX_PORT  1
 /*---------------------------------------------------------------------------*/
 #endif /* NRF53_DK_DEF_H */
 /*---------------------------------------------------------------------------*/
