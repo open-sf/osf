@@ -90,7 +90,7 @@
 #include "sys/log.h"
 
 #define LOG_MODULE "nRF IEEE"
-#define LOG_LEVEL LOG_LEVEL_DBG
+#define LOG_LEVEL LOG_LEVEL_NONE
 /*---------------------------------------------------------------------------*/
 #define NRF_CCA_BUSY      0
 #define NRF_CCA_CLEAR     1
@@ -676,12 +676,28 @@ transmit(unsigned short transmit_len)
   nrf_radio_shorts_enable(NRF_RADIO, NRF_RADIO_SHORT_TXREADY_START_MASK);
   nrf_radio_task_trigger(NRF_RADIO, NRF_RADIO_TASK_TXEN);
 
+#ifndef NRF54L15_XXAA
   /*
    * With fast rampup, the transition between TX and READY (TXRU duration)
    * takes 40us. This means we will be in TX mode in less than 3 rtimer ticks
    * (3x16=42 us). After this duration, we can busy wait for TX to finish.
    */
   RTIMER_BUSYWAIT(TXRU_DURATION_TIMER);
+#else
+  /* Wait for TXREADY event with timeout (e.g., 50us) */
+  uint32_t wait_start = RTIMER_NOW();
+  while(!nrf_radio_event_check(NRF_RADIO, NRF_RADIO_EVENT_TXREADY)) {
+    if(RTIMER_NOW() - wait_start > (RTIMER_SECOND / 20000) * 50) {
+      /* Timeout (optional logging here if needed) */
+      break;
+    }
+  }
+
+  /* Optional: Manually trigger START in case SHORT was missed */
+  if(!nrf_radio_event_check(NRF_RADIO, NRF_RADIO_EVENT_END)) {
+    nrf_radio_task_trigger(NRF_RADIO, NRF_RADIO_TASK_START);
+  }
+#endif
 
   /*
    * The workaround for errata 91 is to wait 10us more during ramp-up

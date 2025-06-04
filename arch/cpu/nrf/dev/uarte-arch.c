@@ -46,6 +46,7 @@
  */
 /*---------------------------------------------------------------------------*/
 #include "contiki.h"
+#include "sys/rtimer.h"
 /*---------------------------------------------------------------------------*/
 #if NRF_HAS_UARTE
 /*---------------------------------------------------------------------------*/
@@ -54,7 +55,6 @@
 #include "hal/nrf_gpio.h"
 /*---------------------------------------------------------------------------*/
 static int (*input_handler)(unsigned char c) = NULL;
-/*---------------------------------------------------------------------------*/
 
 #ifndef NRF_UARTE_INSTANCE_ID
 #define NRF_UARTE_INSTANCE_ID 0
@@ -62,13 +62,34 @@ static int (*input_handler)(unsigned char c) = NULL;
 
 static nrfx_uarte_t instance = NRFX_UARTE_INSTANCE(NRF_UARTE_INSTANCE_ID);
 static uint8_t uarte_buffer;
+static volatile bool uart_tx_done = true;
+static bool is_initialized = false;
 /*---------------------------------------------------------------------------*/
+/**
+ * \brief Send one byte via UARTE
+ * \param data The byte to send
+ */
 void
 uarte_write(unsigned char data)
 {
-  do {
-  }  while(nrfx_uarte_tx_in_progress(&instance));
-  nrfx_uarte_tx(&instance, &data, sizeof(data),0);
+  if(!is_initialized) {
+    return;
+  }
+
+  rtimer_clock_t start = RTIMER_NOW();
+  const rtimer_clock_t timeout = RTIMER_SECOND / 4; // ~250 ms
+
+  while(!uart_tx_done) {
+    if(!RTIMER_CLOCK_LT(RTIMER_NOW(), start + timeout)) {
+      return;
+    }
+  }
+
+  uart_tx_done = false;
+  nrfx_err_t err = nrfx_uarte_tx(&instance, &data, sizeof(data), 0);
+  if(err != NRFX_SUCCESS) {
+    uart_tx_done = true;
+  }
 }
 /*---------------------------------------------------------------------------*/
 /**
@@ -80,48 +101,52 @@ uarte_write(unsigned char data)
 static void
 uarte_handler(nrfx_uarte_event_t const *p_event, void *p_context)
 {
-  uint8_t *p_data;
-  size_t bytes;
-  size_t i;
-
-  /* Don't spend time in interrupt if the input_handler is not set */
   if(p_event->type == NRFX_UARTE_EVT_RX_DONE) {
     if(input_handler) {
-      p_data = p_event->data.rx.p_buffer;
-      bytes = p_event->data.rx.length;
-      for(i = 0; i < bytes; i++) {
+      uint8_t *p_data = p_event->data.rx.p_buffer;
+      size_t bytes = p_event->data.rx.length;
+      for(size_t i = 0; i < bytes; i++) {
         input_handler(p_data[i]);
       }
-      nrfx_uarte_rx(&instance, &uarte_buffer, sizeof(uarte_buffer));
     }
+    nrfx_uarte_rx(&instance, &uarte_buffer, sizeof(uarte_buffer));
+  } else if(p_event->type == NRFX_UARTE_EVT_TX_DONE) {
+    uart_tx_done = true;
   }
 }
 /*---------------------------------------------------------------------------*/
+/**
+ * \brief Set the input handler for received bytes
+ * \param input Pointer to the input handler function
+ */
 void
 uarte_set_input(int (*input)(unsigned char c))
 {
   input_handler = input;
-
   if(input) {
     nrfx_uarte_rx(&instance, &uarte_buffer, sizeof(uarte_buffer));
   }
 }
 /*---------------------------------------------------------------------------*/
+/**
+ * \brief Initialize the UARTE peripheral
+ */
 void
 uarte_init(void)
-{ 
-#if defined(NRF_UARTE0_TX_PORT) && defined(NRF_UARTE0_TX_PIN) \
-  && defined(NRF_UARTE0_RX_PORT) && defined(NRF_UARTE0_RX_PIN)
+{
+#if defined(NRF_UARTE0_TX_PORT) && defined(NRF_UARTE0_TX_PIN) && \
+    defined(NRF_UARTE0_RX_PORT) && defined(NRF_UARTE0_RX_PIN)
   const nrfx_uarte_config_t config = NRFX_UARTE_DEFAULT_CONFIG(
-    NRF_GPIO_PIN_MAP(NRF_UARTE0_TX_PORT, NRF_UARTE0_TX_PIN), 
+    NRF_GPIO_PIN_MAP(NRF_UARTE0_TX_PORT, NRF_UARTE0_TX_PIN),
     NRF_GPIO_PIN_MAP(NRF_UARTE0_RX_PORT, NRF_UARTE0_RX_PIN)
   );
 
   nrfx_uarte_init(&instance, &config, uarte_handler);
 #else
   (void) uarte_handler;
-#endif /* defined(NRF_UARTE0_TX_PORT) && defined(NRF_UARTE0_TX_PIN) \
-  && defined(NRF_UARTE0_RX_PORT) && defined(NRF_UARTE0_RX_PIN) */
+#endif /* defined(NRF_UARTE0_TX_PORT) && defined(NRF_UARTE0_TX_PIN) && defined(NRF_UARTE0_RX_PORT) && defined(NRF_UARTE0_RX_PIN) */
+
+  is_initialized = true;
 }
 /*---------------------------------------------------------------------------*/
 #endif /* NRF_HAS_UARTE */
