@@ -43,30 +43,30 @@ PROCESS_THREAD(empty_application, ev, data)
   PROCESS_BEGIN();
 
   /* Forward buttons */
-  nrf_gpio_pin_mcu_select(NRF_GPIO_PIN_MAP(NRF_BUTTON1_PORT, NRF_BUTTON1_PIN),
-                          GPIO_PIN_CNF_MCUSEL_NetworkMCU);
-  nrf_gpio_pin_mcu_select(NRF_GPIO_PIN_MAP(NRF_BUTTON2_PORT, NRF_BUTTON2_PIN),
-                          GPIO_PIN_CNF_MCUSEL_NetworkMCU);
-  nrf_gpio_pin_mcu_select(NRF_GPIO_PIN_MAP(NRF_BUTTON3_PORT, NRF_BUTTON3_PIN),
-                          GPIO_PIN_CNF_MCUSEL_NetworkMCU);
-  nrf_gpio_pin_mcu_select(NRF_GPIO_PIN_MAP(NRF_BUTTON4_PORT, NRF_BUTTON4_PIN),
-                          GPIO_PIN_CNF_MCUSEL_NetworkMCU);
+  nrf_gpio_pin_control_select(NRF_GPIO_PIN_MAP(NRF_BUTTON1_PORT, NRF_BUTTON1_PIN),
+                              NRF_GPIO_PIN_SEL_NETWORK);
+  nrf_gpio_pin_control_select(NRF_GPIO_PIN_MAP(NRF_BUTTON2_PORT, NRF_BUTTON2_PIN),
+                              NRF_GPIO_PIN_SEL_NETWORK);
+  nrf_gpio_pin_control_select(NRF_GPIO_PIN_MAP(NRF_BUTTON3_PORT, NRF_BUTTON3_PIN),
+                              NRF_GPIO_PIN_SEL_NETWORK);
+  nrf_gpio_pin_control_select(NRF_GPIO_PIN_MAP(NRF_BUTTON4_PORT, NRF_BUTTON4_PIN),
+                              NRF_GPIO_PIN_SEL_NETWORK);
 
   /* Forward LEDS */
-  nrf_gpio_pin_mcu_select(NRF_GPIO_PIN_MAP(NRF_LED1_PORT, NRF_LED1_PIN),
-                          GPIO_PIN_CNF_MCUSEL_NetworkMCU);
-  nrf_gpio_pin_mcu_select(NRF_GPIO_PIN_MAP(NRF_LED2_PORT, NRF_LED2_PIN),
-                          GPIO_PIN_CNF_MCUSEL_NetworkMCU);
-  nrf_gpio_pin_mcu_select(NRF_GPIO_PIN_MAP(NRF_LED3_PORT, NRF_LED3_PIN),
-                          GPIO_PIN_CNF_MCUSEL_NetworkMCU);
-  nrf_gpio_pin_mcu_select(NRF_GPIO_PIN_MAP(NRF_LED4_PORT, NRF_LED4_PIN),
-                          GPIO_PIN_CNF_MCUSEL_NetworkMCU);
+  nrf_gpio_pin_control_select(NRF_GPIO_PIN_MAP(NRF_LED1_PORT, NRF_LED1_PIN),
+                              NRF_GPIO_PIN_SEL_NETWORK);
+  nrf_gpio_pin_control_select(NRF_GPIO_PIN_MAP(NRF_LED2_PORT, NRF_LED2_PIN),
+                              NRF_GPIO_PIN_SEL_NETWORK);
+  nrf_gpio_pin_control_select(NRF_GPIO_PIN_MAP(NRF_LED3_PORT, NRF_LED3_PIN),
+                              NRF_GPIO_PIN_SEL_NETWORK);
+  nrf_gpio_pin_control_select(NRF_GPIO_PIN_MAP(NRF_LED4_PORT, NRF_LED4_PIN),
+                              NRF_GPIO_PIN_SEL_NETWORK);
 
   /* Forward UARTE */
-  nrf_gpio_pin_mcu_select(NRF_GPIO_PIN_MAP(NRF_UARTE0_TX_PORT, NRF_UARTE0_TX_PIN),
-                          GPIO_PIN_CNF_MCUSEL_NetworkMCU);
-  nrf_gpio_pin_mcu_select(NRF_GPIO_PIN_MAP(NRF_UARTE0_RX_PORT, NRF_UARTE0_RX_PIN),
-                          GPIO_PIN_CNF_MCUSEL_NetworkMCU);
+  nrf_gpio_pin_control_select(NRF_GPIO_PIN_MAP(NRF_UARTE0_TX_PORT, NRF_UARTE0_TX_PIN),
+                              NRF_GPIO_PIN_SEL_NETWORK);
+  nrf_gpio_pin_control_select(NRF_GPIO_PIN_MAP(NRF_UARTE0_RX_PORT, NRF_UARTE0_RX_PIN),
+                              NRF_GPIO_PIN_SEL_NETWORK);
 
   /* Network MCU in Secure domain */
   nrf_spu_extdomain_set(NRF_SPU, 0, true, false);
