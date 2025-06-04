@@ -72,8 +72,9 @@ const nrfx_gpiote_t gpiote = NRFX_GPIOTE_INSTANCE(NRF_GPIOTE_INSTANCE_ID);
 /**
  * @brief GPIO event handler
  * 
- * @param pin GPIO pin
- * @param action Action
+ * @param pin      The pin number that triggered the event
+ * @param trigger  The trigger type that caused the event (LOTOHI, HITOLO, TOGGLE)
+ * @param context  User-defined context pointer (unused)
  */
 static void
 pin_event_handler(nrfx_gpiote_pin_t pin, nrfx_gpiote_trigger_t trigger, void *context)
