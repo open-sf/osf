@@ -59,6 +59,10 @@
 #define NRF_RTIMER_TIMER_IRQn TIMER0_IRQn
 #endif
 
+#ifndef NRF_RTIMER_TIMER_IRQHandler
+#define NRF_RTIMER_TIMER_IRQHandler TIMER0_IRQHandler
+#endif
+
 /*---------------------------------------------------------------------------*/
 void
 rtimer_arch_init(void)
@@ -91,7 +95,7 @@ rtimer_arch_now()
 }
 /*---------------------------------------------------------------------------*/
 void
-TIMER0_IRQHandler(void)
+NRF_RTIMER_TIMER_IRQHandler(void)
 {
   if(nrf_timer_event_check(NRF_RTIMER_TIMER, NRF_TIMER_EVENT_COMPARE0)) {
     nrf_timer_event_clear(NRF_RTIMER_TIMER, NRF_TIMER_EVENT_COMPARE0);
