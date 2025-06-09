@@ -179,9 +179,17 @@ endif
 # Serial over USB
 ##---------------------------------------------------------------------------#
 ifneq ($(USB),)
-NRF52840_NATIVE_USB=1
-CFLAGS += -DNRF52840_NATIVE_USB=1
-MODULES += $(CONTIKI_NG_SERVICES_DIR)/slip-cmd
+    CFLAGS += -DCONTIKI_WITH_USB=1
+ifeq ($(TARGET), nrf52840)
+    NRF52840_NATIVE_USB=1
+endif
+ifeq ($(TARGET), nrf)
+    NRF_NATIVE_USB=1
+endif
+ifneq ($(USB_SLIP),)
+    CFLAGS += -DUSE_USB_SLIP=1
+    MODULES += $(CONTIKI_NG_SERVICES_DIR)/slip-cmd
+endif
 # Extra modules for testing
 ifeq ($(WITH_SHELL), 1)
 	 $(warning "WITH_SHELL=1")

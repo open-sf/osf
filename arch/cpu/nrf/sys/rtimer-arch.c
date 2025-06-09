@@ -50,19 +50,32 @@
 
 #include "nrf.h"
 #include "hal/nrf_timer.h"
+
+#ifndef NRF_RTIMER_TIMER 
+#define NRF_RTIMER_TIMER NRF_TIMER0
+#endif
+
+#ifndef NRF_RTIMER_TIMER_IRQn
+#define NRF_RTIMER_TIMER_IRQn TIMER0_IRQn
+#endif
+
+#ifndef NRF_RTIMER_TIMER_IRQHandler
+#define NRF_RTIMER_TIMER_IRQHandler TIMER0_IRQHandler
+#endif
+
 /*---------------------------------------------------------------------------*/
 void
 rtimer_arch_init(void)
 {
-  nrf_timer_event_clear(NRF_TIMER0, NRF_TIMER_EVENT_COMPARE0);
+  nrf_timer_event_clear(NRF_RTIMER_TIMER, NRF_TIMER_EVENT_COMPARE0);
 
-  nrf_timer_frequency_set(NRF_TIMER0, NRF_TIMER_FREQ_62500Hz);
-  nrf_timer_bit_width_set(NRF_TIMER0, NRF_TIMER_BIT_WIDTH_32);
-  nrf_timer_mode_set(NRF_TIMER0, NRF_TIMER_MODE_TIMER);
-  nrf_timer_int_enable(NRF_TIMER0, NRF_TIMER_INT_COMPARE0_MASK);
-  NVIC_ClearPendingIRQ(TIMER0_IRQn);
-  NVIC_EnableIRQ(TIMER0_IRQn);
-  nrf_timer_task_trigger(NRF_TIMER0, NRF_TIMER_TASK_START);
+  nrf_timer_prescaler_set(NRF_RTIMER_TIMER, NRF_TIMER_FREQ_62500Hz);
+  nrf_timer_bit_width_set(NRF_RTIMER_TIMER, NRF_TIMER_BIT_WIDTH_32);
+  nrf_timer_mode_set(NRF_RTIMER_TIMER, NRF_TIMER_MODE_TIMER);
+  nrf_timer_int_enable(NRF_RTIMER_TIMER, NRF_TIMER_INT_COMPARE0_MASK);
+  NVIC_ClearPendingIRQ(NRF_RTIMER_TIMER_IRQn);
+  NVIC_EnableIRQ(NRF_RTIMER_TIMER_IRQn);
+  nrf_timer_task_trigger(NRF_RTIMER_TIMER, NRF_TIMER_TASK_START);
 }
 /*---------------------------------------------------------------------------*/
 void
@@ -71,21 +84,21 @@ rtimer_arch_schedule(rtimer_clock_t t)
   /* 
    * This function schedules a one-shot event with the nRF RTC.
    */
-  nrf_timer_cc_set(NRF_TIMER0, NRF_TIMER_CC_CHANNEL0, t);
+  nrf_timer_cc_set(NRF_RTIMER_TIMER, NRF_TIMER_CC_CHANNEL0, t);
 }
 /*---------------------------------------------------------------------------*/
 rtimer_clock_t
 rtimer_arch_now()
 {
-  nrf_timer_task_trigger(NRF_TIMER0, NRF_TIMER_TASK_CAPTURE1);
-  return nrf_timer_cc_get(NRF_TIMER0, NRF_TIMER_CC_CHANNEL1);
+  nrf_timer_task_trigger(NRF_RTIMER_TIMER, NRF_TIMER_TASK_CAPTURE1);
+  return nrf_timer_cc_get(NRF_RTIMER_TIMER, NRF_TIMER_CC_CHANNEL1);
 }
 /*---------------------------------------------------------------------------*/
 void
-TIMER0_IRQHandler(void)
+NRF_RTIMER_TIMER_IRQHandler(void)
 {
-  if(nrf_timer_event_check(NRF_TIMER0, NRF_TIMER_EVENT_COMPARE0)) {
-    nrf_timer_event_clear(NRF_TIMER0, NRF_TIMER_EVENT_COMPARE0);
+  if(nrf_timer_event_check(NRF_RTIMER_TIMER, NRF_TIMER_EVENT_COMPARE0)) {
+    nrf_timer_event_clear(NRF_RTIMER_TIMER, NRF_TIMER_EVENT_COMPARE0);
     rtimer_run_next();
   }
 }

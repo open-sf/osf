@@ -1,0 +1,5 @@
+### Will allow the inclusion of the correct CPU makefile
+CPU_FAMILY = nrf54l15_application
+
+### Include the common dk makefile
+include $(PLATFORM_ROOT_DIR)/nrf54l15/dk/Makefile.dk

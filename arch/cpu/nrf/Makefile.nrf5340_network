@@ -20,6 +20,14 @@ ifeq ($(NRF_NATIVE_USB),1)
 $(error The nrf5340 network core does not support USB)
 endif
 
+ifeq ($(NRF_USE_RTT),1)
+  MAKE_WITH_LIB_DBG_IO = 0
+endif
+
 include $(CONTIKI)/$(CONTIKI_NG_CM33_DIR)/Makefile.cm33+nodsp
+
+NRF_FALLBACK_RADIO?=0
+NRF_WITH_IEEE_PHY?=1
+NRF_WITH_CODED_PHY?=1
 
 include $(CONTIKI_CPU)/Makefile.nrf

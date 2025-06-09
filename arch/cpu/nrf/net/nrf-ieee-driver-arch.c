@@ -61,10 +61,24 @@
 #include <string.h>
 #include <math.h>
 
+#include "nrf-radio-driver.h"
+
 #include "nrf.h"
 
 /* Only compile the below if NRF_RADIO exists */
 #ifdef NRF_RADIO
+
+#ifndef NRF_RADIO_IRQn
+#define NRF_RADIO_IRQn RADIO_IRQn
+#endif
+
+#ifndef NRF_RADIO_IRQ_HANDLER
+#define NRF_RADIO_IRQ_HANDLER RADIO_IRQHandler
+#endif
+
+#ifndef NRF_RADIO_TIMER
+#define NRF_RADIO_TIMER NRF_TIMER0
+#endif
 
 #include "hal/nrf_radio.h"
 #include "hal/nrf_timer.h"
@@ -222,7 +236,11 @@ radio_is_powered(void)
   if(nrf53_errata_16()) {
     return radio_power;
   } else {
+#ifndef NRF54L15_XXAA
     return NRF_RADIO->POWER == 0 ? false : true;
+#else
+    return true;
+#endif
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -232,7 +250,9 @@ radio_set_power(bool power)
   if(nrf53_errata_16()) {
     radio_power = power;
   } else {
+#ifndef NRF54L15_XXAA
     nrf_radio_power_set(NRF_RADIO, power);
+#endif
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -323,14 +343,14 @@ setup_interrupts(void)
 
   /* Make sure all interrupts are disabled before we enable selectively */
   nrf_radio_int_disable(NRF_RADIO, 0xFFFFFFFF);
-  NVIC_ClearPendingIRQ(RADIO_IRQn);
+  NVIC_ClearPendingIRQ(NRF_RADIO_IRQn);
 
   if(interrupts) {
     nrf_radio_int_enable(NRF_RADIO, interrupts);
-    NVIC_EnableIRQ(RADIO_IRQn);
+    NVIC_EnableIRQ(NRF_RADIO_IRQn);
   } else {
     /* No radio interrupts required. Make sure they are all off at the NVIC */
-    NVIC_DisableIRQ(RADIO_IRQn);
+    NVIC_DisableIRQ(NRF_RADIO_IRQn);
   }
 
   critical_exit(stat);
@@ -347,11 +367,11 @@ setup_ppi_timestamping(void)
   nrfx_gppi_channel_endpoints_setup(
     NRF_PPI_FRAMESTART_CHANNEL,
     nrf_radio_event_address_get(NRF_RADIO, NRF_RADIO_EVENT_FRAMESTART),
-    nrf_timer_task_address_get(NRF_TIMER0, NRF_TIMER_TASK_CAPTURE3));
+    nrf_timer_task_address_get(NRF_RADIO_TIMER, NRF_TIMER_TASK_CAPTURE3));
   nrfx_gppi_channel_endpoints_setup(
     NRF_PPI_END_CHANNEL,
     nrf_radio_event_address_get(NRF_RADIO, NRF_RADIO_EVENT_END),
-    nrf_timer_task_address_get(NRF_TIMER0, NRF_TIMER_TASK_CAPTURE2));
+    nrf_timer_task_address_get(NRF_RADIO_TIMER, NRF_TIMER_TASK_CAPTURE2));
   nrfx_gppi_channels_enable(1uL << NRF_PPI_FRAMESTART_CHANNEL
                             | 1uL << NRF_PPI_END_CHANNEL);
 }
@@ -407,7 +427,9 @@ configure(void)
    * MODECNF: Fast ramp up, DTX=center
    * The Nordic driver is using DTX=0, but this is against the PS (v1.1 p351)
    */
+#ifndef NRF54L15_XXAA
   nrf_radio_modecnf0_set(NRF_RADIO, true, RADIO_MODECNF0_DTX_Center);
+#endif
 }
 /*---------------------------------------------------------------------------*/
 static void
@@ -477,9 +499,12 @@ rssi_read(void)
 
   nrf_radio_task_trigger(NRF_RADIO, NRF_RADIO_TASK_RSSISTART);
 
+#ifdef NRF_RADIO_EVENT_RSSIEND
   while(nrf_radio_event_check(NRF_RADIO, NRF_RADIO_EVENT_RSSIEND) == false);
   nrf_radio_event_clear(NRF_RADIO, NRF_RADIO_EVENT_RSSIEND);
-
+#else
+  /* TODO, we probably need RSSI on nRF54L15 */
+#endif
   rssi_sample = radio_rssi_sample_get();
 
   return -((int8_t)rssi_sample);
@@ -651,12 +676,28 @@ transmit(unsigned short transmit_len)
   nrf_radio_shorts_enable(NRF_RADIO, NRF_RADIO_SHORT_TXREADY_START_MASK);
   nrf_radio_task_trigger(NRF_RADIO, NRF_RADIO_TASK_TXEN);
 
+#ifndef NRF54L15_XXAA
   /*
    * With fast rampup, the transition between TX and READY (TXRU duration)
    * takes 40us. This means we will be in TX mode in less than 3 rtimer ticks
    * (3x16=42 us). After this duration, we can busy wait for TX to finish.
    */
   RTIMER_BUSYWAIT(TXRU_DURATION_TIMER);
+#else
+  /* Wait for TXREADY event with timeout (e.g., 50us) */
+  uint32_t wait_start = RTIMER_NOW();
+  while(!nrf_radio_event_check(NRF_RADIO, NRF_RADIO_EVENT_TXREADY)) {
+    if(RTIMER_NOW() - wait_start > (RTIMER_SECOND / 20000) * 50) {
+      /* Timeout (optional logging here if needed) */
+      break;
+    }
+  }
+
+  /* Optional: Manually trigger START in case SHORT was missed */
+  if(!nrf_radio_event_check(NRF_RADIO, NRF_RADIO_EVENT_END)) {
+    nrf_radio_task_trigger(NRF_RADIO, NRF_RADIO_TASK_START);
+  }
+#endif
 
   /*
    * The workaround for errata 91 is to wait 10us more during ramp-up
@@ -720,8 +761,8 @@ read_frame(void *buf, unsigned short bufsize)
 
   /* Latch timestamp values for this most recently received frame */
   timestamps.phr = rx_buf.phr;
-  timestamps.framestart = nrf_timer_cc_get(NRF_TIMER0, NRF_TIMER_CC_CHANNEL3);
-  timestamps.end = nrf_timer_cc_get(NRF_TIMER0, NRF_TIMER_CC_CHANNEL2);
+  timestamps.framestart = nrf_timer_cc_get(NRF_RADIO_TIMER, NRF_TIMER_CC_CHANNEL3);
+  timestamps.end = nrf_timer_cc_get(NRF_RADIO_TIMER, NRF_TIMER_CC_CHANNEL2);
   timestamps.mpdu_duration = rx_buf.phr * BYTE_DURATION_RTIMER;
 
   /*
@@ -999,7 +1040,7 @@ set_object(radio_param_t param, const void *src, size_t size)
   return RADIO_RESULT_NOT_SUPPORTED;
 }
 /*---------------------------------------------------------------------------*/
-const struct radio_driver nrf_ieee_driver = {
+const struct radio_driver nrf_radio_driver = {
   init,
   prepare,
   transmit,
@@ -1048,18 +1089,30 @@ PROCESS_THREAD(nrf_ieee_rf_process, ev, data)
   PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
+static nrf_radioirq_callback_t irq_handler = (nrf_radioirq_callback_t) NULL;
+/*---------------------------------------------------------------------------*/
 void
-RADIO_IRQHandler(void)
+nrf_radioirq_register_handler(nrf_radioirq_callback_t handler)
 {
-  if(!rf_config.poll_mode) {
-    if(nrf_radio_event_check(NRF_RADIO, NRF_RADIO_EVENT_CRCOK)) {
-      nrf_radio_event_clear(NRF_RADIO, NRF_RADIO_EVENT_CRCOK);
-      rx_buf.full = true;
-      process_poll(&nrf_ieee_rf_process);
-    } else if(nrf_radio_event_check(NRF_RADIO, NRF_RADIO_EVENT_CRCERROR)) {
-      nrf_radio_event_clear(NRF_RADIO, NRF_RADIO_EVENT_CRCERROR);
-      rx_buf_clear();
-      enter_rx();
+  irq_handler = handler;
+}
+/*---------------------------------------------------------------------------*/
+void
+NRF_RADIO_IRQ_HANDLER(void)
+{
+  if(irq_handler) {
+    irq_handler();
+  } else {
+    if(!rf_config.poll_mode) {
+      if(nrf_radio_event_check(NRF_RADIO, NRF_RADIO_EVENT_CRCOK)) {
+        nrf_radio_event_clear(NRF_RADIO, NRF_RADIO_EVENT_CRCOK);
+        rx_buf.full = true;
+        process_poll(&nrf_ieee_rf_process);
+      } else if(nrf_radio_event_check(NRF_RADIO, NRF_RADIO_EVENT_CRCERROR)) {
+        nrf_radio_event_clear(NRF_RADIO, NRF_RADIO_EVENT_CRCERROR);
+        rx_buf_clear();
+        enter_rx();
+      }
     }
   }
 }

@@ -37,12 +37,30 @@
  *         Yevgen Gyl <yevgen.gyl@unikie.com>
  *         Beshr Al Nahas <beshr@chalmers.se>
  */
+#if CONTIKI_TARGET_NRF52840
 
 #ifndef _NRF_RADIO_DRIVER_H_
 #define _NRF_RADIO_DRIVER_H_
 
+#include "contiki.h"
 #include "nrf_radio.h"
 #include "net/mac/osf/osf-timer.h"
+#include "nrf52840-ieee.h"
+
+/*---------------------------------------------------------------------------*/
+/* HAL split */
+/*---------------------------------------------------------------------------*/
+#define OSF_RADIO_IRQ_REGISTER_HANDLER nrf52840_radioirq_register_handler
+#define OSF_RADIO_HAL_START nrf52840_hal_start
+#define OSF_RADIO_HAL_STOP nrf52840_hal_stop
+
+void nrf52840_hal_start();
+void nrf52840_hal_stop();
+
+#define TS_LED                          LED_1
+#define ROUND_LED                       LED_2
+#define SYNCED_LED                      LED_3
+#define CRCERR_LED                      LED_4
 
 /*---------------------------------------------------------------------------*/
 /* TX POWER */
@@ -204,3 +222,5 @@ void my_radio_off_to_rx();
 void my_radio_set_maxlen(uint8_t maxlen);
 
 #endif /* _NRF_RADIO_DRIVER_H_ */
+
+#endif /* CONTIKI_TARGET_NRF52840 */

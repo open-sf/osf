@@ -52,9 +52,12 @@
 #include "contiki.h"
 
 #include "nrfx_gpiote.h"
+
+extern const nrfx_gpiote_t gpiote;
+
 /*---------------------------------------------------------------------------*/
-#define gpio_hal_arch_interrupt_enable(port, pin)  nrfx_gpiote_in_event_enable(NRF_GPIO_PIN_MAP(port, pin), true)
-#define gpio_hal_arch_interrupt_disable(port, pin) nrfx_gpiote_in_event_disable(NRF_GPIO_PIN_MAP(port, pin))
+#define gpio_hal_arch_interrupt_enable(port, pin)  nrfx_gpiote_trigger_enable(&gpiote, NRF_GPIO_PIN_MAP(port, pin), true)
+#define gpio_hal_arch_interrupt_disable(port, pin) nrfx_gpiote_trigger_disable(&gpiote, NRF_GPIO_PIN_MAP(port, pin))
 /*---------------------------------------------------------------------------*/
 #define gpio_hal_arch_pin_set_input(port, pin)     nrf_gpio_cfg_input(NRF_GPIO_PIN_MAP(port, pin), NRF_GPIO_PIN_NOPULL)
 #define gpio_hal_arch_pin_set_output(port, pin)    nrf_gpio_cfg_output(NRF_GPIO_PIN_MAP(port, pin))

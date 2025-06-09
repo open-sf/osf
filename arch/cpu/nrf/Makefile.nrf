@@ -8,17 +8,50 @@ CONTIKI_CPU_DIRS += net
 ### CPU-dependent source files
 CONTIKI_CPU_SOURCEFILES += rtimer-arch.c
 CONTIKI_CPU_SOURCEFILES += watchdog-arch.c
-CONTIKI_CPU_SOURCEFILES += clock-arch.c
-CONTIKI_CPU_SOURCEFILES += dbg-arch.c
 CONTIKI_CPU_SOURCEFILES += gpio-hal-arch.c
 CONTIKI_CPU_SOURCEFILES += int-master-arch.c
 CONTIKI_CPU_SOURCEFILES += random-arch.c
-CONTIKI_CPU_SOURCEFILES += nrf-ieee-driver-arch.c
 CONTIKI_CPU_SOURCEFILES += uarte-arch.c
 CONTIKI_CPU_SOURCEFILES += temp-arch.c
 CONTIKI_CPU_SOURCEFILES += linkaddr-arch.c
 CONTIKI_CPU_SOURCEFILES += reset-arch.c
 CONTIKI_CPU_SOURCEFILES += slip-arch.c
+
+ifeq ($(NRF_USE_RTT),1)
+  ### Suppress the existing debug I/O in os/lib
+  CFLAGS += -DNRF_USE_RTT=1
+  CONTIKI_CPU_DIRS += rtt
+  CONTIKI_CPU_SOURCEFILES += rtt-printf.c SEGGER_RTT.c SEGGER_RTT_printf.c
+else
+  CONTIKI_CPU_SOURCEFILES += dbg-arch.c
+endif
+
+LDFLAGS += -Wl,-Map=$(CONTIKI_NG_PROJECT_MAP)
+
+ifeq ($(NRF_WITH_GRTC_CLOCK), 1)
+CONTIKI_CPU_SOURCEFILES += clock-arch-grtc.c
+else
+CONTIKI_CPU_SOURCEFILES += clock-arch-rtc.c
+endif
+
+# Infrom the radio stack about the available modes
+ifeq ($(NRF_WITH_IEEE_PHY), 1)
+  CFLAGS += -DNRF_WITH_IEEE_PHY=1
+else
+  CFLAGS += -DNRF_WITH_IEEE_PHY=0
+endif
+
+ifeq ($(NRF_WITH_CODED_PHY), 1)
+  CFLAGS += -DNRF_WITH_CODED_PHY=1
+else
+  CFLAGS += -DNRF_WITH_CODED_PHY=0
+endif
+
+ifeq ($(NRF_FALLBACK_RADIO), 1)
+CONTIKI_CPU_SOURCEFILES += nrf-esb-driver-arch.c
+else ifeq ($(NRF_WITH_IEEE_PHY), 1)
+CONTIKI_CPU_SOURCEFILES += nrf-ieee-driver-arch.c
+endif
 
 # Overrides
 CONTIKI_CPU_SOURCEFILES += random.c
@@ -54,16 +87,30 @@ TARGET_LIBFILES += -lgcc -lc -lnosys
 #source common to all targets
 NRFX_C_SRCS += $(NRFX_ROOT)/drivers/src/nrfx_wdt.c
 NRFX_C_SRCS += $(NRFX_ROOT)/drivers/src/nrfx_clock.c
-NRFX_C_SRCS += $(NRFX_ROOT)/drivers/src/nrfx_rtc.c
 NRFX_C_SRCS += $(NRFX_ROOT)/drivers/src/nrfx_gpiote.c
 NRFX_C_SRCS += $(NRFX_ROOT)/drivers/src/nrfx_power.c
 NRFX_C_SRCS += $(NRFX_ROOT)/drivers/src/nrfx_uarte.c
 NRFX_C_SRCS += $(NRFX_ROOT)/drivers/src/nrfx_usbreg.c
 NRFX_C_SRCS += $(NRFX_ROOT)/drivers/src/nrfx_ipc.c
+NRFX_C_SRCS += $(NRFX_ROOT)/drivers/src/nrfx_ppi.c
+NRFX_C_SRCS += $(NRFX_ROOT)/drivers/src/nrfx_dppi.c
+NRFX_C_SRCS += $(NRFX_ROOT)/drivers/src/nrfx_ppib.c
+NRFX_C_SRCS += $(NRFX_ROOT)/drivers/src/nrfx_ppib.c
+
+ifeq ($(NRF_WITH_GRTC_CLOCK), 1)
+NRFX_C_SRCS += $(NRFX_ROOT)/drivers/src/nrfx_grtc.c
+else
+NRFX_C_SRCS += $(NRFX_ROOT)/drivers/src/nrfx_rtc.c
+endif
 
 NRFX_C_SRCS += $(NRFX_ROOT)/soc/nrfx_atomic.c
+NRFX_C_SRCS += $(NRFX_ROOT)/soc/interconnect/dppic_ppib/nrfx_interconnect_dppic_ppib.c
 
 NRFX_C_SRCS += $(NRFX_ROOT)/helpers/nrfx_flag32_allocator.c
+NRFX_C_SRCS += $(NRFX_ROOT)/helpers/nrfx_gppi_ppi.c
+NRFX_C_SRCS += $(NRFX_ROOT)/helpers/nrfx_gppi_dppi.c
+NRFX_C_SRCS += $(NRFX_ROOT)/helpers/nrfx_gppi_dppi_ppib.c
+NRFX_C_SRCS += $(NRFX_ROOT)/helpers/nrfx_gppi_dppi_ppib_lumos.c
 
 #assembly files common to all targets
 NRFX_ASM_SRCS += 
@@ -77,6 +124,8 @@ NRFX_INC_PATHS += templates
 NRFX_INC_PATHS += drivers/src
 NRFX_INC_PATHS += drivers/include
 NRFX_INC_PATHS += soc
+NRFX_INC_PATHS += soc/interconnect
+NRFX_INC_PATHS += soc/interconnect/dppic_ppib
 NRFX_INC_PATHS += hal
 NRFX_INC_PATHS += helpers
 

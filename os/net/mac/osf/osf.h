@@ -38,7 +38,15 @@
  
 #ifndef OSF_H_
 #define OSF_H_
+
+/* TODO: split this cleaner */
+#if CONTIKI_TARGET_NRF52840
 #include "net/mac/osf/nrf52840-osf.h"
+#endif
+
+#if CONTIKI_TARGET_NRF
+#include "net/mac/osf/nrf-osf.h"
+#endif
 
 #if BUILD_WITH_TESTBED
 #include "services/testbed/testbed.h"
@@ -507,5 +515,7 @@ uint8_t osf_send(uint8_t *data, uint8_t len, uint8_t dst);
 uint8_t osf_receive(uint8_t src, uint8_t dst, uint8_t *data, uint8_t len);
 
 rtimer_clock_t osf_get_reference_time();
+
+void RADIO_IRQHandler_callback();
 
 #endif /* OSF_H_ */

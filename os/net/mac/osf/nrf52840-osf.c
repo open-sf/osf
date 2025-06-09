@@ -38,6 +38,8 @@
  *         Beshr Al Nahas <beshr@chalmers.se>
  */
 
+#if CONTIKI_TARGET_NRF52840
+
 #include <inttypes.h>
 
 #include "contiki.h"
@@ -1008,3 +1010,21 @@ print_radio_config()
   LOG_DBG("0x4000173C              : 0x%08lX\n", *(volatile uint32_t *)0x4000173C);
   LOG_DBG("0x40001740              : 0x%08lX\n", *(volatile uint32_t *)0x40001740);
 }
+
+void nrf52840_hal_start() {
+  NVIC_DisableIRQ(RADIO_IRQn);
+  nrf_radio_int_disable(0xFFFFFFFF);
+  NVIC_ClearPendingIRQ(RADIO_IRQn);
+  OSF_RADIO_IRQ_REGISTER_HANDLER(RADIO_IRQHandler_callback);
+}
+
+void nrf52840_hal_stop() {
+    /* Free the handler for other MACs */
+  // FIXME: Radio stuff should really not go here
+  NVIC_DisableIRQ(RADIO_IRQn);
+  nrf_radio_int_disable(0xFFFFFFFF);
+  NVIC_ClearPendingIRQ(RADIO_IRQn);
+  OSF_RADIO_IRQ_REGISTER_HANDLER(NULL);
+}
+
+#endif /* CONTIKI_TARGET_NRF52840 */

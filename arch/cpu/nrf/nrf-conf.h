@@ -49,7 +49,7 @@
 #endif /* BOARD_CONF_PATH */
 /*---------------------------------------------------------------------------*/
 #ifndef NETSTACK_CONF_RADIO
-#define NETSTACK_CONF_RADIO        nrf_ieee_driver
+#define NETSTACK_CONF_RADIO        nrf_radio_driver
 #endif /* NETSTACK_CONF_RADIO */
 /*---------------------------------------------------------------------------*/
 #ifdef NRF_CONF_HARDFAULT_HANDLER_EXTENDED

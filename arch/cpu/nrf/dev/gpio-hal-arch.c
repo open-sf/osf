@@ -53,6 +53,18 @@
 #include "nrfx_gpiote.h"
 
 #include "hal/nrf_gpio.h"
+
+#ifndef NRF_GPIOTE_INSTANCE_ID
+#define NRF_GPIOTE_INSTANCE_ID 0
+#endif
+
+/* TODO: there is for sure a macro for this */
+#ifndef NRF_GPIOTE_NAME
+#define NRF_GPIOTE_NAME NRF_GPIOTE
+#endif
+
+const nrfx_gpiote_t gpiote = NRFX_GPIOTE_INSTANCE(NRF_GPIOTE_INSTANCE_ID);
+
 /*---------------------------------------------------------------------------*/
 #define PIN_TO_PORT(pin) (pin >> 5)
 #define PIN_TO_NUM(pin) (pin & 0x1F)
@@ -60,11 +72,12 @@
 /**
  * @brief GPIO event handler
  * 
- * @param pin GPIO pin
- * @param action Action
+ * @param pin      The pin number that triggered the event
+ * @param trigger  The trigger type that caused the event (LOTOHI, HITOLO, TOGGLE)
+ * @param context  User-defined context pointer (unused)
  */
 static void
-pin_event_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
+pin_event_handler(nrfx_gpiote_pin_t pin, nrfx_gpiote_trigger_t trigger, void *context)
 {
   gpio_hal_port_t port;
   gpio_hal_pin_mask_t pin_mask;
@@ -78,8 +91,9 @@ pin_event_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 void
 gpio_hal_arch_init(void)
 {
-  if(!nrfx_gpiote_is_init()) {
-    nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY);
+  //if(!nrfx_gpiote_is_init()) { /* TODO: track init */
+  {
+    nrfx_gpiote_init(&gpiote,NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY);
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -87,40 +101,54 @@ void
 gpio_hal_arch_port_pin_cfg_set(gpio_hal_port_t port, gpio_hal_pin_t pin, gpio_hal_pin_cfg_t cfg)
 {
   gpio_hal_pin_cfg_t tmp;
-  nrfx_gpiote_in_config_t gpiote_config = {
-    .is_watcher = false,
-    .hi_accuracy = true,
-  };
+
+  uint8_t in_channel;
+  nrfx_gpiote_channel_alloc(&gpiote, &in_channel); /* TODO check return value */
+
+  nrf_gpio_pin_pull_t  pull_config;
+
+  nrfx_gpiote_trigger_config_t trigger_config;
+  trigger_config.p_in_channel = &in_channel;
+
+  nrfx_gpiote_handler_config_t handler_config = {
+		.handler = pin_event_handler,
+	};
 
   uint32_t pin_number = NRF_GPIO_PIN_MAP(port, pin);
 
   tmp = cfg & GPIO_HAL_PIN_CFG_EDGE_BOTH;
   if(tmp == GPIO_HAL_PIN_CFG_EDGE_NONE) {
-    gpiote_config.sense = GPIOTE_CONFIG_POLARITY_None;
+    trigger_config.trigger = NRFX_GPIOTE_TRIGGER_NONE;
   } else if(tmp == GPIO_HAL_PIN_CFG_EDGE_RISING) {
-    gpiote_config.sense = NRF_GPIOTE_POLARITY_LOTOHI;
+    trigger_config.trigger = NRFX_GPIOTE_TRIGGER_LOTOHI;
   } else if(tmp == GPIO_HAL_PIN_CFG_EDGE_FALLING) {
-    gpiote_config.sense = NRF_GPIOTE_POLARITY_HITOLO;
+    trigger_config.trigger = NRFX_GPIOTE_TRIGGER_HITOLO;
   } else if(tmp == GPIO_HAL_PIN_CFG_EDGE_BOTH) {
-    gpiote_config.sense = NRF_GPIOTE_POLARITY_TOGGLE;
+    trigger_config.trigger = NRFX_GPIOTE_TRIGGER_TOGGLE;
   }
 
   tmp = cfg & GPIO_HAL_PIN_CFG_PULL_MASK;
   if(tmp == GPIO_HAL_PIN_CFG_PULL_NONE) {
-    gpiote_config.pull = NRF_GPIO_PIN_NOPULL;
+    pull_config = NRF_GPIO_PIN_NOPULL;
   } else if(tmp == GPIO_HAL_PIN_CFG_PULL_DOWN) {
-    gpiote_config.pull = NRF_GPIO_PIN_PULLDOWN;
+    pull_config = NRF_GPIO_PIN_PULLDOWN;
   } else if(tmp == GPIO_HAL_PIN_CFG_PULL_UP) {
-    gpiote_config.pull = NRF_GPIO_PIN_PULLUP;
+    pull_config = NRF_GPIO_PIN_PULLUP;
   }
 
-  nrfx_gpiote_in_init(pin_number, &gpiote_config, pin_event_handler);
+  nrfx_gpiote_input_pin_config_t input_config = {
+		.p_pull_config = &pull_config,
+		.p_trigger_config = &trigger_config,
+		.p_handler_config = &handler_config
+	};
+
+  nrfx_gpiote_input_configure(&gpiote, pin_number, &input_config);
 
   tmp = cfg & GPIO_HAL_PIN_CFG_INT_MASK;
   if(tmp == GPIO_HAL_PIN_CFG_INT_DISABLE) {
-    nrfx_gpiote_in_event_disable(pin_number);
+    nrfx_gpiote_trigger_disable(&gpiote, pin_number);
   } else if(tmp == GPIO_HAL_PIN_CFG_INT_ENABLE) {
-    nrfx_gpiote_in_event_enable(pin_number, true);
+    nrfx_gpiote_trigger_enable(&gpiote, pin_number, true);
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -148,8 +176,8 @@ gpio_hal_arch_port_pin_cfg_get(gpio_hal_port_t port, gpio_hal_pin_t pin)
    * the GPIOTE configuration
    */
   for(i = 0; i < GPIOTE_CH_NUM; i++) {
-    if(nrf_gpiote_event_pin_get(NRF_GPIOTE, i) == pin_number) {
-      polarity = nrf_gpiote_event_polarity_get(NRF_GPIOTE, i);
+    if(nrf_gpiote_event_pin_get(NRF_GPIOTE_NAME, i) == pin_number) {
+      polarity = nrf_gpiote_event_polarity_get(NRF_GPIOTE_NAME, i);
 
       if(polarity == NRF_GPIOTE_POLARITY_LOTOHI) {
         cfg |= GPIO_HAL_PIN_CFG_EDGE_BOTH;
@@ -167,7 +195,7 @@ gpio_hal_arch_port_pin_cfg_get(gpio_hal_port_t port, gpio_hal_pin_t pin)
         cfg |= GPIO_HAL_PIN_CFG_PULL_UP;
       }
 
-      if(nrf_gpiote_int_enable_check(NRF_GPIOTE, 1 << i)) {
+      if(nrf_gpiote_int_enable_check(NRF_GPIOTE_NAME, 1 << i)) {
         cfg |= GPIO_HAL_PIN_CFG_INT_ENABLE;
       }
       return cfg;

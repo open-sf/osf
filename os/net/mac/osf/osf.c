@@ -69,9 +69,6 @@
 #include "net/mac/osf/osf-log.h"
 #include "net/mac/osf/osf-stat.h"
 
-#include "nrf52840-ieee.h"
-static void RADIO_IRQHandler_callback();
-
 /* MUST INCLUDE THESE FOR NODE IDS AND TESTBED PATTERNS */
 #include "services/deployment/deployment.h"
 #if CONF_TESTBED
@@ -729,11 +726,7 @@ do_slot()
 static void
 start_round() {
   /* Register our own radio handler (we can release later) */
-  // FIXME: Radio stuff needs to be moved to the radio driver.
-  NVIC_DisableIRQ(RADIO_IRQn);
-  nrf_radio_int_disable(0xFFFFFFFF);
-  NVIC_ClearPendingIRQ(RADIO_IRQn);
-  nrf52840_radioirq_register_handler(RADIO_IRQHandler_callback);
+  OSF_RADIO_HAL_START();
 
   /* After a whole epoch of sleeping, we will have drifted. Correct this. */
   // osf.t_epoch_ref += osf.t_epoch_drift; // FIXME: Makes things worse. Need a moving avg.
@@ -824,12 +817,7 @@ end_round() {
   /* Clear the buffer */
   memset(osf_buf, 0, sizeof(osf_buf_t));
 
-  /* Free the handler for other MACs */
-  // FIXME: Radio stuff should really not go here
-  NVIC_DisableIRQ(RADIO_IRQn);
-  nrf_radio_int_disable(0xFFFFFFFF);
-  NVIC_ClearPendingIRQ(RADIO_IRQn);
-  nrf52840_radioirq_register_handler(NULL);
+  OSF_RADIO_HAL_STOP();
 
   /* Next round */
   osf.proto->index++;
@@ -913,7 +901,7 @@ PROCESS_THREAD(osf_post_round_process, ev, ev_data)
 /* Radio IRQ Handler for RoF state machine */
 /*---------------------------------------------------------------------------*/
 // static rtimer_clock_t t_exp_ev_addr_ts = 0;
-static void
+void
 RADIO_IRQHandler_callback()
 {
   DEBUG_GPIO_ON(RADIO_IRQ_EVENT_PIN); // Spikes READY | ADDR | END fo r debug
