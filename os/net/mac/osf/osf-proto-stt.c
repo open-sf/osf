@@ -124,7 +124,7 @@ init()
   }
 
   /* Set a bit index for this node */
-  my_bit_index = deployment_index_from_id(node_id);
+  my_bit_index = deployment_index_from_id(node_id) + 1; // +1: index starts with 0, but ID starts with 1
 
   this->len = i; // note our protocol length
   LOG_ERR("Our length is %u. idx is %u\n", i, my_bit_index);
