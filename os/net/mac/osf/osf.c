@@ -435,11 +435,9 @@ get_next_channel()
       test_n_missed_rxes--;
     }
 #endif
-    // DEBUG_FLASH_GPIO(osf_ch_index, DBG_PIN1);
     osf_ch_index = (osf_ch_index + 1) % osf_ch_len;
   } else {
     channel = scan_channels[osf_scan_index];
-    // DEBUG_FLASH_GPIO(osf_scan_index, DBG_PIN1);
     // Increment channel for next time we hop
     osf_scan_index++;
     if(osf_scan_index == osf_scan_len) {
@@ -772,9 +770,7 @@ start_round() {
   osf_buf_len = OSF_PKT_HDR_LEN + (osf.round->statlen ? OSF_PKT_RND_LEN(osf.round->type) : len);
 
   /* Do extension */
-  // DEBUG_GPIO_ON(DBG_PIN2);
   DO_OSF_D_EXTENSION(start, osf.round->type, osf.round->is_initiator, OSF_PKT_RND_LEN(osf.round->type));
-  // DEBUG_GPIO_OFF(DBG_PIN2);
 
   /* Check we aren't trying to send more than the MTU can handle */
   if(osf_buf_len <= OSF_MAXLEN(osf.rconf->phy->mode)) {
@@ -841,7 +837,6 @@ PROCESS_THREAD(osf_post_epoch_process, ev, ev_data)
 
   while (1) {
     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
-    DEBUG_GPIO_ON(DBG_PIN3); // 80us - empty loop
 
     /* Print logs */
 #if OSF_LOGGING
@@ -853,7 +848,6 @@ PROCESS_THREAD(osf_post_epoch_process, ev, ev_data)
       process_poll(&osf_post_round_process);
     }
 
-    DEBUG_GPIO_OFF(DBG_PIN3);
   }
 
   PROCESS_END();
@@ -867,7 +861,6 @@ PROCESS_THREAD(osf_post_round_process, ev, ev_data)
 
   while (1) {
     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_POLL);
-    DEBUG_GPIO_ON(DBG_PIN3); // 100 us; 1,2ms ; 5ms (ping 1232); 7.5ms (UDP 1232)
     /* If data in FIFO buffer -> push it to App */
     if (osf_buf_rx_length()) {
         osf_buf_element_t *el = osf_buf_rx_peek();
@@ -892,7 +885,6 @@ PROCESS_THREAD(osf_post_round_process, ev, ev_data)
       LOG_WARN("TX queue %d elements !\r\n", osf_buf_tx_length());
     }
 
-    DEBUG_GPIO_OFF(DBG_PIN3);
   }
 
   PROCESS_END();

@@ -448,7 +448,6 @@ PROCESS_THREAD(tb_eeprom_reader_process, ev, data)
       continue;
     }
 
-    DEBUG_GPIO_ON(DBG_PIN4);
     // we have been polled by the GPIO and need to read data from the EEPROM
     eeprom.read(tb_rx_fifo[tb_rx_fifo_pos++]);
     LOG_DBG("E2-R++ %u\n", tb_rx_fifo_pos);
@@ -459,7 +458,6 @@ PROCESS_THREAD(tb_eeprom_reader_process, ev, data)
     if(testbed.pop(&rx_data, &rx_pkt_len)) {
       testbed.read_callback(rx_data, rx_pkt_len, tb_destinations, tb_num_dst);
     }
-    DEBUG_GPIO_OFF(DBG_PIN4);
   }
   PROCESS_END();
 }
