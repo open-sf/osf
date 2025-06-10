@@ -92,8 +92,8 @@
 #define RADIO_TXRX_PIN                  NRF_GPIO_PIN_MAP(0, 31) // high on READY, low on END
 #define RADIO_IRQ_EVENT_PIN             NRF_GPIO_PIN_MAP(0, 30) // high on IRQ in, low - on out
 // #define DBG_PIN1                        NRF_GPIO_PIN_MAP(1, 5)  // DBG1
-#define DBG_PIN2                        NRF_GPIO_PIN_MAP(1, 6)  // DBG2
-#define DBG_PIN3                        NRF_GPIO_PIN_MAP(1, 7)  // DBG3
+// #define DBG_PIN2                        NRF_GPIO_PIN_MAP(1, 6)  // DBG2
+// #define DBG_PIN3                        NRF_GPIO_PIN_MAP(1, 7)  // DBG3
 // #define DBG_PIN4                        NRF_GPIO_PIN_MAP(1, 8)  // DBG4
 // #define DBG_PIN4                        NRF_GPIO_PIN_MAP(0, 28)  // DBG4
 // #define RADIO_READY_EVENT_PIN           NRF_GPIO_PIN_MAP(0, 29) // READY
