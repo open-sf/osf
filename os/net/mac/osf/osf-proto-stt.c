@@ -60,7 +60,7 @@
 #define LOG_MODULE "OSF-STT"
 #define LOG_LEVEL LOG_LEVEL_DBG
 
-static uint8_t       my_bit_index;
+static uint8_t       my_tx_round;
 static osf_proto_t  *this = &osf_proto_stt;
 
 #define UNUSED(x) (void)(x)
@@ -124,10 +124,10 @@ init()
   }
 
   /* Set a bit index for this node */
-  my_bit_index = deployment_index_from_id(node_id) + 1; // +1: index starts with 0, but ID starts with 1
+  my_tx_round = deployment_index_from_id(node_id);
 
   this->len = i; // note our protocol length
-  LOG_ERR("Our length is %u. idx is %u\n", i, my_bit_index);
+  LOG_ERR("Our length is %u. idx is %u\n", i, my_tx_round);
   this->index = 0; // reset index
 
   /* Configure the protocol (phys, ntx, statlen, etc.) - gives us the (initial) duration */
@@ -164,7 +164,8 @@ next_round()
         // if the dst field is your id, you are a DST <-- done in round
         // all other nodes are FWD
         // FIXME: Need a better way to determine who is in what slot
-        this->role = (osf_buf_tx_length() && (my_bit_index == this->index)) ? OSF_ROLE_SRC : (node_is_destination ? OSF_ROLE_DST : OSF_ROLE_FWD);
+        this->role = (osf_buf_tx_length() && (my_tx_round == this->index)) ? OSF_ROLE_SRC : (node_is_destination ? OSF_ROLE_DST : OSF_ROLE_FWD);
+        // printf("%u/%u - %u\n", my_tx_round, this->index, this->role == OSF_ROLE_SRC);
         break;
       default:
         LOG_ERR("Unknown round type! (%u) %u/%u\n", rconf->round->type, this->index, this->len);
