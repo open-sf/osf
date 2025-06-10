@@ -27,8 +27,6 @@
  * SUCH DAMAGE.
  *
  * This file is part of the Contiki operating system.
- *
- * $Id: netstack.h,v 1.6 2010/10/03 20:37:32 adamdunkels Exp $
  */
 
 /**
@@ -103,9 +101,9 @@
 /* PA driver configuration. Most often set by the platform. */
 #ifdef NETSTACK_CONF_PA
 #define NETSTACK_PA NETSTACK_CONF_PA
-#else /* NETSTACK_CONF_RADIO */
+#else /* NETSTACK_CONF_PA */
 #define NETSTACK_PA nullpa_driver
-#endif /* NETSTACK_CONF_RADIO */
+#endif /* NETSTACK_CONF_PA */
 
 /* Framer selection. The framer is used by the MAC implementation
    to build and parse frames. */
@@ -142,6 +140,7 @@ extern const struct routing_driver NETSTACK_ROUTING;
 extern const struct network_driver NETSTACK_NETWORK;
 extern const struct mac_driver NETSTACK_MAC;
 extern const struct radio_driver NETSTACK_RADIO;
+extern const struct pa_driver NETSTACK_PA;
 extern const struct framer NETSTACK_FRAMER;
 
 void netstack_init(void);
