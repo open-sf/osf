@@ -162,20 +162,61 @@
 #endif /* TEST_NODE */
 
 /*---------------------------------------------------------------------------*/
+/* FEM */
+/*---------------------------------------------------------------------------*/
+/* FEM default values */
+#ifdef FEM_MODE_TX
+#define FEM_CONF_MODE_TX FEM_MODE_TX
+#else
+#if USE_FEM == 1
+#define FEM_CONF_MODE_TX PA_TX_Plus20dBm
+#elif USE_FEM == 2
+#define FEM_CONF_MODE_TX PA_TX_Plus20dBm
+#elif USE_FEM == 3
+#define FEM_CONF_MODE_TX PA_TX_Plus27dBm
+#endif
+#endif /* FEM_MODE_TX */
+
+#ifdef FEM_TX_ATT
+#define FEM_CONF_TX_ATT FEM_TX_ATT
+#else
+#define FEM_CONF_TX_ATT (0x1F)
+#endif /* FEM_TX_ATT */
+
+#ifdef FEM_MODE_RX
+#define FEM_CONF_MODE_RX FEM_MODE_RX
+#else
+#if USE_FEM == 1
+#define FEM_CONF_MODE_RX PA_RX_LNA
+#elif USE_FEM == 2
+#define FEM_CONF_MODE_RX PA_RX_LNA
+#elif USE_FEM == 3
+#define FEM_CONF_MODE_RX PA_RX_LNA
+#endif
+#endif /* FEM_MODE_RX */
+
+#ifdef FEM_ANT_RX
+#define FEM_CONF_ANT_RX FEM_ANT_RX
+#else
+#define FEM_CONF_ANT_RX PA_LNA_ANT1
+#endif /* FEM_ANT_RX */
+
+#ifdef FEM_ANT_TX
+#define FEM_CONF_ANT_TX FEM_ANT_TX
+#else
+#define FEM_CONF_ANT_TX PA_LNA_ANT1
+#endif /* FEM_ANT_TX */
+
+/*---------------------------------------------------------------------------*/
 /* Debug */
 /*---------------------------------------------------------------------------*/
+
 /* Debug logging */
 #ifdef LOGGING
 #define OSF_CONF_LOGGING                    LOGGING
 #else
 #define OSF_CONF_LOGGING                    1
 #endif
-
-#define LOG_CONF_LEVEL_TCPIP                LOG_LEVEL_NONE
-#define LOG_CONF_LEVEL_IPV6                 LOG_LEVEL_NONE
-#define LOG_CONF_LEVEL_6LOWPAN              LOG_LEVEL_NONE
-#define LOG_CONF_LEVEL_MAC                  LOG_LEVEL_NONE
-#define LOG_CONF_LEVEL_FRAMER               LOG_LEVEL_NONE
 
 /* Debug GPIO */
 #ifdef GPIO
@@ -190,5 +231,17 @@
 #else
 #define OSF_DEBUG_LEDS                      1
 #endif
+
+/*---------------------------------------------------------------------------*/
+/* Debug level of modules */
+/*---------------------------------------------------------------------------*/
+
+#define LOG_CONF_LEVEL_TCPIP    LOG_LEVEL_NONE
+#define LOG_CONF_LEVEL_IPV6     LOG_LEVEL_ERR
+#define LOG_CONF_LEVEL_6LOWPAN  LOG_LEVEL_NONE
+#define LOG_CONF_LEVEL_NULLNET  LOG_LEVEL_NONE
+#define LOG_CONF_LEVEL_MAC      LOG_LEVEL_ERR
+#define LOG_CONF_LEVEL_FRAMER   LOG_LEVEL_NONE
+#define LOG_CONF_LEVEL_MAIN     LOG_LEVEL_NONE
 
 #endif /* PROJECT_CONF_H_ */

@@ -1015,6 +1015,15 @@ void
 osf_init()
 {
   LOG_INFO("Init OSF...\n");
+
+#if USE_FEM
+  osf_cfg.fem_rx_ant = FEM_CONF_ANT_RX;
+  osf_cfg.fem_tx_ant = FEM_CONF_ANT_TX;
+  osf_cfg.fem_tx_mode = FEM_CONF_MODE_TX;
+  osf_cfg.fem_rx_mode = FEM_CONF_MODE_RX;
+  osf_cfg.fem_tx_att_mode = FEM_CONF_TX_ATT;
+#endif
+
   /* Initialise channel hopping */
   osf_ch_init();
   /* Initialise MAC buffer */
@@ -1160,6 +1169,14 @@ print_osf_config()
   LOG_INFO("- OSF_MAX_NODES                - %u\n", OSF_MAX_NODES);
   LOG_INFO("- OSF_TXPOWER                  - %s\n", OSF_TXPOWER_TO_STR(OSF_TXPOWER));
   LOG_INFO("- OSF_PROTOCOL:                - %s\n", OSF_PROTO_TO_STR(OSF_PROTOCOL));
+#if USE_FEM
+  LOG_PRINT("- PA_TX_MODE:                  - %s\n", PA_TXMODE_TO_STR(osf_cfg.fem_tx_mode));
+  LOG_PRINT("- PA_TX_ATT_MODE:              - 0x%X\n", osf_cfg.fem_tx_att_mode);
+  LOG_PRINT("- PA_RX_MODE:                  - %s\n", PA_RXMODE_TO_STR(osf_cfg.fem_rx_mode));
+  LOG_PRINT("- PA_RX_ANTENNA:               - %s\n", PA_ANT_TO_STR(osf_cfg.fem_rx_ant));
+  LOG_PRINT("- PA_TX_ANTENNA:               - %s\n", PA_ANT_TO_STR(osf_cfg.fem_tx_ant));
+#endif
+  /* Extensions */
   LOG_INFO("- OSF_PROTO_EXTENSION:         - %s\n", (osf_p_extension != NULL ? osf_p_extension->name : "NONE"));
   LOG_INFO("- OSF_DRIVER_EXTENSION:        - %s\n", (osf_d_extension != NULL ? osf_d_extension->name : "NONE"));
   /* Debug */

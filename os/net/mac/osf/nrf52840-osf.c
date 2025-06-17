@@ -386,6 +386,14 @@ configure_errata(osf_phy_conf_t *conf) {
    * This configuration applies to IC Rev. Revision 3, build codes QFAA-Fx0, QIAA-Fx0, CKAA-Fx0.
    * [254] RADIO: External PAs, FEMs, and LNAs need additional Radio configuration
    */
+
+#if USE_FEM
+  /** \brief Errata [254] */
+  if (*(volatile uint32_t *)0x10000330UL != 0xFFFFFFFFUL) {
+    *(volatile uint32_t *)0x4000174CUL = *(volatile uint32_t *)0x10000330UL;
+  }
+#endif /* USE_FEM */
+
   switch (conf->mode) {
     case PHY_BLE_1M:
     case PHY_BLE_2M:
@@ -408,6 +416,15 @@ configure_errata(osf_phy_conf_t *conf) {
     case PHY_IEEE:
       /* [191] */
       *(volatile uint32_t *)0x40001740 = ((*((volatile uint32_t *)0x40001740)) & 0x7FFFFFFF);
+#if USE_FEM
+      /* [254] */
+      if (*(volatile uint32_t *)0x10000334UL != 0xFFFFFFFFUL) {
+        *(volatile uint32_t *)0x40001584UL = *(volatile uint32_t *)0x10000334UL;
+      }
+      if (*(volatile uint32_t *)0x10000338UL != 0xFFFFFFFFUL) {
+        *(volatile uint32_t *)0x40001588UL = *(volatile uint32_t *)0x10000338UL;
+      }
+#endif /* USE_FEM */
       break;
 #endif      
     default:
