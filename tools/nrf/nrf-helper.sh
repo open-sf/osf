@@ -66,7 +66,7 @@ done
 # --------------------------------------------------------------------------- #
 if [ ! -f "$FILE" ]; then
   echo "> WARN: \"$FILE\" does not exist!"
-elif [[ -v SAVE ]]; then
+elif [ -n "${SAVE+x}" ]; then
   echo "> WARN: Generating new \"$FILE\"!"
   rm nrf.csv
 else
@@ -79,10 +79,10 @@ fi
 # --------------------------------------------------------------------------- #
 # Board info
 # --------------------------------------------------------------------------- #
-if [[ -v INFO ]]; then
+if [ -n "${INFO+x}" ]; then
   echo "> Print board info..."
 
-  if [[ -v DEPLOYMENT ]]; then
+  if [ -n "${DEPLOYMENT+x}" ]; then
     DEPLOYMENT_FOLDER=../../os/services/deployment/nulltb/
     DEPLOYMENT_FILE=$DEPLOYMENT_FOLDER/deployment-map-nulltb.c
     mkdir -p $DEPLOYMENT_FOLDER
@@ -106,7 +106,7 @@ if [[ -v INFO ]]; then
       sn=${row::9}
       mac=`nrfjprog --snr $sn --memrd 0x100000A4 --n 8 | cut -c 13-21,28-30`
       mac="F4CE36${mac:9:2}${mac:6:2}${mac:4:2}${mac:2:2}${mac:0:2}"
-      if [[ -v SAVE ]]; then
+      if [ -n "${SAVE+x}" ]; then
         id=$(( $id + 1 ))
         echo "$id,$mac,$sn" >> $FILE
       else
@@ -116,8 +116,8 @@ if [[ -v INFO ]]; then
           fi
         done
       fi
-      if [[ -v DEPLOYMENT ]]; then
-        mac=${mac,,}
+      if [ -n "${DEPLOYMENT+x}" ]; then
+        mac=$(echo "$mac" | tr '[:upper:]' '[:lower:]')
         mac="0x${mac:0:2},0x${mac:2:2},0x${mac:4:2},0x${mac:6:2},0x${mac:8:2},0x${mac:10:2},0x${mac:12:2},0x${mac:14:2}"
         echo "  {   $id, {{$mac}} }," | tee -a $DEPLOYMENT_FILE
       else
@@ -141,7 +141,7 @@ if [[ -v INFO ]]; then
     done
   fi
 
-  if [[ -v DEPLOYMENT ]]; then
+  if [ -n "${DEPLOYMENT+x}" ]; then
     echo "  {   0, {{0}}}" | tee -a $DEPLOYMENT_FILE
     echo "};" | tee -a $DEPLOYMENT_FILE
     echo "#else" | tee -a $DEPLOYMENT_FILE
