@@ -594,8 +594,6 @@ end_rx()
 #endif
     if(!node_is_synced) {
       start_rx(RTIMERX_NOW() + US_TO_RTIMERTICKSX(500));
-      NETSTACK_PA.set_antenna(osf_cfg.fem_rx_ant);
-      NETSTACK_PA.set_rx_gain(osf_cfg.fem_rx_mode);
       NETSTACK_PA.rx_on();
       return;
     }
