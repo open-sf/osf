@@ -215,32 +215,5 @@ ifeq ($(FEM), 3)
     $(warning "FEM : SE2436L")
     NETSTACK_PA = MAKE_PA_SE2436LPA
 endif
-ifeq ($(FEM), $(filter $(FEM),1 2 3))
-    # PA_TX_Plus27dBm, PA_TX_Plus20dBm, PA_TX_Plus10dBm, PA_TX_Bypass
-    ifneq ($(FEM_MODE_TX),)
-    CFLAGS += -DFEM_MODE_TX=$(FEM_MODE_TX)
-    $(warning "FEM_MODE_TX=$(FEM_MODE_TX)")
-    endif
-    # PA_RX_LNA, PA_RX_Bypass
-    ifneq ($(FEM_MODE_RX),)
-    CFLAGS += -DFEM_MODE_RX=$(FEM_MODE_RX) 
-    $(warning "FEM_MODE_RX=$(FEM_MODE_RX)")
-    endif
-    # PA_LNA_ANT1, PA_LNA_ANT2
-    ifneq ($(FEM_ANT_RX),)
-    CFLAGS += -DFEM_ANT_RX=$(FEM_ANT_RX)
-    $(warning "FEM_ANT_RX=$(FEM_ANT_RX)")
-    endif
-    # PA_LNA_ANT1, PA_LNA_ANT2
-    ifneq ($(FEM_ANT_TX),)
-    CFLAGS += -DFEM_ANT_TX=$(FEM_ANT_TX)
-    $(warning "FEM_ANT_TX=$(FEM_ANT_TX)")
-    endif
-    # 0x00...0x1F
-    ifneq ($(FEM_TX_ATT),)
-    CFLAGS += -DFEM_TX_ATT=$(FEM_TX_ATT)
-    $(warning "FEM_TX_ATT=$(FEM_TX_ATT)")
-    endif
-endif
 
 include $(CONTIKI)/Makefile.include

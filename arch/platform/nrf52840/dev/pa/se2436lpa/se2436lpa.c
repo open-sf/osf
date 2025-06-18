@@ -44,6 +44,7 @@
 
 #include "dev/nullpa.h"
 #include "nrf_gpio.h"
+#include "se2436lpa.h"
 
 #define FEM_CSD_PIN         NRF_GPIO_PIN_MAP(1, 15)
 #define FEM_CPS_PIN         NRF_GPIO_PIN_MAP(0, 2)
@@ -94,6 +95,12 @@ init(void)
   nrf_gpio_pin_set(DA_V4);
   
   off();
+
+  /* Apply default configuration */
+  set_antenna(SE2436LPA_ANT_RX);
+  set_tx_gain(SE2436LPA_MODE_TX);
+  set_rx_gain(SE2436LPA_MODE_RX);
+  set_attenuator(SE2436LPA_TX_ATT);
 }
 
 /*---------------------------------------------------------------------------*/

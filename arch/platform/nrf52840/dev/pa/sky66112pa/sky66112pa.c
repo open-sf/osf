@@ -44,6 +44,7 @@
 
 #include "dev/nullpa.h"
 #include "nrf_gpio.h"
+#include "sky66112pa.h"
 
 #define FEM_CSD_PIN         NRF_GPIO_PIN_MAP(1, 15)
 #define FEM_CPS_PIN         NRF_GPIO_PIN_MAP(0, 2)
@@ -66,6 +67,12 @@ init(void)
   nrf_gpio_cfg_output(FEM_ANT_SEL_PIN);
 
   off();
+
+  /* Apply default configuration */
+  set_antenna(SKY66112PA_ANT_RX);
+  set_tx_gain(SKY66112PA_MODE_TX);
+  set_rx_gain(SKY66112PA_MODE_RX);
+  set_attenuator(SKY66112PA_TX_ATT);
 }
 
 /*---------------------------------------------------------------------------*/

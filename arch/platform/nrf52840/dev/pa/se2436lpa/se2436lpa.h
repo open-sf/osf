@@ -47,6 +47,30 @@
 
 #include "dev/pa.h"
 
+/*
+ * Default FEM configuration for SE2436L PA
+ * These can be overridden in a project or board-specific header before including this file.
+ */
+#ifndef SE2436LPA_MODE_TX
+#define SE2436LPA_MODE_TX    PA_TX_Plus27dBm
+#endif
+
+#ifndef SE2436LPA_MODE_RX
+#define SE2436LPA_MODE_RX    PA_RX_LNA
+#endif
+
+#ifndef SE2436LPA_ANT_RX
+#define SE2436LPA_ANT_RX     PA_LNA_ANT1
+#endif
+
+#ifndef SE2436LPA_ANT_TX
+#define SE2436LPA_ANT_TX     PA_LNA_ANT1
+#endif
+
+#ifndef SE2436LPA_TX_ATT
+#define SE2436LPA_TX_ATT     0x1F
+#endif
+
 extern const struct pa_driver se2436lpa_driver;
 
 #endif /* SE2436LPA_H */

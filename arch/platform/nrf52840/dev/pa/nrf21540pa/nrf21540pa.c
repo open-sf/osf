@@ -44,6 +44,7 @@
 
 #include "dev/nullpa.h"
 #include "nrf_gpio.h"
+#include "nrf21540pa.h"
 
 #define FEM_MODE_PIN         NRF_GPIO_PIN_MAP(0, 17)
 #define FEM_RX_EN_PIN        NRF_GPIO_PIN_MAP(0, 19)
@@ -66,6 +67,12 @@ init(void)
   nrf_gpio_cfg_output(FEM_NCSN_PIN);
 
   off();
+
+  // Set up default FEM configuration using #defines
+  set_antenna(NRF21540PA_ANT_TX);     // Set default TX antenna
+  set_tx_gain(NRF21540PA_MODE_TX);    // Set default TX gain
+  set_rx_gain(NRF21540PA_MODE_RX);    // Set default RX gain
+  set_attenuator(NRF21540PA_TX_ATT);  // Set default TX attenuation
 }
 
 /*---------------------------------------------------------------------------*/

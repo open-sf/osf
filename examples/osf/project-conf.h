@@ -162,52 +162,6 @@
 #endif /* TEST_NODE */
 
 /*---------------------------------------------------------------------------*/
-/* FEM */
-/*---------------------------------------------------------------------------*/
-/* FEM default values */
-#ifdef FEM_MODE_TX
-#define FEM_CONF_MODE_TX FEM_MODE_TX
-#else
-#if USE_FEM == 1
-#define FEM_CONF_MODE_TX PA_TX_Plus20dBm
-#elif USE_FEM == 2
-#define FEM_CONF_MODE_TX PA_TX_Plus20dBm
-#elif USE_FEM == 3
-#define FEM_CONF_MODE_TX PA_TX_Plus27dBm
-#endif
-#endif /* FEM_MODE_TX */
-
-#ifdef FEM_TX_ATT
-#define FEM_CONF_TX_ATT FEM_TX_ATT
-#else
-#define FEM_CONF_TX_ATT (0x1F)
-#endif /* FEM_TX_ATT */
-
-#ifdef FEM_MODE_RX
-#define FEM_CONF_MODE_RX FEM_MODE_RX
-#else
-#if USE_FEM == 1
-#define FEM_CONF_MODE_RX PA_RX_LNA
-#elif USE_FEM == 2
-#define FEM_CONF_MODE_RX PA_RX_LNA
-#elif USE_FEM == 3
-#define FEM_CONF_MODE_RX PA_RX_LNA
-#endif
-#endif /* FEM_MODE_RX */
-
-#ifdef FEM_ANT_RX
-#define FEM_CONF_ANT_RX FEM_ANT_RX
-#else
-#define FEM_CONF_ANT_RX PA_LNA_ANT1
-#endif /* FEM_ANT_RX */
-
-#ifdef FEM_ANT_TX
-#define FEM_CONF_ANT_TX FEM_ANT_TX
-#else
-#define FEM_CONF_ANT_TX PA_LNA_ANT1
-#endif /* FEM_ANT_TX */
-
-/*---------------------------------------------------------------------------*/
 /* Debug */
 /*---------------------------------------------------------------------------*/
 
