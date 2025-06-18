@@ -164,18 +164,13 @@
 /*---------------------------------------------------------------------------*/
 /* Debug */
 /*---------------------------------------------------------------------------*/
+
 /* Debug logging */
 #ifdef LOGGING
 #define OSF_CONF_LOGGING                    LOGGING
 #else
 #define OSF_CONF_LOGGING                    1
 #endif
-
-#define LOG_CONF_LEVEL_TCPIP                LOG_LEVEL_NONE
-#define LOG_CONF_LEVEL_IPV6                 LOG_LEVEL_NONE
-#define LOG_CONF_LEVEL_6LOWPAN              LOG_LEVEL_NONE
-#define LOG_CONF_LEVEL_MAC                  LOG_LEVEL_NONE
-#define LOG_CONF_LEVEL_FRAMER               LOG_LEVEL_NONE
 
 /* Debug GPIO */
 #ifdef GPIO
@@ -190,5 +185,17 @@
 #else
 #define OSF_DEBUG_LEDS                      1
 #endif
+
+/*---------------------------------------------------------------------------*/
+/* Debug level of modules */
+/*---------------------------------------------------------------------------*/
+
+#define LOG_CONF_LEVEL_TCPIP    LOG_LEVEL_NONE
+#define LOG_CONF_LEVEL_IPV6     LOG_LEVEL_ERR
+#define LOG_CONF_LEVEL_6LOWPAN  LOG_LEVEL_NONE
+#define LOG_CONF_LEVEL_NULLNET  LOG_LEVEL_NONE
+#define LOG_CONF_LEVEL_MAC      LOG_LEVEL_ERR
+#define LOG_CONF_LEVEL_FRAMER   LOG_LEVEL_NONE
+#define LOG_CONF_LEVEL_MAIN     LOG_LEVEL_NONE
 
 #endif /* PROJECT_CONF_H_ */

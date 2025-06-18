@@ -594,6 +594,7 @@ end_rx()
 #endif
     if(!node_is_synced) {
       start_rx(RTIMERX_NOW() + US_TO_RTIMERTICKSX(500));
+      NETSTACK_PA.rx_on();
       return;
     }
   }
@@ -672,17 +673,23 @@ do_slot()
     if(osf.round->primitive == OSF_PRIMITIVE_ROF ? OSF_DOTX_ROF() : OSF_DOTX_GLOSSY()) {
       r = start_tx(t_ref);
       osf.last_slot_type = OSF_SLOT_T;
+      if (RTIMER_OK == r) {
+        NETSTACK_PA.tx_on();
+      }
     } else {
       r = start_rx(t_ref);
       osf.last_slot_type = OSF_SLOT_R;
+      if (RTIMER_OK == r) {
+        NETSTACK_PA.rx_on();
+      }
     }
     if(r != RTIMER_OK) {
       rtimer_clock_t now = RTIMERX_NOW();
       /* Check we aren't beond the end of the epoch */
       if(RTIMER_CLOCK_LT(t_epoch_end, now)) {
-  #if OSF_LOGGING
+#if OSF_LOGGING
         osf_log_slot_state('X');
-  #endif
+#endif
         LOG_DBG("{%u|ep-%-4u} rt miss EPOCH %s | t_ref:+%lu us eoe:+%lu us\n",
           node_id, osf.epoch, OSF_ROUND_TO_STR(osf.round->type),
           RTIMERTICKS_TO_USX(now - t_ref), RTIMERTICKS_TO_USX(now - t_epoch_end));
@@ -692,9 +699,9 @@ do_slot()
         osf_stat.osf_rt_miss_epoch_total++; /* Statictics */
       /* Check we aren't beond the end of the round */
       } else if (RTIMER_CLOCK_LT(t_round_end, now)) {
-  #if OSF_LOGGING
+#if OSF_LOGGING
         osf_log_slot_state('S');
-  #endif
+#endif
         LOG_DBG("{%u|ep-%-4u} rt miss ROUND %s | t_ref:+%lu us eor:+%lu us\n",
           node_id, osf.epoch, OSF_ROUND_TO_STR(osf.round->type),
           RTIMERTICKS_TO_USX(now - t_ref), RTIMERTICKS_TO_USX(now - t_round_end));
@@ -950,9 +957,7 @@ RADIO_IRQHandler_callback()
   /* END Event */
   else if (NRF_RADIO->EVENTS_END) {
     NRF_RADIO->EVENTS_END = 0;
-
     NETSTACK_PA.off();
-
     t_ev_end_ts = NRF_TIMERX->CC[TIMESTAMP_REG];
     /* We have been receiving, end RX. The next TX/RX will be scheduled by the
        next round which is called by end_rx() */
@@ -1015,6 +1020,7 @@ void
 osf_init()
 {
   LOG_INFO("Init OSF...\n");
+
   /* Initialise channel hopping */
   osf_ch_init();
   /* Initialise MAC buffer */
@@ -1028,6 +1034,8 @@ osf_init()
   osf_debug_gpio_init();
   /* Initialize runtime statistics */
   osf_stat_init();
+  /* Init PA */
+  NETSTACK_PA.init();
 }
 
 /*---------------------------------------------------------------------------*/
@@ -1159,9 +1167,14 @@ print_osf_config()
   LOG_INFO("- OSF_MAX_MAX_SLOTS            - %u\n", OSF_MAX_MAX_SLOTS);
   LOG_INFO("- OSF_MAX_NODES                - %u\n", OSF_MAX_NODES);
   LOG_INFO("- OSF_TXPOWER                  - %s\n", OSF_TXPOWER_TO_STR(OSF_TXPOWER));
-  LOG_INFO("- OSF_PROTOCOL:                - %s\n", OSF_PROTO_TO_STR(OSF_PROTOCOL));
+  LOG_INFO("- OSF_PROTOCOL:                - %s\n", OSF_PROTO_TO_STR(OSF_PROTOCOL)); 
+  /* Extensions */
   LOG_INFO("- OSF_PROTO_EXTENSION:         - %s\n", (osf_p_extension != NULL ? osf_p_extension->name : "NONE"));
   LOG_INFO("- OSF_DRIVER_EXTENSION:        - %s\n", (osf_d_extension != NULL ? osf_d_extension->name : "NONE"));
+  /* IPv6 -- TODO */
+#ifdef LENGTH
+  LOG_PRINT("- LENGTH                       - %u bytes\n", LENGTH);
+#endif
   /* Debug */
   LOG_INFO("OSF Config... (DEBUG)\n");
   LOG_INFO("- OSF_PKT_PHY_LEN              - %u bytes\n", OSF_PKT_PHY_LEN(osf.rconf->phy->mode, osf.round->statlen));

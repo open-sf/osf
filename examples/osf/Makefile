@@ -197,4 +197,23 @@ ifeq ($(WITH_SHELL), 1)
 endif
 endif
 
+#----------------------------------------------------------------------------#
+# nRF21540, SKY66112-11 or SE2436L FEM
+##---------------------------------------------------------------------------#
+ifneq ($(FEM),)
+    CFLAGS += -DUSE_FEM=$(FEM)
+endif
+ifeq ($(FEM), 1)
+    $(warning "FEM : NRF21540")
+    NETSTACK_PA = MAKE_PA_NRF21540PA
+endif
+ifeq ($(FEM), 2)
+    $(warning "FEM : SKY66112-11")
+    NETSTACK_PA = MAKE_PA_SKY66112PA
+endif
+ifeq ($(FEM), 3)
+    $(warning "FEM : SE2436L")
+    NETSTACK_PA = MAKE_PA_SE2436LPA
+endif
+
 include $(CONTIKI)/Makefile.include

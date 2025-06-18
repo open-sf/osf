@@ -244,6 +244,18 @@ ifneq ($(BOARD),)
   CFLAGS += -DCONTIKI_BOARD_STRING=\"$(BOARD)\"
 endif
 
+# Configure PA Layer
+
+MAKE_PA_NULLPA = 0
+MAKE_PA_NRF21540PA = 1
+MAKE_PA_SKY66112PA = 2
+MAKE_PA_SE2436LPA = 3
+NETSTACK_PA ?= MAKE_PA_NULLPA
+
+ifeq ($(NETSTACK_PA), MAKE_PA_NULLPA)
+  CFLAGS += -DPA_CONF_WITH_NULLPA=1
+endif
+
 # Configure MAC layer
 
 # The different options

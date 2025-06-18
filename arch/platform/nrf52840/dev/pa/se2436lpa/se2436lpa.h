@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, technology Innovation Institute (TII).
+ * Copyright (c) 2024, technology Innovation Institute (TII).
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,66 +32,46 @@
 
 /**
  * \file
- *         pa driver header
+ *         se2436l pa driver
  * \author
  *         Yevgen Gyl <yevgen.gyl@unikie.com>
- *         Michael Baddeley <michael.baddeley@tii.ae>
  */
-#ifndef PA_H_
-#define PA_H_
 
-#include <stddef.h>
-#include <stdint.h>
+/**
+ * \addtogroup nrf52840-devices Device drivers
+ * @{
+ */
 
-#if PA_CONF_MAX_TX_POWER
-#define PA_MAX_TX_POWER PA_CONF_MAX_TX_POWER
-#else
-#define PA_MAX_TX_POWER 0xFF
+#ifndef SE2436LPA_H
+#define SE2436LPA_H
+
+#include "dev/pa.h"
+
+/*
+ * Default FEM configuration for SE2436L PA
+ * These can be overridden in a project or board-specific header before including this file.
+ */
+#ifndef SE2436LPA_MODE_TX
+#define SE2436LPA_MODE_TX    PA_TX_Plus27dBm
 #endif
 
-typedef enum
-{
-    PA_LNA_ANT1 = 0,
-    PA_LNA_ANT2
-} pa_lna_ant_t;
+#ifndef SE2436LPA_MODE_RX
+#define SE2436LPA_MODE_RX    PA_RX_LNA
+#endif
 
-typedef enum
-{   
-    PA_TX_Bypass = 0,
-    PA_TX_Plus10dBm,
-    PA_TX_Plus20dBm,
-    PA_TX_Plus27dBm
-} pa_tx_gain_t;
+#ifndef SE2436LPA_ANT_RX
+#define SE2436LPA_ANT_RX     PA_LNA_ANT1
+#endif
 
-typedef enum
-{
-    PA_RX_Bypass = 0,
-    PA_RX_LNA
-} pa_rx_gain_t;
+#ifndef SE2436LPA_ANT_TX
+#define SE2436LPA_ANT_TX     PA_LNA_ANT1
+#endif
 
-#define PA_ANT_TO_STR(A) \
-  ((A == PA_LNA_ANT1) ? ("LNA_ANT1") : \
-   (A == PA_LNA_ANT2) ? ("LNA_ANT2") : ("???"))
+#ifndef SE2436LPA_TX_ATT
+#define SE2436LPA_TX_ATT     0x1F
+#endif
 
-#define PA_TXMODE_TO_STR(P) \
-  ((P == PA_TX_Plus27dBm) ? ("+27dBm") : \
-   (P == PA_TX_Plus20dBm) ? ("+20dBm") : \
-   (P == PA_TX_Plus10dBm) ? ("+10dBm") : \
-   (P == PA_TX_Bypass) ? ("Bypass") : ("???"))
-   
-#define PA_RXMODE_TO_STR(P) \
-  ((P == PA_RX_LNA) ? ("LNA") : \
-   (P == PA_RX_Bypass) ? ("Bypass") : ("???"))
+extern const struct pa_driver se2436lpa_driver;
 
-struct pa_driver {
-  void (* init)(void);
-  void (* set_antenna)(pa_lna_ant_t default_ant);
-  void (* set_tx_gain)(pa_tx_gain_t default_gain);
-  void (* set_attenuator)(uint8_t mode);
-  void (* set_rx_gain)(pa_rx_gain_t default_gain);
-  void (* tx_on)(void);
-  void (* rx_on)(void);
-  void (* off)(void);
-};
-
-#endif /* PA_H_ */
+#endif /* SE2436LPA_H */
+/** @} */

@@ -32,66 +32,42 @@
 
 /**
  * \file
- *         pa driver header
+ *         sky66112 pa driver
  * \author
  *         Yevgen Gyl <yevgen.gyl@unikie.com>
- *         Michael Baddeley <michael.baddeley@tii.ae>
  */
-#ifndef PA_H_
-#define PA_H_
 
-#include <stddef.h>
-#include <stdint.h>
+/**
+ * \addtogroup nrf52840-devices Device drivers
+ * @{
+ */
 
-#if PA_CONF_MAX_TX_POWER
-#define PA_MAX_TX_POWER PA_CONF_MAX_TX_POWER
-#else
-#define PA_MAX_TX_POWER 0xFF
+#ifndef SKY66112PA_H
+#define SKY66112PA_H
+
+#include "dev/pa.h"
+
+/*
+ * Default FEM configuration for SKY66112-11 PA
+ * These can be overridden in a project or board-specific header before including this file.
+ */
+#ifndef SKY66112PA_MODE_TX
+#define SKY66112PA_MODE_TX    PA_TX_Plus20dBm
 #endif
 
-typedef enum
-{
-    PA_LNA_ANT1 = 0,
-    PA_LNA_ANT2
-} pa_lna_ant_t;
+#ifndef SKY66112PA_MODE_RX
+#define SKY66112PA_MODE_RX    PA_RX_LNA
+#endif
 
-typedef enum
-{   
-    PA_TX_Bypass = 0,
-    PA_TX_Plus10dBm,
-    PA_TX_Plus20dBm,
-    PA_TX_Plus27dBm
-} pa_tx_gain_t;
+#ifndef SKY66112PA_ANT_RX
+#define SKY66112PA_ANT_RX     PA_LNA_ANT1
+#endif
 
-typedef enum
-{
-    PA_RX_Bypass = 0,
-    PA_RX_LNA
-} pa_rx_gain_t;
+#ifndef SKY66112PA_ANT_TX
+#define SKY66112PA_ANT_TX     PA_LNA_ANT1
+#endif
 
-#define PA_ANT_TO_STR(A) \
-  ((A == PA_LNA_ANT1) ? ("LNA_ANT1") : \
-   (A == PA_LNA_ANT2) ? ("LNA_ANT2") : ("???"))
+extern const struct pa_driver sky66112pa_driver;
 
-#define PA_TXMODE_TO_STR(P) \
-  ((P == PA_TX_Plus27dBm) ? ("+27dBm") : \
-   (P == PA_TX_Plus20dBm) ? ("+20dBm") : \
-   (P == PA_TX_Plus10dBm) ? ("+10dBm") : \
-   (P == PA_TX_Bypass) ? ("Bypass") : ("???"))
-   
-#define PA_RXMODE_TO_STR(P) \
-  ((P == PA_RX_LNA) ? ("LNA") : \
-   (P == PA_RX_Bypass) ? ("Bypass") : ("???"))
-
-struct pa_driver {
-  void (* init)(void);
-  void (* set_antenna)(pa_lna_ant_t default_ant);
-  void (* set_tx_gain)(pa_tx_gain_t default_gain);
-  void (* set_attenuator)(uint8_t mode);
-  void (* set_rx_gain)(pa_rx_gain_t default_gain);
-  void (* tx_on)(void);
-  void (* rx_on)(void);
-  void (* off)(void);
-};
-
-#endif /* PA_H_ */
+#endif /* SKY66112PA_H */
+/** @} */
