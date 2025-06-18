@@ -72,7 +72,6 @@ init(void)
   set_antenna(NRF21540PA_ANT_TX);     // Set default TX antenna
   set_tx_gain(NRF21540PA_MODE_TX);    // Set default TX gain
   set_rx_gain(NRF21540PA_MODE_RX);    // Set default RX gain
-  set_attenuator(NRF21540PA_TX_ATT);  // Set default TX attenuation
 }
 
 /*---------------------------------------------------------------------------*/

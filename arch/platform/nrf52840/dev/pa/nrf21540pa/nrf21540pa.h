@@ -67,10 +67,6 @@
 #define NRF21540PA_ANT_TX     PA_LNA_ANT1
 #endif
 
-#ifndef NRF21540PA_TX_ATT
-#define NRF21540PA_TX_ATT     0x1F
-#endif
-
 extern const struct pa_driver nrf21540pa_driver;
 
 #endif /* NRF21540PA_H */

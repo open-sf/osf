@@ -67,10 +67,6 @@
 #define SKY66112PA_ANT_TX     PA_LNA_ANT1
 #endif
 
-#ifndef SKY66112PA_TX_ATT
-#define SKY66112PA_TX_ATT     0x1F
-#endif
-
 extern const struct pa_driver sky66112pa_driver;
 
 #endif /* SKY66112PA_H */

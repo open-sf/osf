@@ -72,7 +72,6 @@ init(void)
   set_antenna(SKY66112PA_ANT_RX);
   set_tx_gain(SKY66112PA_MODE_TX);
   set_rx_gain(SKY66112PA_MODE_RX);
-  set_attenuator(SKY66112PA_TX_ATT);
 }
 
 /*---------------------------------------------------------------------------*/
