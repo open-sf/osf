@@ -53,7 +53,11 @@
 #define FEM_NPDN_PIN         NRF_GPIO_PIN_MAP(0, 23)
 #define FEM_NCSN_PIN         NRF_GPIO_PIN_MAP(0, 21)
 
+/* Forward declarations of static functions */
 static void off(void);
+static void set_antenna(pa_lna_ant_t default_ant);
+static void set_tx_gain(pa_tx_gain_t default_gain);
+static void set_rx_gain(pa_rx_gain_t default_gain);
 
 /*---------------------------------------------------------------------------*/
 static void
@@ -134,7 +138,6 @@ off(void)
   nrf_gpio_pin_clear(FEM_RX_EN_PIN);
   nrf_gpio_pin_clear(FEM_TX_EN_PIN);
 
-  nrf_gpio_pin_clear(FEM_MODE_PIN);
   nrf_gpio_pin_clear(FEM_ANT_SEL_PIN);
 }
 

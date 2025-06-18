@@ -66,8 +66,12 @@
 #define PIN1               NRF_GPIO_PIN_MAP(0,12)
 #define PIN2               NRF_GPIO_PIN_MAP(0,24)
 
-
+/* Forward declarations of static functions */
 static void off(void);
+static void set_antenna(pa_lna_ant_t default_ant);
+static void set_tx_gain(pa_tx_gain_t default_gain);
+static void set_rx_gain(pa_rx_gain_t default_gain);
+static void set_attenuator(uint8_t mode);
 
 /*---------------------------------------------------------------------------*/
 static void
