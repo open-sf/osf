@@ -6,10 +6,11 @@ name: CI
 #   * Any PR against master, develop or candidate release branch
 #   * Any push (or merge) on master and develop
 on:
-  push:
-    branches: [ main, master, develop ]
-  pull_request:
-    branches: [ main, master, develop, release-* ]
+  workflow_dispatch:
+  # push:
+  #   branches: [ main, master, develop ]
+  # pull_request:
+  #   branches: [ main, master, develop, release-* ]
 
 # We use a single job with a matrix with elements corresponding to our tests
 # The job will be replicated as many times as there are elements in the matrix
