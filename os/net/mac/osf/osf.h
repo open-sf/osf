@@ -87,6 +87,7 @@
    set the same PHY and use statlen for all round types */
 #ifdef OSF_CONF_PHY
 #define OSF_CONF_ROUND_S_PHY          OSF_CONF_PHY
+#define OSF_CONF_ROUND_J_PHY          OSF_CONF_PHY
 #define OSF_CONF_ROUND_T_PHY          OSF_CONF_PHY
 #define OSF_CONF_ROUND_A_PHY          OSF_CONF_PHY
 #endif
@@ -96,6 +97,11 @@
 #define OSF_ROUND_S_PHY               OSF_CONF_ROUND_S_PHY
 #else
 #define OSF_ROUND_S_PHY               PHY_BLE_500K
+#endif
+#ifdef OSF_CONF_ROUND_J_PHY
+#define OSF_ROUND_J_PHY               OSF_CONF_ROUND_J_PHY
+#else
+#define OSF_ROUND_J_PHY               PHY_BLE_500K
 #endif
 #ifdef OSF_CONF_ROUND_T_PHY
 #define OSF_ROUND_T_PHY               OSF_CONF_ROUND_T_PHY
@@ -113,6 +119,11 @@
 #define OSF_ROUND_S_STATLEN           OSF_CONF_ROUND_S_STATLEN
 #else
 #define OSF_ROUND_S_STATLEN           1
+#endif
+#ifdef OSF_CONF_ROUND_J_STATLEN
+#define OSF_ROUND_J_STATLEN           OSF_CONF_ROUND_J_STATLEN
+#else
+#define OSF_ROUND_J_STATLEN           1
 #endif
 #ifdef OSF_CONF_ROUND_T_STATLEN
 #define OSF_ROUND_T_STATLEN           OSF_CONF_ROUND_T_STATLEN
@@ -133,6 +144,7 @@ typedef enum osf_primitive_t {
 
 #ifdef OSF_CONF_PRIMITIVE
 #define OSF_CONF_ROUND_S_PRIMITIVE    OSF_CONF_PRIMITIVE
+#define OSF_CONF_ROUND_J_PRIMITIVE    OSF_CONF_PRIMITIVE
 #define OSF_CONF_ROUND_T_PRIMITIVE    OSF_CONF_PRIMITIVE
 #define OSF_CONF_ROUND_A_PRIMITIVE    OSF_CONF_PRIMITIVE
 #endif
@@ -141,6 +153,11 @@ typedef enum osf_primitive_t {
 #define OSF_ROUND_S_PRIMITIVE         OSF_CONF_ROUND_S_PRIMITIVE
 #else
 #define OSF_ROUND_S_PRIMITIVE         OSF_PRIMITIVE_ROF
+#endif
+#ifdef OSF_CONF_ROUND_J_PRIMITIVE
+#define OSF_ROUND_J_PRIMITIVE         OSF_CONF_ROUND_J_PRIMITIVE
+#else
+#define OSF_ROUND_J_PRIMITIVE         OSF_PRIMITIVE_ROF
 #endif
 #ifdef OSF_CONF_ROUND_T_PRIMITIVE
 #define OSF_ROUND_T_PRIMITIVE         OSF_CONF_ROUND_T_PRIMITIVE
@@ -171,6 +188,11 @@ typedef enum osf_primitive_t {
 #else
 #define OSF_ROUND_S_NTX               OSF_NTX
 #endif
+#ifdef OSF_CONF_ROUND_J_NTX
+#define OSF_ROUND_J_NTX               OSF_CONF_ROUND_J_NTX
+#else
+#define OSF_ROUND_J_NTX               1
+#endif
 #ifdef OSF_CONF_ROUND_T_NTX
 #define OSF_ROUND_T_NTX               OSF_CONF_ROUND_T_NTX
 #else
@@ -189,6 +211,11 @@ typedef enum osf_primitive_t {
 #define OSF_ROUND_S_MAX_SLOTS         OSF_CONF_ROUND_S_MAX_SLOTS
 #else
 #define OSF_ROUND_S_MAX_SLOTS         (OSF_ROUND_S_NTX * 2)
+#endif
+#ifdef OSF_CONF_ROUND_J_MAX_SLOTS
+#define OSF_ROUND_J_MAX_SLOTS         OSF_CONF_ROUND_J_MAX_SLOTS
+#else
+#define OSF_ROUND_J_MAX_SLOTS         (OSF_ROUND_J_NTX * 2)
 #endif
 #ifdef OSF_CONF_ROUND_T_MAX_SLOTS
 #define OSF_ROUND_T_MAX_SLOTS         OSF_CONF_ROUND_T_MAX_SLOTS
@@ -339,16 +366,19 @@ extern uint8_t osf_state;
 /* OSF round data struct */
 typedef enum osf_round_type {
   OSF_ROUND_S,
+  OSF_ROUND_J,
   OSF_ROUND_T,
   OSF_ROUND_A
 } osf_round_type_t;
 
 #define OSF_ROUND_TO_STR(R) \
   ((R == OSF_ROUND_S) ? ("OSF_ROUND_S") : \
+   (R == OSF_ROUND_J) ? ("OSF_ROUND_J") : \
    (R == OSF_ROUND_T) ? ("OSF_ROUND_T") : \
    (R == OSF_ROUND_A) ? ("OSF_ROUND_A") : ("???"))
 #define OSF_ROUND_TO_STR_SHORT(R) \
   ((R == OSF_ROUND_S) ? ("S") : \
+   (R == OSF_ROUND_J) ? ("J") : \
    (R == OSF_ROUND_T) ? ("T") : \
    (R == OSF_ROUND_A) ? ("A") : ("???"))
 
@@ -384,6 +414,7 @@ typedef struct osf_round {
 
 /* Round externs for use with protocols */
 extern osf_round_t osf_round_s;
+extern osf_round_t osf_round_j;
 extern osf_round_t osf_round_tx;
 extern osf_round_t osf_round_a;
 
@@ -497,6 +528,10 @@ typedef struct osf {
   uint8_t               dst_len;
   uint8_t               border_routers[OSF_MAX_NODES];
   uint8_t               br_len;
+  /* Joined nodes management */
+  uint8_t               joined_nodes[64];        /* List of joined node IDs (max 64) */
+  uint8_t               joined_count;            /* Number of currently joined nodes */
+  uint8_t               my_join_index;           /* My index in the joined nodes list (if joined) */
 } osf_t;
 
 extern rtimer_clock_t t_ref;
@@ -529,6 +564,12 @@ void    osf_sync(void);
 void    osf_join(void);
 uint8_t osf_send(uint8_t *data, uint8_t len, uint8_t dst);
 uint8_t osf_receive(uint8_t src, uint8_t dst, uint8_t *data, uint8_t len);
+
+/* Joined nodes management functions */
+uint8_t osf_add_joined_node(uint8_t node_id);
+uint8_t osf_get_node_index(uint8_t node_id);
+uint8_t osf_is_node_joined(uint8_t node_id);
+void    osf_init_joined_nodes(void);
 
 rtimer_clock_t osf_get_reference_time();
 

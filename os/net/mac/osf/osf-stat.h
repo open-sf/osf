@@ -51,6 +51,8 @@ typedef struct osf_mac_stat {
   uint32_t osf_mac_ack_total;        /* ACK OK */
   uint32_t osf_mac_no_ack_total;     /* No ACK after retransmissions */
 
+  uint32_t osf_mac_join_total;     /* No ACK after retransmissions */
+
   uint32_t osf_mac_rx_total;         /* T rounds, used for RX */
   uint32_t osf_mac_rx_slots_total;   /* Slots of T rounds, used for RX */
 

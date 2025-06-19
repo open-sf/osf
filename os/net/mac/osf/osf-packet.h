@@ -39,6 +39,7 @@
 #ifndef OSF_PACKET_H_
 #define OSF_PACKET_H_
 
+#include "net/linkaddr.h"
 #include "net/mac/osf/osf.h"
 #include "net/mac/osf/osf-proto.h"
 #include "net/mac/osf/extensions/osf-ext.h"
@@ -128,6 +129,14 @@ typedef struct __attribute__((packed)) osf_pkt_a_round {
 #endif
 
 #define OSF_PKT_A_RND_LEN sizeof(osf_pkt_a_round_t)
+
+/*---------------------------------------------------------------------------*/
+/* Join round packet */
+typedef struct __attribute__((packed)) osf_pkt_j_round {
+  // TODO: Do we need to add the lladdr?
+} osf_pkt_j_round_t;
+
+#define OSF_PKT_J_RND_LEN sizeof(osf_pkt_j_round_t)
 
 /*---------------------------------------------------------------------------*/
 #define OSF_PKT_RND_LEN(R) \

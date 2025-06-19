@@ -1025,6 +1025,8 @@ osf_init()
   osf_ch_init();
   /* Initialise MAC buffer */
   osf_buf_init();
+  /* Initialize joined nodes management */
+  osf_init_joined_nodes();
   /* Print current config */
   print_osf_config();
   print_osf_timings();
@@ -1194,4 +1196,69 @@ print_osf_timings()
   LOG_INFO("- OSF_ROUND_GUARD              - %llu (%luus)\n", OSF_ROUND_GUARD, RTIMERTICKS_TO_USX(OSF_ROUND_GUARD));
   LOG_INFO("- OSF_RX_GUARD                 - %llu (%luus)\n", OSF_RX_GUARD, RTIMERTICKS_TO_USX(OSF_RX_GUARD));
   LOG_INFO("- OSF_REF_SHIFT                - %lu ticks | %lu us\n", OSF_REF_SHIFT, RTIMERTICKS_TO_USX(OSF_REF_SHIFT));
+}
+
+/*---------------------------------------------------------------------------*/
+/* Joined nodes management functions */
+/*---------------------------------------------------------------------------*/
+void
+osf_init_joined_nodes(void)
+{
+  memset(osf.joined_nodes, 0, sizeof(osf.joined_nodes));
+  osf.joined_count = 0;
+  osf.my_join_index = 0xFF; /* Invalid index initially */
+  
+  /* If we are the timesync, add ourselves to the joined nodes list */
+  if(node_is_timesync) {
+    osf.joined_nodes[0] = osf_timesync;
+    osf.joined_count = 1;
+    osf.my_join_index = 0;
+    LOG_INFO("Timesync node %u auto-joined at index 0\n", osf_timesync);
+  }
+}
+
+/*---------------------------------------------------------------------------*/
+uint8_t
+osf_add_joined_node(uint8_t node_id)
+{
+  /* Check if node is already joined */
+  uint8_t existing_index = osf_get_node_index(node_id);
+  if(existing_index != 0xFF) {
+    LOG_DBG("Node %u already joined at index %u\n", node_id, existing_index);
+    return existing_index;
+  }
+  
+  /* Check if we have space for more nodes */
+  if(osf.joined_count >= 64) {
+    LOG_WARN("Cannot add node %u: joined nodes list is full (%u/64)\n", node_id, osf.joined_count);
+    return 0xFF; /* Invalid index */
+  }
+  
+  /* Add the node to the list */
+  osf.joined_nodes[osf.joined_count] = node_id;
+  uint8_t new_index = osf.joined_count;
+  osf.joined_count++;
+  
+  LOG_INFO("Node %u joined at index %u (total joined: %u)\n", node_id, new_index, osf.joined_count);
+  return new_index;
+}
+
+/*---------------------------------------------------------------------------*/
+uint8_t
+osf_get_node_index(uint8_t node_id)
+{
+  uint8_t i;
+  for(i = 0; i < osf.joined_count; i++) {
+    if(osf.joined_nodes[i] == node_id) {
+      return i;
+    }
+  }
+  return 0xFF; /* Node not found */
+}
+
+/*---------------------------------------------------------------------------*/
+uint8_t
+osf_is_node_joined(uint8_t node_id)
+{
+  return (osf_get_node_index(node_id) != 0xFF);
 }
