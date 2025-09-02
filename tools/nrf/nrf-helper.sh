@@ -1,9 +1,11 @@
+#!/bin/bash
+
 baud=115200
 FILE=nrf.csv
 
 function help {
 echo " ./nrf-helper.sh"
-echo "     -info               print out device information ID/MAC/SN"
+echo "     -i, --info         print out device information ID/MAC/SN"
 echo "         -s                  generate a save of ID/MAC/SN"
 echo "         -d                  output a deployment mapping of ID/MAC (FIXME: Also need to use -s to generate the uuids!)"
 echo "     -t                  output serial to terminal"
@@ -22,7 +24,11 @@ while (( "$#" )); do
       CLEAN=1
       shift
       ;;
-    -info)
+    -i)
+      INFO=1
+      shift
+      ;;
+    --info)
       INFO=1
       shift
       ;;
@@ -64,16 +70,23 @@ done
 # --------------------------------------------------------------------------- #
 # Save
 # --------------------------------------------------------------------------- #
-if [ ! -f "$FILE" ]; then
-  echo "> WARN: \"$FILE\" does not exist!"
-elif [ -n "${SAVE+x}" ]; then
+# Initialize arrays
+id_arr=()
+mac_arr=()
+sn_arr=()
+
+if [ -n "${SAVE+x}" ]; then
   echo "> WARN: Generating new \"$FILE\"!"
-  rm nrf.csv
-else
+  rm -f "$FILE"
+elif [ -f "$FILE" ]; then
   echo "> WARN: Read from \"$FILE\" (list of node id/mac/sn/port)..."
-  readarray -t id_arr < <(cut -d, -f1 $FILE)
-  readarray -t mac_arr < <(cut -d, -f2 $FILE)
-  readarray -t sn_arr < <(cut -d, -f3 $FILE)
+  while IFS=',' read -r id mac sn; do
+    id_arr+=("$id")
+    mac_arr+=("$mac")
+    sn_arr+=("$sn")
+  done < "$FILE"
+else
+  echo "> WARN: \"$FILE\" does not exist!"
 fi
 
 # --------------------------------------------------------------------------- #
@@ -91,6 +104,7 @@ if [ -n "${INFO+x}" ]; then
     fi
     echo "> Create deployment mapping in $DEPLOYMENT_FILE"
     echo ""
+    : > $DEPLOYMENT_FILE
     echo "#include \"services/deployment/deployment.h\"" | tee -a $DEPLOYMENT_FILE
     echo "" | tee -a $DEPLOYMENT_FILE
     echo "#if CONTIKI_TARGET_NRF52840" | tee -a $DEPLOYMENT_FILE
@@ -100,7 +114,15 @@ if [ -n "${INFO+x}" ]; then
   # nrfjprog exists so we can get mac addresses
   if command -v nrfjprog &> /dev/null; then
     len=`expr ${#mac_arr[@]} - 1`
+    if [ $len -lt 0 ]; then
+      len=-1
+    fi
     id=0
+    # Use a temporary file to store the output for deployment mapping
+    if [ -n "${DEPLOYMENT+x}" ]; then
+      temp_file=$(mktemp)
+    fi
+    
     nrfjprog --com | while read row; do
       port=${row:13:12}
       sn=${row::9}
@@ -110,33 +132,51 @@ if [ -n "${INFO+x}" ]; then
         id=$(( $id + 1 ))
         echo "$id,$mac,$sn" >> $FILE
       else
-        for i in $(seq 0 $len); do
-          if [ ${mac_arr[$i]} == $mac ]; then
-            id=${id_arr[$i]}
-          fi
-        done
+        if [ $len -ge 0 ]; then
+          for i in $(seq 0 $len); do
+            if [ "${mac_arr[$i]}" == "$mac" ]; then
+              id=${id_arr[$i]}
+            fi
+          done
+        fi
       fi
       if [ -n "${DEPLOYMENT+x}" ]; then
-        mac=$(echo "$mac" | tr '[:upper:]' '[:lower:]')
-        mac="0x${mac:0:2},0x${mac:2:2},0x${mac:4:2},0x${mac:6:2},0x${mac:8:2},0x${mac:10:2},0x${mac:12:2},0x${mac:14:2}"
-        echo "  {   $id, {{$mac}} }," | tee -a $DEPLOYMENT_FILE
+        # Store the MAC address for later processing with sequential IDs
+        echo "$mac" >> "$temp_file"
       else
         echo "  - Port: $port | Node ID: $id | MAC Addr: $mac | JLink SN: $sn"
       fi
     done
+    
+    # Process deployment mapping with sequential IDs
+    if [ -n "${DEPLOYMENT+x}" ]; then
+      id=1
+      while read mac; do
+        mac_lower=$(echo "$mac" | tr '[:upper:]' '[:lower:]')
+        mac_formatted="0x${mac_lower:0:2},0x${mac_lower:2:2},0x${mac_lower:4:2},0x${mac_lower:6:2},0x${mac_lower:8:2},0x${mac_lower:10:2},0x${mac_lower:12:2},0x${mac_lower:14:2}"
+        echo "  {   $id, {{$mac_formatted}} }," | tee -a $DEPLOYMENT_FILE
+        id=$(( $id + 1 ))
+      done < "$temp_file"
+      rm "$temp_file"
+    fi
   #nrfjprog doesn't exist, so only get jlink sn
   else
     echo "WARN: nrfjprog not present so can't get MAC, but we can get JLink serial numbers!"
     len=`expr ${#sn_arr[@]} - 1`
+    if [ $len -lt 0 ]; then
+      len=-1
+    fi
     for port in /dev/ttyACM*; do
       sn=`udevadm info -q property -a -p $(udevadm info -q path -n $port) | grep serial | grep -oP '(?<=").*(?=")' | grep "0006" | cut -c 4-`
       id="UNKNOWN"
       mac="UNKNOWN"
-      for i in $(seq 0 $len); do
-        if [ ${sn_arr[$i]} == $sn ]; then
-          id=${id_arr[$i]}
-        fi
-      done
+      if [ $len -ge 0 ]; then
+        for i in $(seq 0 $len); do
+          if [ "${sn_arr[$i]}" == "$sn" ]; then
+            id=${id_arr[$i]}
+          fi
+        done
+      fi
       echo "  - Port: $port | Node ID: $id | MAC Addr: $mac | JLink SN: $sn"
     done
   fi
@@ -156,15 +196,15 @@ fi
 # --------------------------------------------------------------------------- #
 # Output to terminal/logs
 # --------------------------------------------------------------------------- #
-if [[ -v OUT ]]; then
-  if [[ -v LOGS ]]; then
+if [ -n "${OUT+x}" ]; then
+  if [ -n "${LOGS+x}" ]; then
     echo "> Serial out to terminal... Logs sent to: $LOGS"
   else
     echo "> Serial out to terminal..."
   fi
   len=`expr ${#sn_arr[@]} - 1`
   mkdir -p ~/logs
-  if [[ -v CLEAN ]]; then
+  if [ -n "${CLEAN+x}" ]; then
     if [ -d ~/logs ]; then rm -Rf ~/logs; fi
     mkdir -p ~/logs
   fi
@@ -178,7 +218,7 @@ if [[ -v OUT ]]; then
       fi
     done
     echo "  - Port: $port | Node ID: $id | MAC Addr: $mac | JLink SN: $sn"
-    if [[ -v LOGS ]]; then
+    if [ -n "${LOGS+x}" ]; then
       CMD="socat $port,b$baud,raw,echo=0,nonblock STDOUT | ts [%Y-%m-%d\ %H:%M:%.S] | tee ~/logs/log_$id.txt"
     else
       CMD="socat $port,b$baud,raw,echo=0,nonblock STDOUT | ts [%Y-%m-%d\ %H:%M:%.S]"
@@ -197,7 +237,7 @@ function arraydiff() {
        END{for(k in a)if(a[k])print k}' <(echo -n "${!1}") <(echo -n "${!2}")
 }
 
-if [[ -v USB ]]; then
+if [ -n "${USB+x}" ]; then
   # get list of all acm ports
   acm_arr=()
   for port in /dev/ttyACM*; do
