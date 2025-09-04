@@ -52,6 +52,10 @@
 #include "services/testbed/testbed.h"
 #endif
 
+#if BUILD_WITH_DEPLOYMENT
+#include "services/deployment/deployment.h"
+#endif
+
 #ifndef MAX
 #define MAX(x,y) (((x) > (y)) ? (x) : (y) )
 #endif
@@ -65,14 +69,13 @@
 
 /* Maximum number of sources / destinations supported in the network. This is
    used in some round calculations when doing bit manipulations. */
-#ifdef BUILD_WITH_TESTBED
-#define OSF_MAX_NODES                 TB_MAX_SRC_DEST
-#elif OSF_CONF_MAX_NODES
-#define OSF_MAX_NODES                 OSF_CONF_MAX_NODES
+#if OSF_CONF_MAX_NODES
+#define OSF_MAX_NODES                 OSF_CONF_MAX_NODES // Supplied by user through the makeargs
+#elif BUILD_WITH_DEPLOYMENT
+#define OSF_MAX_NODES                 DEPLOYMENT_MAPPING_LEN // Defined in the deployment header files (e.g., deployment-map-nulltb.h)
 #else
-#define OSF_MAX_NODES                 8
-#endif
-
+#define OSF_MAX_NODES                 8 // Default value
+#endif /* OSF_CONF_MAX_NODES */
 
 #ifdef OSF_CONF_PERIOD_MS
 #define OSF_PERIOD_MS                 OSF_CONF_PERIOD_MS
@@ -221,9 +224,6 @@ typedef enum osf_primitive_t {
 #else
 #define OSF_RESYNC_THRESHOLD          10  /* Quit and rejoin after N missed sync rounds */
 #endif
-
-/* Maximum number of rounds in a protocol schedule */
-#define OSF_SCHEDULE_LEN_MAX          25
 
 /* Scanning interval */
 #define OSF_SCAN_TIME                 (US_TO_RTIMERTICKSX(20000))
@@ -416,12 +416,28 @@ uint8_t                  sources[OSF_BITMASK_LEN];       /* permitted sources in
    (R == OSF_PROTO_STA)   ? "OSF_PROTO_STA" : \
    (R == OSF_PROTO_STT)   ? "OSF_PROTO_STT" : "???")
 
+/* User configured protocol, or default to STA */
 #ifdef OSF_CONF_PROTO
 #define OSF_PROTOCOL                  OSF_CONF_PROTO
 #else
 #define OSF_PROTOCOL                  OSF_PROTO_STA
 #endif
 
+/* Number of TA pairs in the STA/Crystal protocol. Needed here for schedule length calculation. */
+#ifdef OSF_CONF_PROTO_STA_NTA
+#define OSF_PROTO_STA_NTA OSF_CONF_PROTO_STA_NTA
+#else
+#define OSF_PROTO_STA_NTA 1 + (2 * OSF_MAX_NODES) // S round + (2 * number of nodes)
+#endif /* OSF_CONF_PROTO_STA_NTA */
+
+/* Maximum number of rounds in a protocol schedule */
+#if (OSF_PROTOCOL == OSF_PROTO_BCAST)
+#define OSF_SCHEDULE_LEN_MAX 1 // S round
+#elif (OSF_PROTOCOL == OSF_PROTO_STT)
+#define OSF_SCHEDULE_LEN_MAX 1 + OSF_MAX_NODES // S round + number of nodes
+#elif (OSF_PROTOCOL == OSF_PROTO_STA)
+#define OSF_SCHEDULE_LEN_MAX 1 + (2 * OSF_CONF_PROTO_STA_NTA) // S round + (2 * TA pairs)
+#endif
 /* OSF protocol data struct */
 typedef struct osf_proto {
   /* Protocol details */

@@ -63,10 +63,6 @@
 
 #if OSF_MPHY
 uint8_t osf_mphy_pattern_100[] = {PHY_BLE_2M,   PHY_BLE_2M,   PHY_BLE_2M,   PHY_BLE_2M};
-// uint8_t osf_mphy_pattern_75[]  = {PHY_BLE_2M,   PHY_BLE_125K, PHY_BLE_2M,   PHY_BLE_2M};
-// uint8_t osf_mphy_pattern_50[]  = {PHY_BLE_2M,   PHY_BLE_125K, PHY_BLE_2M,   PHY_BLE_125K};
-// uint8_t osf_mphy_pattern_25[]  = {PHY_BLE_2M,   PHY_BLE_125K, PHY_BLE_125K, PHY_BLE_125K};
-// uint8_t osf_mphy_pattern_0[]   = {PHY_BLE_125K, PHY_BLE_125K, PHY_BLE_125K, PHY_BLE_125K};
 uint8_t osf_mphy_pattern_75[]  = {PHY_BLE_2M,   PHY_BLE_500K, PHY_BLE_2M,   PHY_BLE_2M};
 uint8_t osf_mphy_pattern_50[]  = {PHY_BLE_2M,   PHY_BLE_500K, PHY_BLE_2M,   PHY_BLE_500K};
 uint8_t osf_mphy_pattern_25[]  = {PHY_BLE_2M,   PHY_BLE_500K, PHY_BLE_500K, PHY_BLE_500K};
@@ -74,11 +70,6 @@ uint8_t osf_mphy_pattern_0[]   = {PHY_BLE_500K, PHY_BLE_500K, PHY_BLE_500K, PHY_
 uint8_t osf_mphy_pattern = OSF_MPHY_PATTERN_75;
 uint8_t *osf_mphy;
 clock_time_t mphy_last_received[255] = {0};
-
-// static uint16_t rcvd_2m = 0;
-// static uint16_t total_2m = 0;
-// static uint16_t rcvd_125K = 0;
-// static uint16_t total_125k = 0;
 #endif
 
 static uint8_t       my_bit_index;
@@ -148,7 +139,7 @@ configure()
   rconf->is_last = 0;
 #endif
 
-  for(i = 0; i < OSF_PROTO_STA_N_TA; i++) {
+  for(i = 0; i < OSF_PROTO_STA_NTA; i++) {
 #if OSF_MPHY
     uint8_t mode = osf_mphy[(i % OSF_MPHY_PATTERN_LEN)];
 #else
@@ -203,7 +194,7 @@ init()
 
   /* Set up the protocol schedule */
   rconf->round = &osf_round_s;
-  for(i = 0; i < OSF_PROTO_STA_N_TA; i++) {
+  for(i = 0; i < OSF_PROTO_STA_NTA; i++) {
       rconf = &this->sched[++this->index];
       rconf->round = &osf_round_tx;
       rconf = &this->sched[++this->index];

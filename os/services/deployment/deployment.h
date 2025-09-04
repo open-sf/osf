@@ -48,6 +48,10 @@
 #include "net/ipv6/uip.h"
 #include "net/linkaddr.h"
 
+#ifdef DEPLOYMENT_MAP_HEADER
+#include DEPLOYMENT_MAP_HEADER
+#endif
+
 /**
  * \brief ID<->MAC address mapping structure
  */

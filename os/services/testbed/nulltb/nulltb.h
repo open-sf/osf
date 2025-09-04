@@ -5,7 +5,6 @@
  *         Michael Baddeley <michael.g.baddeley@gmail.com> *
  */
 
-
 #ifndef DCUBE_NULLTB_H
 #define DCUBE_NULLTB_H
 
@@ -31,8 +30,7 @@
 #define TB_PERIOD_MAX                 (CLOCK_SECOND * 5)
 #endif
 
-/*NULLTB data length */
-// #if TB_CONF_NULLTB_DATA_LEN
+/* NULLTB data length */
 #if TB_CONF_NULLTB_DATA_LEN
 #define TB_DATA_LEN                   TB_CONF_NULLTB_DATA_LEN
 #else
@@ -44,7 +42,7 @@
 #define TB_MAX_SRC_DEST               TB_CONF_MAX_SRC_DEST
 #else
 #define TB_MAX_SRC_DEST               8
-#endif
+#endif /* TB_CONF_MAX_SRC_DEST */
 
 /* Same number of border routers as dcube */
 #if TB_CONF_MAX_BR

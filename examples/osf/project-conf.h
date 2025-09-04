@@ -119,10 +119,8 @@
 
 /* Number of TA pairs in the STA/Crystal protocol */
 #ifdef NTA
-#define OSF_CONF_PROTO_STA_N_TA             NTA
-#else
-#define OSF_CONF_PROTO_STA_N_TA             5
-#endif /* NTX */
+#define OSF_CONF_PROTO_STA_NTA              NTA
+#endif /* NTA */
 
 /* Exit the protocol after 4 empty rounds (x2 TA pairs) */
 #ifdef EMPTY
