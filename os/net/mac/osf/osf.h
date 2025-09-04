@@ -436,7 +436,7 @@ uint8_t                  sources[OSF_BITMASK_LEN];       /* permitted sources in
 #elif (OSF_PROTOCOL == OSF_PROTO_STT)
 #define OSF_SCHEDULE_LEN_MAX 1 + OSF_MAX_NODES // S round + number of nodes
 #elif (OSF_PROTOCOL == OSF_PROTO_STA)
-#define OSF_SCHEDULE_LEN_MAX 1 + (2 * OSF_CONF_PROTO_STA_NTA) // S round + (2 * TA pairs)
+#define OSF_SCHEDULE_LEN_MAX 1 + (2 * OSF_PROTO_STA_NTA) // S round + (2 * TA pairs)
 #endif
 /* OSF protocol data struct */
 typedef struct osf_proto {
