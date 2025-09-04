@@ -63,6 +63,7 @@ jobs:
     - name: Create dummy deployment table
       run: |
         ls
+        mkdir -p os/services/deployment/nulltb
         touch os/services/deployment/nulltb/deployment-map-nulltb.c
         cat <<EOF > os/services/deployment/nulltb/deployment-map-nulltb.c
         #include "services/deployment/deployment.h"
@@ -73,6 +74,14 @@ jobs:
         #else
         #warning "WARN: Unknown DEPLOYMENT target"
         #endif
+        EOF
+        cat <<EOF > os/services/deployment/nulltb/deployment-map-nulltb.h
+        #ifndef DEPLOYMENT_MAP_NULLTB_H_
+        #define DEPLOYMENT_MAP_NULLTB_H_
+
+        #define DEPLOYMENT_MAPPING_LEN 1
+
+        #endif /* DEPLOYMENT_MAP_NULLTB_H_ */
         EOF
 
     - name: Build and package

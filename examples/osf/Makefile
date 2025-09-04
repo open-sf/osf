@@ -33,12 +33,8 @@ endif
 #----------------------------------------------------------------------------#
 DEPLOYMENT ?= nulltb
 ifneq ($(DEPLOYMENT),)
-  ifeq ($(DEPLOYMENT), nulltb)
-  	CFLAGS += -DDEPLOYMENT_MAPPING=deployment_nulltb
-  endif
-  ifeq ($(DEPLOYMENT), dcube)
-  	CFLAGS += -DDEPLOYMENT_MAPPING=deployment_dcube
-  endif
+  CFLAGS += -DDEPLOYMENT_MAPPING=deployment_$(DEPLOYMENT)
+  CFLAGS += -DDEPLOYMENT_MAP_HEADER=\"deployment-map-$(DEPLOYMENT).h\"
   MODULES += $(CONTIKI_NG_SERVICES_DIR)/deployment
 else
   $(warning WARN: No deployment specified! DEPLOYMENT=(nulltb/dcube))

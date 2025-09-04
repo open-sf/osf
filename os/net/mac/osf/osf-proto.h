@@ -56,15 +56,7 @@
 #define OSF_PROTO_CODE_STA_EXIT                0xEE
 
 /*---------------------------------------------------------------------------*/
-#ifdef OSF_CONF_PROTO_STA_N_TA
-#define OSF_PROTO_STA_N_TA                     OSF_CONF_PROTO_STA_N_TA
-#else
-#define OSF_PROTO_STA_N_TA                     4
-#endif
-#if ((2*OSF_PROTO_STA_N_TA) >= (OSF_SCHEDULE_LEN_MAX))
-#error "ERROR: Number of TA pairs plus S round > OSF_SCHEDULE_LEN_MAX!"
-#endif
-
+/* STA */
 #ifdef OSF_CONF_PROTO_STA_ACK_TOGGLING
 #define OSF_PROTO_STA_ACK_TOGGLING             OSF_CONF_PROTO_STA_ACK_TOGGLING
 #else
