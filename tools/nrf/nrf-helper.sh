@@ -98,9 +98,13 @@ if [ -n "${INFO+x}" ]; then
   if [ -n "${DEPLOYMENT+x}" ]; then
     DEPLOYMENT_FOLDER=../../os/services/deployment/nulltb/
     DEPLOYMENT_FILE=$DEPLOYMENT_FOLDER/deployment-map-nulltb.c
+    DEPLOYMENT_HEADER_FILE=$DEPLOYMENT_FOLDER/deployment-map-nulltb.h
     mkdir -p $DEPLOYMENT_FOLDER
     if [[ -f "$DEPLOYMENT_FILE" ]]; then
       rm $DEPLOYMENT_FILE
+    fi
+    if [[ -f "$DEPLOYMENT_HEADER_FILE" ]]; then
+      rm $DEPLOYMENT_HEADER_FILE
     fi
     echo "> Create deployment mapping in $DEPLOYMENT_FILE"
     echo ""
@@ -151,13 +155,22 @@ if [ -n "${INFO+x}" ]; then
     # Process deployment mapping with sequential IDs
     if [ -n "${DEPLOYMENT+x}" ]; then
       id=1
+      deployment_count=0
       while read mac; do
         mac_lower=$(echo "$mac" | tr '[:upper:]' '[:lower:]')
         mac_formatted="0x${mac_lower:0:2},0x${mac_lower:2:2},0x${mac_lower:4:2},0x${mac_lower:6:2},0x${mac_lower:8:2},0x${mac_lower:10:2},0x${mac_lower:12:2},0x${mac_lower:14:2}"
         echo "  {   $id, {{$mac_formatted}} }," | tee -a $DEPLOYMENT_FILE
         id=$(( $id + 1 ))
+        deployment_count=$(( deployment_count + 1 ))
       done < "$temp_file"
       rm "$temp_file"
+      # Create/update header file with mapping length
+      echo "#ifndef DEPLOYMENT_MAP_NULLTB_H_" >> $DEPLOYMENT_HEADER_FILE
+      echo "#define DEPLOYMENT_MAP_NULLTB_H_" >> $DEPLOYMENT_HEADER_FILE
+      echo "" >> $DEPLOYMENT_HEADER_FILE
+      echo "#define DEPLOYMENT_MAPPING_LEN $deployment_count" >> $DEPLOYMENT_HEADER_FILE
+      echo "" >> $DEPLOYMENT_HEADER_FILE
+      echo "#endif /* DEPLOYMENT_MAP_NULLTB_H_ */" >> $DEPLOYMENT_HEADER_FILE
     fi
   #nrfjprog doesn't exist, so only get jlink sn
   else
