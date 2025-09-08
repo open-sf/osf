@@ -1,0 +1,22 @@
+name: Check PR Title Format
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  lint-pr-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lint PR Title
+        shell: bash
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          REGEX='^[a-z0-9_-]+:[[:space:]].*[A-Z].+$'
+          if [[ "$TITLE" =~ $REGEX ]]; then
+            echo "PR title OK: $TITLE"
+          else
+            echo "::error::PR title does not match required format ("descriptor: My full title") : $TITLE"
+            echo "Expected regex: $REGEX"
+            exit 1
+          fi
