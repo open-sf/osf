@@ -1,0 +1,17 @@
+name: Check PR Title Format
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  lint-pr-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR title against format
+        uses: xt0rted/pull-request-title-check-action@v1
+        with:
+          regex: '^[a-z0-9_-]+:\s.+$'
+          ignore_case: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
