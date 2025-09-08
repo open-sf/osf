@@ -1,155 +1,97 @@
-# Main Contiki-NG CI workflow
-# Comprises a matrix-generated set of jobs that execute our CI test suite
-name: CI
+name: build
+permissions: write-all
 
-# Run the workflow on:
-#   * Any PR against master, develop or candidate release branch
-#   * Any push (or merge) on master and develop
 on:
-  workflow_dispatch:
-  # push:
-  #   branches: [ main, master, develop ]
-  # pull_request:
-  #   branches: [ main, master, develop, release-* ]
-
-# We use a single job with a matrix with elements corresponding to our tests
-# The job will be replicated as many times as there are elements in the matrix
+  workflow_call:
+    secrets:
+      personal_access_token:
+        required: true
+  
 jobs:
-  Contiki-NG:
-    # The type of runner that the job will run on
-    runs-on: ubuntu-latest
-    # Longest test in July 2022 takes 15 minutes. Building the docker image
-    # takes 10 minutes.
-    timeout-minutes: 45
-    # Common environment variables
-    env:
-        OUT_OF_TREE_TEST_PATH: out-of-tree-tests
-        OUT_OF_TREE_TEST_VER: 2869ae7
-        DOCKER_BASE_IMG: contiker/contiki-ng
-
+  build:
     strategy:
-        # Always run all jobs in the matrix, even if one fails
-        fail-fast: false
-        matrix:
-            test: [ documentation, compile-base, compile-arm-ports, compile-tools, out-of-tree-build, rpl-lite, rpl-classic, simulation-base, ipv6, ieee802154, tun-rpl-br, script-base, native-runs, ipv6-nbr, coap-lwm2m, packet-parsing ]
+      matrix:
+        board:
+          [
+            # dwm1001,
+            # dwm3001cdk, 
+            # bluebite,
+            # uwpcie,
+            dk,
+            # dc10",
+          ]
+      fail-fast: false  # Ensures all matrix jobs run even if one fails
+    runs-on: ubuntu-latest
+    container: contiker/contiki-ng
+    timeout-minutes: 20    
 
-    # Checks-out the contiki-ng $GITHUB_WORKSPACE, so your job can access it
     steps:
-
-    # Checks out the repo with full history
-    - name: Checkout github repo (+ download lfs dependencies)
-      uses: actions/checkout@v3
+    - name: Install additional packages
+      run: |
+        sudo apt update -y
+        sudo apt install -y python3.10 python3.10-venv nodejs tree
+        
+    - uses: actions/checkout@v4
       with:
-          fetch-depth: 2
-          submodules: 'recursive'
-          persist-credentials: false
-          lfs: true
-    - name: Checkout LFS objects
-      run: git lfs checkout
+          # We need this for 'git describe' to work
+          fetch-depth: 0
+          submodules: true
+          token: ${{ secrets.personal_access_token }}
 
-    # Construct the correct docker container image tag corresponding to this build
-    - name: Figure out correct docker image tag
+    - name: Configure Git
+      run: git config --global --add safe.directory /__w/flock/flock
+
+      # Prevent an issue with an error on the repository ownership
+    - name: Fix repository ownership
+      run: git config --global --add safe.directory /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
+    
+      # Only clone submodules we need
+    - name: Checkout submodules
       run: |
-        tools/docker/print-dockerhash.sh >> $GITHUB_ENV
-        echo COOJA_COMMIT=$(git -C tools/cooja log -1 --oneline | cut -d" " -f1) >> $GITHUB_ENV
-
-    # Try to download the image from dockerhub. If it works, use it.
-    #
-    # If however it fails then we are most likely looking at a branch or pull
-    # that touched tools/docker. In this case, build the image.
-    #
-    # Any build error will count as a job failure.
-    #
-    # If the test was triggered by a branch update (e.g. a PR merge) then push
-    # the new image to dockerhub. This will only happen for builds against
-    # contiki-ng/contiki-ng, not for builds on forks.
-    - name: Try to download image from dockerhub
+        git submodule update --init arch/cpu/arm/CMSIS
+        git submodule update --init arch/cpu/nrf/lib/nrfx
+        git submodule update --init arch/cpu/nrf52840/lib/nrf52-sdk
+        git submodule update --init os/net/security/tinydtls
+        
+    - name: Install Python developer depedancies
       run: |
-        echo "Using $DOCKER_IMG for this run"
-        echo "Pulling image $DOCKER_IMG from dockerhub";
-        docker pull $DOCKER_IMG || echo DOCKER_NEED_BUILD=1 >> $GITHUB_ENV
-
-    - name: Build docker image if required
-      if: env.DOCKER_NEED_BUILD == '1'
+        python3.10 -m venv .venv
+        . .venv/bin/activate
+        pip install -r requirements-dev.txt
+        inv --list
+    
+    - name: Create dummy deployment table
       run: |
-        echo $DOCKER_IMG does not exist on dockerhub or pull failed
-        echo This is normal for PR builds and for builds on forks
-        echo Building from dockerfile
-        docker build tools/docker -t $DOCKER_IMG --no-cache --pull
+        ls
+        mkdir -p os/services/deployment/nulltb
+        touch os/services/deployment/nulltb/deployment-map-nulltb.c
+        cat <<EOF > os/services/deployment/nulltb/deployment-map-nulltb.c
+        #include "services/deployment/deployment.h"
 
-    # If i) the previous step built an image and ii) we are on the main
-    # contiki-ng repo and iii) this is a push (merge commit) to one of the
-    # branches of interest then push the image to dockerhub
-    - name: Push images to dockerhub
-      if: env.DOCKER_NEED_BUILD == '1' && github.repository == 'contiki-ng/contiki-ng' && github.event_name == 'push'
+        #if CONTIKI_TARGET_NRF52840
+        const struct id_mac deployment_nulltb[] = {
+            {0, {{0}}}};
+        #else
+        #warning "WARN: Unknown DEPLOYMENT target"
+        #endif
+        EOF
+        cat <<EOF > os/services/deployment/nulltb/deployment-map-nulltb.h
+        #ifndef DEPLOYMENT_MAP_NULLTB_H_
+        #define DEPLOYMENT_MAP_NULLTB_H_
+
+        #define DEPLOYMENT_MAPPING_LEN 1
+
+        #endif /* DEPLOYMENT_MAP_NULLTB_H_ */
+        EOF
+
+    - name: Build and package
       run: |
-        # Extract the branch name from github.ref. For example, from
-        # 'refs/heads/master' we want to keep 'master'
-        MERGE_BRANCH_REF=$(echo ${{ github.ref }} | sed -e 's|refs/heads/||g')
-        echo This is a build for branch $MERGE_BRANCH_REF and it updates the docker container
-        echo Push images to Dockerhub
-        echo ${{ secrets.DOCKERHUB_PASSWD }} | docker login --username contiker --password-stdin
-        docker push $DOCKER_IMG
-        docker tag $DOCKER_IMG $DOCKER_BASE_IMG:$MERGE_BRANCH_REF
-        docker push $DOCKER_BASE_IMG:$MERGE_BRANCH_REF
-        if [ $MERGE_BRANCH_REF == develop ]; then
-          # When develop is updated, also push docker image with tag 'latest'
-          docker tag $DOCKER_IMG $DOCKER_BASE_IMG:latest
-          docker push $DOCKER_BASE_IMG:latest
-        fi
+        . .venv/bin/activate
+        inv package -b ${{ matrix.board }} --output=packages
 
-    # Clone the repo used for out-of-tree builds if required
-    - name: Clone the repo used for out-of-tree builds if required
-      if: matrix.test == 'out-of-tree-build'
-      run: |
-        mkdir -p $OUT_OF_TREE_TEST_PATH
-        git clone --depth 1 https://github.com/contiki-ng/out-of-tree-tests $OUT_OF_TREE_TEST_PATH
-        # Check out desired hash
-        (cd $OUT_OF_TREE_TEST_PATH && git checkout $OUT_OF_TREE_TEST_VER)
-        # Set up docker mount
-        echo DOCKER_ARGS=-v `pwd`/$OUT_OF_TREE_TEST_PATH:/home/user/out-of-tree-tests >> $GITHUB_ENV
-
-    # The docker image contains ccache, but the ccache action uses the ccache
-    # outside docker for statistics, so install the same ccache version.
-    # Install in /usr/bin so the ccache action gets the expected environment.
-    - name: install ccache
-      run: |
-        wget -nv https://github.com/ccache/ccache/releases/download/v4.8.2/ccache-4.8.2-linux-x86_64.tar.xz
-        sudo tar xf ccache-4.8.2-linux-x86_64.tar.xz -C /usr/bin --strip-components=1 --no-same-owner ccache-4.8.2-linux-x86_64/ccache
-        rm -f ccache-*-linux-x86_64.tar.xz
-
-    # Set the max-size according to the output from "ccache -v -s" after
-    # running the largest test in a newly started docker container.
-    # The largest test is 02-compile-arm-ports in September 2022.
-    #
-    # IMPORTANT: cache size must also be updated in the "Execute tests" section.
-    - name: ccache
-      uses: hendrikmuhs/ccache-action@v1.2.9
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
       with:
-        key: compilation-${{ matrix.test }}
-        max-size: 140M
-
-    # Keep a cache of the Cooja build files and gradle files. Keyed on Cooja
-    # repo commit to ensure clean rebuild when updating Cooja submodule.
-    - name: Cache Cooja Artifacts
-      uses: actions/cache@v3
-      with:
-        path: |
-          tools/cooja/build
-          tools/cooja/.gradle
-          tools/cooja/.gradle_home
-        key: cooja-${{ runner.os }}-gradle-deps-${{ env.COOJA_COMMIT }}
-
-    # Fire up the container and run corresponding tests
-    - name: Execute tests
-      run: |
-        # Cache restores write-time timestamps, update timestamps to be more
-        # recent than the files that were just checked out. Ensure the command
-        # is successful with empty cache.
-        find tools/cooja/build tools/cooja/.gradle -exec touch {} \; 2>/dev/null || true
-        # Run test
-        # FIXME: (2023) Remove "ccache -c", workaround for cache growing
-        #        too large from ccache CI/ccache configuration mismatch.
-        docker run --privileged --sysctl net.ipv6.conf.all.disable_ipv6=0 -e GITHUB_JOB -e GITHUB_REF -e GITHUB_SHA -e GITHUB_REPOSITORY -e GITHUB_REPOSITORY_OWNER -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RETENTION_DAYS -e GITHUB_ACTOR -e GITHUB_WORKFLOW -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GITHUB_EVENT_NAME -e GITHUB_SERVER_URL -e GITHUB_API_URL -e GITHUB_GRAPHQL_URL -e GITHUB_WORKSPACE -e GITHUB_ACTION -e GITHUB_EVENT_PATH -e GITHUB_ACTION_REPOSITORY -e GITHUB_ACTION_REF -e GITHUB_PATH -e GITHUB_ENV -e RUNNER_OS -e RUNNER_TOOL_CACHE -e RUNNER_TEMP -e RUNNER_WORKSPACE -e ACTIONS_RUNTIME_URL -e ACTIONS_RUNTIME_TOKEN -e ACTIONS_CACHE_URL -e GITHUB_ACTIONS=true -e CI=true -e GRADLE_USER_HOME=/home/user/contiki-ng/tools/cooja/.gradle_home -e LOCAL_UID=$(id -u $USER) -e LOCAL_GID=$(id -g $USER) $DOCKER_ARGS -v `pwd`:/home/user/contiki-ng -v $GITHUB_WORKSPACE/.ccache:/home/user/.ccache $DOCKER_IMG bash --login -c "source ../.bash_aliases && ccache --set-config=max_size='140M' && cimake -C tests/??-${{ matrix.test }}; ccache -c"
-        # Check outcome of the test
-        ./tests/check-test.sh `pwd`/tests/??-${{ matrix.test }}
+        name: "${{ matrix.board }}-packages"
+        path: packages/*
+        retention-days: 30
