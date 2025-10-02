@@ -86,7 +86,7 @@ typedef enum {
   (L == DUP)     ? ("DUP")  : ("UNKWN"))
 
 typedef struct osf_log {
-  struct atm_log     *next;
+  struct osf_log     *next;
   osf_log_type_t      type;
   uint8_t             rtx;
   uint16_t            id;
@@ -107,7 +107,7 @@ void osf_buf_log_print(void);
 #define OSF_BUF_PKT_ID_LT(a, b) ((signed short)((a)-(b)) < 0)
 
 typedef struct osf_buf_element {
-  struct atm_data    *next;
+  struct osf_buf_element *next;
   uint16_t            rtx;
   uint16_t            id;
   uint8_t             src;
