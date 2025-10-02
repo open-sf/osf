@@ -80,7 +80,6 @@ twi_init(void)
 void
 read_pin_handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 {
-  // atm_log_str("E2 EVENT\n");
   read_event = 1;
 }
 
