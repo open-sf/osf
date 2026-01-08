@@ -60,25 +60,40 @@ configure()
 {
   osf_round_conf_t *rconf;
   /* Init vars for start of epoch */
-  this->index = 0;
   this->duration = 0;
-
   /* Init S round */
-  rconf = &this->sched[this->index];
+  rconf = &this->sched[0];
   rconf->t_offset = 0;
   osf_round_configure(rconf, rconf->round, my_radio_get_phy_conf(OSF_ROUND_S_PHY), rconf->ntx + OSF_ROUND_S_NTX, OSF_ROUND_S_MAX_SLOTS);
-  this->duration += rconf->duration;
+  this->duration += rconf->duration + OSF_ROUND_GUARD;
   if(!osf_is_on) {
     osf_round_conf_print(rconf, rconf->round);
   }
+  /* Init J round */
+  rconf = &this->sched[1];
+  rconf->t_offset = this->duration;
+  osf_round_configure(rconf, rconf->round, my_radio_get_phy_conf(OSF_ROUND_J_PHY), rconf->ntx + OSF_ROUND_J_NTX, OSF_ROUND_J_MAX_SLOTS);
+  this->duration += rconf->duration;
+  if (!osf_is_on) {
+    osf_round_conf_print(rconf, rconf->round);
+  }
+
+  memset(this->received, 0, sizeof(this->received));
+  memset(this->sent, 0, sizeof(this->sent));
 }
 
 /*---------------------------------------------------------------------------*/
 static void
 init()
 {
-  osf_round_conf_t *rconf = &this->sched[this->index];
+  osf_round_conf_t *rconf = &this->sched[0];
   rconf->round = &osf_round_s;
+
+  /* Set up the protocol schedule */
+  rconf->round = &osf_round_s;
+  rconf = &this->sched[++this->index];
+  rconf->round = &osf_round_j;
+
   this->len = this->index + 1; // note our protocol length
 
   /* Configure the protocol (phys, ntx, statlen, etc.) - gives us the
@@ -86,11 +101,8 @@ init()
   configure();
 
   /* Print the round PHY timings */
-  if(!osf_is_on) {
-    LOG_INFO("=== %s ===\n", OSF_PROTO_TO_STR(this->type));
-    LOG_INFO("- PROTO LEN      - %u rounds\n", this->len);
-    LOG_INFO("- PROTO DURATION - %5lu ticks | %4lu us\n",
-      this->duration, RTIMERTICKS_TO_USX(this->duration));
+  if (!osf_is_on) {
+    osf_proto_print(this);
   }
 }
 
@@ -102,9 +114,31 @@ next_round()
 
   if(this->index < this->len) {
     rconf = &this->sched[this->index];
-    this->role = node_is_timesync ? OSF_ROLE_SRC : (node_is_destination ? OSF_ROLE_DST : OSF_ROLE_FWD);
-    /* Configure the round and return */
+    switch (rconf->round->type) {
+      /* Configure S round */
+      case OSF_ROUND_S:
+        // if you are a timesync, you are a SRC
+        this->role = node_is_timesync ? OSF_ROLE_SRC
+                                      : (!node_is_joined ? OSF_ROLE_DST : OSF_ROLE_FWD);
+        break;
+      /* Configure J round */
+      case OSF_ROUND_J:
+        // if you are a timesync, you are a DST
+        // if you have not joined the network, you are a SRC
+        this->role = node_is_timesync ? OSF_ROLE_DST
+                                      : (!node_is_joined ? OSF_ROLE_SRC : OSF_ROLE_FWD);
+        break;
+      default:
+        LOG_ERR("Unknown round type! (%u) %u/%u\n", rconf->round->type, this->index, this->len);
+        break;
+    }
+
+    /* Protocol Extension */
+    DO_OSF_P_EXTENSION(next, this, rconf);
+
+    /* Configure the round */
     rconf->round->configure();
+
   } else {
     // TODO: Move this to osf_proto_end()
     this->role = OSF_ROLE_NONE;

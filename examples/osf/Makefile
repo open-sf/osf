@@ -31,7 +31,6 @@ endif
 #----------------------------------------------------------------------------#
 # Testbed/Deployment
 #----------------------------------------------------------------------------#
-DEPLOYMENT ?= nulltb
 ifneq ($(DEPLOYMENT),)
   CFLAGS += -DDEPLOYMENT_MAPPING=deployment_$(DEPLOYMENT)
   CFLAGS += -DDEPLOYMENT_MAP_HEADER=\"deployment-map-$(DEPLOYMENT).h\"

@@ -35,19 +35,18 @@
  *         Michael Baddeley <michael.baddeley@tii.ae>
  */
 
-#include "contiki.h"
 #include "contiki-net.h"
-#include "node-id.h"
+#include "contiki.h"
+#include "net/mac/osf/extensions/osf-ext.h"
 #include "net/mac/osf/nrf52840-osf.h"
-
+#include "net/mac/osf/osf-buffer.h"
 #include "net/mac/osf/osf-debug.h"
 #include "net/mac/osf/osf-log.h"
 #include "net/mac/osf/osf-packet.h"
 #include "net/mac/osf/osf-proto.h"
-#include "net/mac/osf/osf-buffer.h"
+#include "net/mac/osf/osf-net.h"
 #include "net/mac/osf/osf.h"
-
-#include "net/mac/osf/extensions/osf-ext.h"
+#include "node-id.h"
 
 #if BUILD_WITH_TESTBED
 #include "services/testbed/testbed.h"
@@ -86,14 +85,12 @@ configure()
   }
 
   /* 
-   * Init T rounds. We will use deployment mapping for now. 
-   * FIXME: Some better way of setting the number of T rounds
-   *        based on the number of nodes in the network.
+   * Init T rounds based on the number of nodes in the network.
    */
-  for(i = 0; i < deployment_node_count(); i++) {
+  for(i = 0; i < osf_net_count_nodes(); i++) {
     rconf = &this->sched[++this->index];
     rconf->t_offset = this->duration;
-    osf_round_configure(rconf, rconf->round, my_radio_get_phy_conf(OSF_ROUND_T_PHY), rconf->ntx + OSF_ROUND_T_NTX, OSF_ROUND_S_MAX_SLOTS);
+    osf_round_configure(rconf, rconf->round, my_radio_get_phy_conf(OSF_ROUND_T_PHY), rconf->ntx + OSF_ROUND_T_NTX, OSF_ROUND_T_MAX_SLOTS);
     this->duration += rconf->duration + OSF_ROUND_GUARD;
     if(!osf_is_on && !i) {
       osf_round_conf_print(rconf, rconf->round);
@@ -118,13 +115,14 @@ init()
   rconf->round = &osf_round_s;
 
   /* Set up the TX rounds */
-  for(i = 1; i <= deployment_node_count(); i++) {
-      rconf = &this->sched[i];
-      rconf->round = &osf_round_tx;
+  for (i = 1; i <= osf_net_count_nodes(); i++) {
+    rconf = &this->sched[i];
+    rconf->round = &osf_round_tx;
   }
 
   /* Set a bit index for this node */
-  my_tx_round = deployment_index_from_id(node_id);
+  osf_net_node_t *node = osf_net_find_node(node_id);
+  my_tx_round = node->id;
 
   this->len = i; // note our protocol length
   LOG_ERR("Our length is %u. idx is %u\n", i, my_tx_round);

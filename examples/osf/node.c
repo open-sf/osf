@@ -45,17 +45,17 @@
 /* #include "net/mac/osf/osf-packet.h" */
 #include "net/mac/osf/osf.h"
 #include "net/mac/osf/osf-proto.h"
+#if OSF_DEBUG_LEDS || OSF_DEBUG_GPIO
 #include "net/mac/osf/osf-debug.h"
+#endif
 
 #include "sys/node-id.h"
-
-#include "services/deployment/deployment.h"
 
 #if BUILD_WITH_TESTBED
 /* Take sources/destinations from the testbed conf */
 #include "services/testbed/testbed.h"
-#endif /* BUILD_WITH_TESTBED*/
-#include <nrf_nvmc.h>
+#endif
+
 
 /* Log configuration */
 #include "sys/log.h"
@@ -67,16 +67,7 @@
 #if HELLO_WORLD
 static struct etimer timer;
 static uint8_t count = 0;
-/* Initialise a receive buffer. Again, testbed has it's own version of this. */
 static char data_buf[64];
-/* Create dummy sources/destinations here from the makeargs */
-#define SOURCES(...)         static uint8_t sources[] = { __VA_ARGS__ };
-#define N_SOURCES            sizeof(sources) / sizeof(uint8_t)
-#define DESTINATIONS(...)    static uint8_t destinations[] = { __VA_ARGS__ };
-#define N_DESTINATIONS       sizeof(destinations) / sizeof(uint8_t)
-/* Actually initialise the sources and destinations */
-SOURCES(TB_CONF_SOURCES);
-DESTINATIONS(TB_CONF_DESTINATIONS)
 #endif /* HELLO_WORLD */
 
 /*---------------------------------------------------------------------------*/
@@ -109,29 +100,30 @@ input_callback(uint8_t *data, uint8_t len)
 static void
 hello_world_init()
 {
-  uint8_t i;
-  uint8_t is_source = 0;
-  for(i = 0; i < sizeof(sources); i++) {
-    if(node_id == sources[i]) {
-      is_source = 1;
-      LOG_INFO("I am a SOURCE node :)\n");
-    }
-  }
-  if(is_source) {
-    /* Setup a periodic send timer. */
-    etimer_set(&timer, HELLO_WORLD_PERIOD);
-  }
+  // uint8_t i;
+  // uint8_t is_source = 0;
+  // for(i = 0; i < sizeof(sources); i++) {
+  //   if(node_id == sources[i]) {
+  //     is_source = 1;
+  //     LOG_INFO("I am a SOURCE node :)\n");
+  //   }
+  // }
+  // if(is_source) {
+  //   /* Setup a periodic send timer. */
+  //   etimer_set(&timer, HELLO_WORLD_PERIOD);
+  // }
 }
 /*---------------------------------------------------------------------------*/
 static void
 hello_world_send()
 {
-  uint8_t i;
-  for(i = 0; i < sizeof(destinations); i++) {
+  // uint8_t i;
+  // for(i = 0; i < sizeof(destinations); i++) {
+  if (node_id !=1) {
     snprintf(data_buf, sizeof(data_buf), "TX: hello %d from %u", count, node_id);
     count++;
     LOG_INFO("%s\n", data_buf);
-    osf_send((uint8_t *)data_buf, sizeof(data_buf), destinations[i]);
+    osf_send((uint8_t *)data_buf, sizeof(data_buf), 1);
   }
 }
 #endif /* HELLO_WORLD */

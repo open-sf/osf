@@ -46,34 +46,33 @@
 #include "net/packetbuf.h"
 #include "net/netstack.h"
 
+#include "sys/node-id.h"
+
+#if BUILD_WITH_DEPLOYMENT
+#include "services/deployment/deployment.h"
+#endif
 #if BUILD_WITH_TESTBED
 #include "services/testbed/testbed.h"
 #endif
 
-#include "nrf_timer.h"
-#include "nrf_clock.h"
-#include "nrf_radio.h"
-#include "nrf_ppi.h"
-#include "sys/critical.h"
-#include "sys/int-master.h"
-#include "net/mac/osf/nrf52840-osf.h"
-
-#include "net/mac/osf/osf.h"
-#include "net/mac/osf/osf-timer.h"
-#include "net/mac/osf/osf-ch.h"
-#include "net/mac/osf/osf-packet.h"
-#include "net/mac/osf/osf-proto.h"
-#include "net/mac/osf/osf-buffer.h"
 #include "net/mac/osf/extensions/osf-ext.h"
+#include "net/mac/osf/nrf52840-osf.h"
+#include "net/mac/osf/osf-buffer.h"
+#include "net/mac/osf/osf-ch.h"
 #include "net/mac/osf/osf-debug.h"
 #include "net/mac/osf/osf-log.h"
+#include "net/mac/osf/osf-net.h"
+#include "net/mac/osf/osf-packet.h"
+#include "net/mac/osf/osf-proto.h"
 #include "net/mac/osf/osf-stat.h"
-
-/* MUST INCLUDE THESE FOR NODE IDS AND TESTBED PATTERNS */
-#include "services/deployment/deployment.h"
-#if CONF_TESTBED
-#include "services/testbed/testbed.h"
-#endif
+#include "net/mac/osf/osf-timer.h"
+#include "net/mac/osf/osf.h"
+#include "nrf_clock.h"
+#include "nrf_ppi.h"
+#include "nrf_radio.h"
+#include "nrf_timer.h"
+#include "sys/critical.h"
+#include "sys/int-master.h"
 
 /* Log configuration */
 #include "sys/log.h"
@@ -105,7 +104,7 @@ uint8_t osf_is_on = 0;
 uint8_t node_is_timesync = 0;
 uint8_t node_is_synced = 0;
 uint8_t node_is_joined = 0;
-uint8_t osf_timesync = 0;
+uint8_t osf_timesync = 0; // FIXME: This should be the lladdr
 
 uint8_t node_is_source = 0;
 uint8_t node_is_destination = 0;
@@ -218,49 +217,7 @@ osf_sync(void)
   osf_ch_init_index(osf.epoch + osf.proto->index);
   osf_ch_index += (osf.slot+1);
   osf_ch_index = osf_ch_index % osf_ch_len;
-  /* Join - TODO: This could be a whole handshake process */
-  if(!node_is_joined) {
-    osf.join_epoch = osf.epoch;
-    node_is_joined = 1;
-    osf_stat.osf_join_total++; /* Statistics */
-  }
-  DEBUG_LEDS_ON(SYNCED_LED);
-}
-
-/*---------------------------------------------------------------------------*/
-static void
-set_timesync()
-{
-#if BUILD_WITH_TESTBED
-  volatile tb_pattern_t *pattern = tb_get_pattern();
-  switch(pattern->traffic_pattern) {
-  case P2P:
-  case P2MP:
-    osf_timesync = tb_get_sources()[0];
-    break;
-  case MP2P:
-    osf_timesync = tb_get_destinations()[0];
-    break;
-  case MP2MP:
-  default:
-    LOG_ERR("Unhandled PATTERN type! %s (%u)\n", PATTERN_TO_STR(pattern->traffic_pattern), pattern->traffic_pattern);
-    return;
-  }
-  LOG_INFO("- OSF Timesync AUTO (%s) set to node %u ", PATTERN_TO_STR(pattern->traffic_pattern), osf_timesync);
-#else
-  osf_timesync = OSF_TS;
-  LOG_INFO("- OSF Timesync MANUAL set to node %u ", osf_timesync);
-#endif
-  /* Check if we are the timesync */
-  if(node_id == osf_timesync) {
-    node_is_timesync = 1;
-    node_is_synced = 1;
-    node_is_joined = 1;
-    DEBUG_LEDS_ON(TS_LED);
-    LOG_INFO_("... I am TS! (TS is %u)\n", osf_timesync);
-  } else {
-    LOG_INFO_("... I am NOT TS! (TS is %u)\n", osf_timesync);
-  }
+  DEBUG_LEDS_ON(JOINED_LED);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -514,13 +471,11 @@ start_rx(rtimer_clock_t target)
   } else {
     /* Limit maxlen for avoid RX overflow */
     // my_radio_set_maxlen(OSF_ROUND_S_PAYLOAD_LENGTH); // FIXME: WHY?
-    if(node_is_joined) {
-      if (osf.round->type == OSF_ROUND_A) {
-        // my_radio_set_maxlen(OSF_PKT_HDR_LEN + OSF_PKT_A_RND_LEN + MIC_SIZE); // FIXME: WHY?
-      } else if (osf.round->type == OSF_ROUND_T) {
-        my_radio_set_maxlen(OSF_MAXLEN(osf.rconf->phy->mode));
-        }
-    }
+    if (osf.round->type == OSF_ROUND_A) {
+      // my_radio_set_maxlen(OSF_PKT_HDR_LEN + OSF_PKT_A_RND_LEN + MIC_SIZE); // FIXME: WHY?
+    } else if (osf.round->type == OSF_ROUND_T) {
+      my_radio_set_maxlen(OSF_MAXLEN(osf.rconf->phy->mode));
+    } 
   }
 #else
   my_radio_set_maxlen(OSF_MAXLEN(osf.rconf->phy->mode));
@@ -538,7 +493,7 @@ end_rx()
 
   /* Statistics */
   /* FIXME: What is this trying to log? */
-  if (node_is_joined && (osf.round->type == OSF_ROUND_T)) {
+  if (osf.round->type == OSF_ROUND_T) {
     osf_stat.osf_mac_rx_slots_total++;
   }
 
@@ -766,7 +721,7 @@ start_round() {
     stat = critical_enter();
   }
   uint8_t len = osf.round->send();
-  // if(len && (osf.round->type == OSF_ROUND_T) && !osf.round->statlen && node_is_joined) {
+  // if(len && (osf.round->type == OSF_ROUND_T) && !osf.round->statlen) {
   if(len) {
     osf_stat.osf_mac_tx_total++; /* Statistics */
   }
@@ -980,6 +935,7 @@ RADIO_IRQHandler_callback()
 /*---------------------------------------------------------------------------*/
 /* Public functions for netstack dtiver */
 /*---------------------------------------------------------------------------*/
+#if BUILD_WITH_TESTBED
 void
 osf_configure(uint8_t *sources, uint8_t src_len,
               uint8_t *destinations, uint8_t dst_len,
@@ -1014,6 +970,7 @@ osf_configure(uint8_t *sources, uint8_t src_len,
     }
   }
 }
+#endif
 
 /*---------------------------------------------------------------------------*/
 void
@@ -1036,6 +993,8 @@ osf_init()
   osf_stat_init();
   /* Init PA */
   NETSTACK_PA.init();
+  /* Initialize OSF network management */
+  osf_net_init();
 }
 
 /*---------------------------------------------------------------------------*/
@@ -1069,8 +1028,6 @@ osf_on()
   if(osf_is_on) {
     return 1;
   }
-  /* Set the timesync */
-  set_timesync();
   /* Initialize osf radio timer */
   rtimerx_init();
   /* Initialize protocol */

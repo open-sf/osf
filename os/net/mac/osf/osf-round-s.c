@@ -48,7 +48,9 @@
 #include "net/mac/osf/osf-log.h"
 #include "net/mac/osf/osf-debug.h"
 #include "net/mac/osf/osf-stat.h"
+#include "net/mac/osf/osf-net.h"
 
+#include <string.h>
 #if OSF_MPHY
 #include "net/mac/osf/osf-proto.h"
 #endif
@@ -59,7 +61,7 @@
 
 #include "sys/log.h"
 #define LOG_MODULE "OSF-RND-S"
-#define LOG_LEVEL LOG_LEVEL_WARN
+#define LOG_LEVEL LOG_LEVEL_DBG
 
 static osf_round_t *this = &osf_round_s;
 /*---------------------------------------------------------------------------*/
@@ -90,10 +92,28 @@ send()
   osf_pkt_s_round_t *rnd_pkt = (osf_pkt_s_round_t *)osf_buf_rnd_pkt;
   /* Send ONLY if we are a TS*/
   if(node_is_timesync) {
+    osf_log_s("DBG","SS\n");
+    /* Header */
     osf_buf_hdr->src = node_id;
     osf_buf_hdr->dst = 0xFF;
     rnd_pkt->epoch = osf.epoch;
     packet_len += sizeof(rnd_pkt->epoch);
+    /* Joining */
+    osf_net_node_t *n = osf_net_get_next_join_request();
+    if(n != NULL) {
+      LOG_DBG("JR found for node %x\n", n->id);
+      rnd_pkt->net_id = OSF_DEFAULT_NETWORK_ID;
+      packet_len += sizeof(rnd_pkt->net_id);
+      rnd_pkt->net_join_id = n->id;
+      packet_len += sizeof(rnd_pkt->net_join_id);
+      // linkaddr_copy(&rnd_pkt->net_join_lladdr, &n->lladdr);
+      memcpy(&rnd_pkt->net_join_lladdr.u8[0], &n->lladdr.u8[0], LINKADDR_SIZE);
+      packet_len += sizeof(rnd_pkt->net_join_lladdr);
+      rnd_pkt->net_next_join_epoch = osf_net_get_next_join_epoch();
+      packet_len += sizeof(rnd_pkt->net_next_join_epoch);
+      // FIXME: This is a terrible way to do this. We need an ACK from the node.
+      n->joined = 1;
+    }
 #if OSF_ROUND_S_PAYLOAD
     osf_buf_element_t *el = osf_buf_tx_get();
     /* Send data from the MAC buffer */
@@ -105,14 +125,13 @@ send()
       rnd_pkt += el->len;
       osf.proto->sent[osf.proto->index] = el->dst;
       osf_log_slot_node(osf_buf_hdr->dst);
-      return packet_len;
     }
 #endif
 #if OSF_MPHY
     rnd_pkt->pattern = osf_mphy_pattern;
-#else
-    return 0;
+    packet_len += sizeof(rnd_pkt->pattern);
 #endif
+    return packet_len;
   }
   return 0;
 }
@@ -121,8 +140,30 @@ send()
 static uint8_t
 receive()
 {
-#if OSF_ROUND_S_PAYLOAD
   osf_pkt_s_round_t *rnd_pkt = (osf_pkt_s_round_t *)osf_buf_rnd_pkt;
+  // FIXME: We don't see anything in the join round as this happens almost immedately. We should only
+  //        try and join if we have already sent a join request.
+  if (!node_is_joined) {
+    osf_log_s("DBG","RS\n");
+    /* Temporarily join so we can send our details to the tiemsync. We then check the joining lladdr to see if we have 
+       been assigned to the network. */
+    // printf("%x\n", linkaddr_node_addr.u8[LINKADDR_SIZE - 1]);
+    printf("%x\n", rnd_pkt->net_join_lladdr.u8[LINKADDR_SIZE - 1]);
+    // if (linkaddr_cmp(&linkaddr_node_addr, &rnd_pkt->net_join_lladdr)) {
+    if (memcmp(&linkaddr_node_addr.u8[0], &rnd_pkt->net_join_lladdr.u8[0], LINKADDR_SIZE) == 0) {
+      // FIXME: We need to return the join id and the joiner lladdr.
+      printf("J\n");
+      printf("id - %x\n", rnd_pkt->net_join_id);
+      printf("lladdr - %02X:%02X:%02X:%02X:%02X:%02X\n",
+             rnd_pkt->net_join_lladdr.u8[0], rnd_pkt->net_join_lladdr.u8[1],
+             rnd_pkt->net_join_lladdr.u8[2], rnd_pkt->net_join_lladdr.u8[3],
+             rnd_pkt->net_join_lladdr.u8[4], rnd_pkt->net_join_lladdr.u8[5]);
+      osf_net_join(osf_buf_hdr->src, rnd_pkt->net_id);
+      return 1;
+    }
+  }
+
+#if OSF_ROUND_S_PAYLOAD
   if(osf.proto->role == OSF_ROLE_DST || osf_buf_hdr->dst == node_id || osf_buf_hdr->dst == 0xFF) {
     osf_buf_receive(rnd_pkt->id, osf_buf_hdr->src, osf_buf_hdr->dst, rnd_pkt->payload, OSF_DATA_LEN_MAX, osf_buf_hdr->slot);
     osf.proto->received[osf.proto->index] = osf_buf_hdr->src;
@@ -130,7 +171,6 @@ receive()
   }
 #endif
 #if OSF_MPHY
-  osf_pkt_s_round_t *rnd_pkt = (osf_pkt_s_round_t *)osf_buf_rnd_pkt;
   osf_mphy_pattern = rnd_pkt->pattern;
   return 1;
 #else
@@ -147,7 +187,7 @@ no_rx()
     osf_stat.osf_ts_lost_total++; /* Statistics */
     /* If we did not sync for N epochs, then desync */
     if(!node_is_timesync && osf.failed_epochs >= OSF_RESYNC_THRESHOLD) {
-      DEBUG_LEDS_OFF(SYNCED_LED);
+      DEBUG_LEDS_OFF(JOINED_LED);
       node_is_synced = 0;
       node_is_joined = 0;
       osf.proto->index = osf.proto->len;

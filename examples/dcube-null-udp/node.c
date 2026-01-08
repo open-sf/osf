@@ -18,7 +18,9 @@
 
 
 /* MUST INCLUDE THESE FOR NODE IDS AND TESTBED PATTERNS */
+#if BUILD_WITH_DEPLOYMENT
 #include "services/deployment/deployment.h"
+#endif
 #if BUILD_WITH_TESTBED
 /* Take sources/destinations from the testbed conf */
 #include "services/testbed/testbed.h"

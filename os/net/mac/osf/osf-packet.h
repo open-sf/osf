@@ -39,6 +39,7 @@
 #ifndef OSF_PACKET_H_
 #define OSF_PACKET_H_
 
+#include "net/linkaddr.h"
 #include "net/mac/osf/osf.h"
 #include "net/mac/osf/osf-proto.h"
 #include "net/mac/osf/extensions/osf-ext.h"
@@ -87,13 +88,18 @@ typedef struct __attribute__((packed)) osf_pkt_hdr {
 #ifdef OSF_CONF_DATA_LEN_MAX
 #define OSF_DATA_LEN_MAX            OSF_CONF_DATA_LEN_MAX
 #else
-#define OSF_DATA_LEN_MAX            248
+#define OSF_DATA_LEN_MAX            200
 #endif
 
 /*---------------------------------------------------------------------------*/
 /* S round packet */
 typedef struct __attribute__((packed)) osf_pkt_s_round {
-  uint16_t epoch;
+  uint16_t   epoch;
+  /* Network Join Response */
+  uint16_t   net_next_join_epoch;
+  uint8_t    net_id;
+  uint8_t    net_join_id;
+  linkaddr_t net_join_lladdr;
 #if OSF_ROUND_S_PAYLOAD
   uint16_t id;
   uint8_t  payload[OSF_DATA_LEN_MAX];
@@ -128,6 +134,14 @@ typedef struct __attribute__((packed)) osf_pkt_a_round {
 #endif
 
 #define OSF_PKT_A_RND_LEN sizeof(osf_pkt_a_round_t)
+
+/*---------------------------------------------------------------------------*/
+/* Join round packet */
+typedef struct __attribute__((packed)) osf_pkt_j_round {
+  linkaddr_t lladdr;
+} osf_pkt_j_round_t;
+
+#define OSF_PKT_J_RND_LEN sizeof(osf_pkt_j_round_t)
 
 /*---------------------------------------------------------------------------*/
 #define OSF_PKT_RND_LEN(R) \

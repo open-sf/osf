@@ -98,8 +98,8 @@ main(void)
 #if QUEUEBUF_ENABLED
   queuebuf_init();
 #endif /* QUEUEBUF_ENABLED */
-  netstack_init();
   node_id_init();
+  netstack_init();
 
   LOG_INFO("Starting " CONTIKI_VERSION_STRING "\n");
   LOG_DBG("TARGET=%s", CONTIKI_TARGET_STRING);

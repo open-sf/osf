@@ -41,6 +41,7 @@
 #include "sys/node-id.h"
 #include "net/linkaddr.h"
 
+
 #if BUILD_WITH_TESTBED
 #include "services/testbed/testbed.h"
 #endif
@@ -80,9 +81,10 @@ node_id_init(void) {
 #else
 
   /* Initialize with a default value derived from linkaddr */
-  LOG_DBG("Init ID through linkaddr.\n");
-  node_id = linkaddr_node_addr.u8[LINKADDR_SIZE - 1]
-            + (linkaddr_node_addr.u8[LINKADDR_SIZE - 2] << 8);
+  // node_id = linkaddr_node_addr.u8[LINKADDR_SIZE - 1]
+  //           + (linkaddr_node_addr.u8[LINKADDR_SIZE - 2] << 8);
+  node_id = linkaddr_node_addr.u8[LINKADDR_SIZE - 1];
+  LOG_DBG("Init ID through linkaddr (%x).\n", node_id);
 
 #endif /* BUILD_WITH_DEPLOYMENT */
 

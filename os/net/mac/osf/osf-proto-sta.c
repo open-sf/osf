@@ -46,6 +46,7 @@
 #include "net/mac/osf/osf-packet.h"
 #include "net/mac/osf/osf-proto.h"
 #include "net/mac/osf/osf-buffer.h"
+#include "net/mac/osf/osf-net.h"
 #include "net/mac/osf/osf.h"
 
 #include "net/mac/osf/extensions/osf-ext.h"
@@ -190,7 +191,8 @@ init()
   osf_round_conf_t *rconf = &this->sched[this->index];
 
   /* Set a bit index for this node */
-  my_bit_index = deployment_index_from_id(node_id);
+  osf_net_node_t *node = osf_net_find_node(node_id);
+  my_bit_index = node->id;
 
   /* Set up the protocol schedule */
   rconf->round = &osf_round_s;

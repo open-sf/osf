@@ -106,6 +106,20 @@ typedef struct radio_buffer {
 #define OSF_LOG_MSG_LEN_MAX           64
 
 /* Poor man's approach to %s %u %d %x */
+typedef enum {
+  OSF_LOG_MSG_TYPE_S,
+  OSF_LOG_MSG_TYPE_U,
+  OSF_LOG_MSG_TYPE_D,
+  OSF_LOG_MSG_TYPE_X,
+  OSF_LOG_MSG_TYPE_B,
+} osf_log_msg_type_t;
+
+#define OSF_LOG_MSG_S OSF_LOG_MSG_TYPE_S
+#define OSF_LOG_MSG_U OSF_LOG_MSG_TYPE_U
+#define OSF_LOG_MSG_D OSF_LOG_MSG_TYPE_D
+#define OSF_LOG_MSG_X OSF_LOG_MSG_TYPE_X
+#define OSF_LOG_MSG_B OSF_LOG_MSG_TYPE_B
+
 typedef struct osf_log_msg {
   struct osf_log_msg_t  *next;
   const char            *prefix;
@@ -113,19 +127,14 @@ typedef struct osf_log_msg {
   uint8_t                slot;
   uint8_t                index;
   uint16_t               epoch;
-  enum {
-    OSF_LOG_MSG_S,
-    OSF_LOG_MSG_U,
-    OSF_LOG_MSG_D,
-    OSF_LOG_MSG_X,
-    OSF_LOG_MSG_B,
-  } type;
+  osf_log_msg_type_t     type;
   uint8_t                msg[OSF_LOG_MSG_LEN_MAX];
   uint8_t                len;
 } osf_log_msg_t;
 
 /* Macros to map to the different msg log types */
 // TODO: Can maybe look at using LOG_CONF_OUTPUT_PREFIX
+#if OSF_LOG_MSG
 #define osf_log_s(prefix, str) do { \
   const char *msg = str; \
   osf_log_msg(prefix, LOG_MODULE, (uint8_t *)msg, strlen(msg), OSF_LOG_MSG_S); \
@@ -146,6 +155,13 @@ typedef struct osf_log_msg {
 #define osf_log_b(prefix, var, len) do { \
   osf_log_msg(prefix, LOG_MODULE, (uint8_t *)var, len, OSF_LOG_MSG_B); \
 } while(0);
+#else
+#define osf_log_s(prefix, str) do { } while(0)
+#define osf_log_u(prefix, var, len) do { } while(0)
+#define osf_log_d(prefix, var, len) do { } while(0)
+#define osf_log_x(prefix, var, len) do { } while(0)
+#define osf_log_b(prefix, var, len) do { } while(0)
+#endif
 
 /*---------------------------------------------------------------------------*/
 /* Slots */

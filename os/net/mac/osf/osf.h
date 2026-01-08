@@ -87,6 +87,7 @@
    set the same PHY and use statlen for all round types */
 #ifdef OSF_CONF_PHY
 #define OSF_CONF_ROUND_S_PHY          OSF_CONF_PHY
+#define OSF_CONF_ROUND_J_PHY          OSF_CONF_PHY
 #define OSF_CONF_ROUND_T_PHY          OSF_CONF_PHY
 #define OSF_CONF_ROUND_A_PHY          OSF_CONF_PHY
 #endif
@@ -96,6 +97,11 @@
 #define OSF_ROUND_S_PHY               OSF_CONF_ROUND_S_PHY
 #else
 #define OSF_ROUND_S_PHY               PHY_BLE_500K
+#endif
+#ifdef OSF_CONF_ROUND_J_PHY
+#define OSF_ROUND_J_PHY               OSF_CONF_ROUND_J_PHY
+#else
+#define OSF_ROUND_J_PHY               PHY_BLE_500K
 #endif
 #ifdef OSF_CONF_ROUND_T_PHY
 #define OSF_ROUND_T_PHY               OSF_CONF_ROUND_T_PHY
@@ -113,6 +119,11 @@
 #define OSF_ROUND_S_STATLEN           OSF_CONF_ROUND_S_STATLEN
 #else
 #define OSF_ROUND_S_STATLEN           1
+#endif
+#ifdef OSF_CONF_ROUND_J_STATLEN
+#define OSF_ROUND_J_STATLEN           OSF_CONF_ROUND_J_STATLEN
+#else
+#define OSF_ROUND_J_STATLEN           1
 #endif
 #ifdef OSF_CONF_ROUND_T_STATLEN
 #define OSF_ROUND_T_STATLEN           OSF_CONF_ROUND_T_STATLEN
@@ -133,6 +144,7 @@ typedef enum osf_primitive_t {
 
 #ifdef OSF_CONF_PRIMITIVE
 #define OSF_CONF_ROUND_S_PRIMITIVE    OSF_CONF_PRIMITIVE
+#define OSF_CONF_ROUND_J_PRIMITIVE    OSF_CONF_PRIMITIVE
 #define OSF_CONF_ROUND_T_PRIMITIVE    OSF_CONF_PRIMITIVE
 #define OSF_CONF_ROUND_A_PRIMITIVE    OSF_CONF_PRIMITIVE
 #endif
@@ -141,6 +153,11 @@ typedef enum osf_primitive_t {
 #define OSF_ROUND_S_PRIMITIVE         OSF_CONF_ROUND_S_PRIMITIVE
 #else
 #define OSF_ROUND_S_PRIMITIVE         OSF_PRIMITIVE_ROF
+#endif
+#ifdef OSF_CONF_ROUND_J_PRIMITIVE
+#define OSF_ROUND_J_PRIMITIVE         OSF_CONF_ROUND_J_PRIMITIVE
+#else
+#define OSF_ROUND_J_PRIMITIVE         OSF_PRIMITIVE_ROF
 #endif
 #ifdef OSF_CONF_ROUND_T_PRIMITIVE
 #define OSF_ROUND_T_PRIMITIVE         OSF_CONF_ROUND_T_PRIMITIVE
@@ -171,6 +188,11 @@ typedef enum osf_primitive_t {
 #else
 #define OSF_ROUND_S_NTX               OSF_NTX
 #endif
+#ifdef OSF_CONF_ROUND_J_NTX
+#define OSF_ROUND_J_NTX               OSF_CONF_ROUND_J_NTX
+#else
+#define OSF_ROUND_J_NTX               OSF_NTX
+#endif
 #ifdef OSF_CONF_ROUND_T_NTX
 #define OSF_ROUND_T_NTX               OSF_CONF_ROUND_T_NTX
 #else
@@ -189,6 +211,11 @@ typedef enum osf_primitive_t {
 #define OSF_ROUND_S_MAX_SLOTS         OSF_CONF_ROUND_S_MAX_SLOTS
 #else
 #define OSF_ROUND_S_MAX_SLOTS         (OSF_ROUND_S_NTX * 2)
+#endif
+#ifdef OSF_CONF_ROUND_J_MAX_SLOTS
+#define OSF_ROUND_J_MAX_SLOTS         OSF_CONF_ROUND_J_MAX_SLOTS
+#else
+#define OSF_ROUND_J_MAX_SLOTS         (OSF_ROUND_J_NTX * 2)
 #endif
 #ifdef OSF_CONF_ROUND_T_MAX_SLOTS
 #define OSF_ROUND_T_MAX_SLOTS         OSF_CONF_ROUND_T_MAX_SLOTS
@@ -339,16 +366,19 @@ extern uint8_t osf_state;
 /* OSF round data struct */
 typedef enum osf_round_type {
   OSF_ROUND_S,
+  OSF_ROUND_J,
   OSF_ROUND_T,
   OSF_ROUND_A
 } osf_round_type_t;
 
 #define OSF_ROUND_TO_STR(R) \
   ((R == OSF_ROUND_S) ? ("OSF_ROUND_S") : \
+   (R == OSF_ROUND_J) ? ("OSF_ROUND_J") : \
    (R == OSF_ROUND_T) ? ("OSF_ROUND_T") : \
    (R == OSF_ROUND_A) ? ("OSF_ROUND_A") : ("???"))
 #define OSF_ROUND_TO_STR_SHORT(R) \
   ((R == OSF_ROUND_S) ? ("S") : \
+   (R == OSF_ROUND_J) ? ("J") : \
    (R == OSF_ROUND_T) ? ("T") : \
    (R == OSF_ROUND_A) ? ("A") : ("???"))
 
@@ -384,6 +414,7 @@ typedef struct osf_round {
 
 /* Round externs for use with protocols */
 extern osf_round_t osf_round_s;
+extern osf_round_t osf_round_j;
 extern osf_round_t osf_round_tx;
 extern osf_round_t osf_round_a;
 
@@ -432,7 +463,7 @@ uint8_t                  sources[OSF_BITMASK_LEN];       /* permitted sources in
 
 /* Maximum number of rounds in a protocol schedule */
 #if (OSF_PROTOCOL == OSF_PROTO_BCAST)
-#define OSF_SCHEDULE_LEN_MAX 1 // S round
+#define OSF_SCHEDULE_LEN_MAX 2 // S round + J round
 #elif (OSF_PROTOCOL == OSF_PROTO_STT)
 #define OSF_SCHEDULE_LEN_MAX 1 + OSF_MAX_NODES // S round + number of nodes
 #elif (OSF_PROTOCOL == OSF_PROTO_STA)
@@ -490,13 +521,14 @@ typedef struct osf {
   rtimer_clock_t        t_epoch_ref;
   int                   t_epoch_drift;
   int                   t_slot_drift;
-  /* Network */
+#if BUILD_WITH_TESTBED
   uint8_t               sources[OSF_MAX_NODES];
   uint8_t               src_len;
   uint8_t               destinations[OSF_MAX_NODES];
   uint8_t               dst_len;
   uint8_t               border_routers[OSF_MAX_NODES];
   uint8_t               br_len;
+#endif /* BUILD_WITH_TESTBED */
 } osf_t;
 
 extern rtimer_clock_t t_ref;
@@ -520,9 +552,11 @@ typedef void (*osf_input_callback_t)(uint8_t *data, uint8_t len);
 
 /*---------------------------------------------------------------------------*/
 /* TODO: Make these part of netstack struct */
+#if BUILD_WITH_TESTBED || BUILD_WITH_DEPLOYMENT
 void    osf_configure(uint8_t *sources, uint8_t src_len,
                       uint8_t *destinations, uint8_t dst_len,
                       uint8_t *border_routers, uint8_t br_len);
+#endif
 void    osf_init(void);
 void    osf_register_input_callback(osf_input_callback_t cb);
 void    osf_sync(void);

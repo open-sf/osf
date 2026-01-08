@@ -59,7 +59,7 @@ void nrf52840_hal_stop();
 
 #define TS_LED                          LED_1
 #define ROUND_LED                       LED_2
-#define SYNCED_LED                      LED_3
+#define JOINED_LED                      LED_3
 #define CRCERR_LED                      LED_4
 
 /*---------------------------------------------------------------------------*/

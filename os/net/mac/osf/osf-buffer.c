@@ -41,9 +41,7 @@
 #include "lib/list.h"
 #include "lib/queue.h"
 #include "net/packetbuf.h"
-
-#include "services/deployment/deployment.h"
-
+#include "sys/node-id.h"
 #include "osf.h"
 #include "osf-packet.h"
 #include "osf-buffer.h"
@@ -72,7 +70,7 @@ static uint8_t           log_index;
 static osf_log_t         log_array[OSF_LOG_MAX];
 
 /*---------------------------------------------------------------------------*/
-/* Logging */
+/* Logging (For this buffer only. Not to be confused with osf-log) */
 /*---------------------------------------------------------------------------*/
 void
 osf_buf_log_init()

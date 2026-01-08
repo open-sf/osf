@@ -59,7 +59,7 @@ void nrf_hal_stop();
 
 #define TS_LED                          NRF_GPIO_PIN_MAP(NRF_LED1_PORT,NRF_LED1_PIN)
 #define ROUND_LED                       NRF_GPIO_PIN_MAP(NRF_LED2_PORT,NRF_LED2_PIN)
-#define SYNCED_LED                      NRF_GPIO_PIN_MAP(NRF_LED3_PORT,NRF_LED3_PIN)
+#define JOINED_LED                      NRF_GPIO_PIN_MAP(NRF_LED3_PORT,NRF_LED3_PIN)
 #define CRCERR_LED                      NRF_GPIO_PIN_MAP(NRF_LED4_PORT,NRF_LED4_PIN)
 
 /*---------------------------------------------------------------------------*/

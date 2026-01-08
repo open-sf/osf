@@ -40,7 +40,7 @@
 #include "lib/list.h"
 #include "net/nbr-table.h"
 
-#define DEBUG DEBUG_NONE
+#define DEBUG DEBUG_DEBUG
 #include "net/ipv6/uip-debug.h"
 
 #if DEBUG

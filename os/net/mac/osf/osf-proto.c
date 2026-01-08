@@ -46,6 +46,7 @@
 #include "net/mac/osf/osf-proto.h"
 #include "net/mac/osf/osf-packet.h"
 #include "net/mac/osf/osf-buffer.h"
+#include "net/mac/osf/osf-net.h"
 #include "net/mac/osf/extensions/osf-ext.h"
 
 #if BUILD_WITH_TESTBED
@@ -121,7 +122,7 @@ osf_proto_print(osf_proto_t *proto)
   LOG_INFO("- SCHEDULE: |");
   for (i = 0; i < proto->len; i++) {
     osf_round_conf_t *rconf = &proto->sched[i];
-    uint8_t is_source = OSF_CHK_BIT_BYTE(rconf->sources, deployment_index_from_id(node_id));
+    uint8_t is_source = OSF_CHK_BIT_BYTE(rconf->sources, ((osf_net_node_t*)osf_net_find_node(node_id))->id);
     LOG_INFO_("%u:%s-%s-%u", i, OSF_ROUND_TO_STR_SHORT(rconf->round->type), OSF_PHY_TO_STR(rconf->phy->mode), is_source);
     LOG_INFO_("|");
   }

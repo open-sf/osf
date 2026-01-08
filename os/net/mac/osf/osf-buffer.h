@@ -39,8 +39,9 @@
 #ifndef OSF_BUF_H_
 #define OSF_BUF_H_
 
-/* D-Cube tests need a LIFO */
-#define OSF_BUF_LIFO                      1
+#include "net/mac/osf/osf-packet.h"
+
+#define OSF_BUF_LIFO                      0
 
 /*---------------------------------------------------------------------------*/
 /* Bit manipulation */
