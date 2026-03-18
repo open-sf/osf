@@ -3,6 +3,96 @@
 baud=115200
 FILE=nrf.csv
 
+UNAME_S="$(uname -s 2>/dev/null || echo unknown)"
+IS_MAC=0
+if [[ "$UNAME_S" == "Darwin" ]]; then
+  IS_MAC=1
+fi
+
+function spawn_terminal() {
+  local cmd="$1"
+  local title="${2:-nrf-helper}"
+
+  if [[ $IS_MAC -eq 1 ]]; then
+    # macOS: prefer iTerm2, fallback to Apple Terminal
+    # Override with NRF_TERMINAL=terminal or NRF_TERMINAL=iterm2
+    local esc
+    esc="$(printf '%s' "$cmd" | sed 's/\\/\\\\/g; s/"/\\\\\\"/g')"
+
+    if [[ "${NRF_TERMINAL:-}" != "terminal" ]] && (open -Ra "iTerm" >/dev/null 2>&1 || open -Ra "iTerm2" >/dev/null 2>&1); then
+      osascript >/dev/null 2>&1 <<EOF
+tell application "iTerm2"
+  activate
+  if (count of windows) = 0 then
+    set w to (create window with default profile)
+  else
+    set w to current window
+  end if
+  tell w
+    set t to (create tab with default profile)
+    tell current session of t
+      write text "bash -lc \\"$esc\\""
+    end tell
+  end tell
+end tell
+EOF
+      return $?
+    fi
+
+    osascript >/dev/null 2>&1 <<EOF
+tell application "Terminal"
+  activate
+  do script "bash -lc \\"$esc\\""
+end tell
+EOF
+    return $?
+  fi
+
+  if command -v tilix >/dev/null 2>&1; then
+    tilix -t "$title" -a session-add-down --focus-window -e "bash -lc '$cmd'"
+    return $?
+  fi
+  if command -v gnome-terminal >/dev/null 2>&1; then
+    gnome-terminal -- bash -lc "$cmd"
+    return $?
+  fi
+  if command -v xterm >/dev/null 2>&1; then
+    xterm -T "$title" -e bash -lc "$cmd" &
+    return 0
+  fi
+
+  echo "> WARN: No supported terminal emulator found; running in background in this shell."
+  bash -lc "$cmd" &
+}
+
+function ts_pipe() {
+  # Prefer `ts` (moreutils). Fallback to awk timestamping.
+  if command -v ts >/dev/null 2>&1; then
+    ts "[$1]"
+  else
+    awk -v fmt="$1" '{ print strftime("[" fmt "]"), $0 }'
+  fi
+}
+
+function kill_serial_readers() {
+  # Best-effort cleanup of existing readers that may hold the port open.
+  # We intentionally scope to the specific port string to avoid killing unrelated sessions.
+  local port="$1"
+  if [[ -z "$port" ]]; then
+    return 0
+  fi
+
+  # socat
+  if command -v pkill >/dev/null 2>&1; then
+    pkill -f "socat .*FILE:${port//\//\\/}" >/dev/null 2>&1 || true
+    pkill -f "socat .*${port//\//\\/}" >/dev/null 2>&1 || true
+
+    # picocom (direct or wrapped with script)
+    pkill -f "picocom .* ${port//\//\\/}" >/dev/null 2>&1 || true
+    pkill -f "script .*picocom .* ${port//\//\\/}" >/dev/null 2>&1 || true
+  fi
+}
+
 function help {
 echo " ./nrf-helper.sh"
 echo "     -i, --info         print out device information ID/MAC/SN"
@@ -127,9 +217,7 @@ if [ -n "${INFO+x}" ]; then
       temp_file=$(mktemp)
     fi
     
-    nrfjprog --com | while read row; do
-      port=${row:13:12}
-      sn=${row::9}
+    nrfjprog --com | while read -r sn port vcom; do
       mac=`nrfjprog --snr $sn --memrd 0x100000A4 --n 8 | cut -c 13-21,28-30`
       mac="F4CE36${mac:9:2}${mac:6:2}${mac:4:2}${mac:2:2}${mac:0:2}"
       if [ -n "${SAVE+x}" ]; then
@@ -179,8 +267,18 @@ if [ -n "${INFO+x}" ]; then
     if [ $len -lt 0 ]; then
       len=-1
     fi
-    for port in /dev/ttyACM*; do
-      sn=`udevadm info -q property -a -p $(udevadm info -q path -n $port) | grep serial | grep -oP '(?<=").*(?=")' | grep "0006" | cut -c 4-`
+    if [[ $IS_MAC -eq 1 ]]; then
+      PORT_GLOB="/dev/tty.usbmodem*"
+    else
+      PORT_GLOB="/dev/ttyACM*"
+    fi
+    for port in $PORT_GLOB; do
+      [[ -e "$port" ]] || continue
+      if [[ $IS_MAC -eq 1 ]]; then
+        sn="UNKNOWN"
+      else
+        sn=`udevadm info -q property -a -p $(udevadm info -q path -n $port) | grep serial | grep -oP '(?<=").*(?=")' | grep "0006" | cut -c 4-`
+      fi
       id="UNKNOWN"
       mac="UNKNOWN"
       if [ $len -ge 0 ]; then
@@ -215,15 +313,35 @@ if [ -n "${OUT+x}" ]; then
   else
     echo "> Serial out to terminal..."
   fi
+  HAVE_SOCAT=0
+  HAVE_PICOCOM=0
+  if command -v socat >/dev/null 2>&1; then HAVE_SOCAT=1; fi
+  if command -v picocom >/dev/null 2>&1; then HAVE_PICOCOM=1; fi
+  if [[ $HAVE_SOCAT -eq 0 && $HAVE_PICOCOM -eq 0 ]]; then
+    echo "> ERROR: -t requires either socat or picocom."
+    if [[ $IS_MAC -eq 1 ]]; then
+      echo ">        Install with: brew install socat   (recommended)"
+      echo ">        Or:           brew install picocom"
+    fi
+    exit 2
+  fi
   len=`expr ${#sn_arr[@]} - 1`
-  mkdir -p ~/logs
-  if [ -n "${CLEAN+x}" ]; then
-    if [ -d ~/logs ]; then rm -Rf ~/logs; fi
+  if [ -n "${LOGS+x}" ]; then
+    mkdir -p "$LOGS"
+  else
     mkdir -p ~/logs
   fi
-  nrfjprog --com | while read row; do
-    port=${row:13:12}
-    sn=`udevadm info -q property -a -p $(udevadm info -q path -n $port) | grep serial | grep -oP '(?<=").*(?=")' | grep "0006" | cut -c 4-`
+  if [ -n "${CLEAN+x}" ]; then
+    if [ -n "${LOGS+x}" ]; then
+      if [ -d "$LOGS" ]; then rm -Rf "$LOGS"; fi
+      mkdir -p "$LOGS"
+    else
+      if [ -d ~/logs ]; then rm -Rf ~/logs; fi
+      mkdir -p ~/logs
+    fi
+  fi
+  nrfjprog --com | while read -r sn port vcom; do
+    kill_serial_readers "$port"
     for i in $(seq 0 $len); do
       if [ ${sn_arr[$i]} == $sn ]; then
         id=${id_arr[$i]}
@@ -232,11 +350,40 @@ if [ -n "${OUT+x}" ]; then
     done
     echo "  - Port: $port | Node ID: $id | MAC Addr: $mac | JLink SN: $sn"
     if [ -n "${LOGS+x}" ]; then
-      CMD="socat $port,b$baud,raw,echo=0,nonblock STDOUT | ts [%Y-%m-%d\ %H:%M:%.S] | tee ~/logs/log_$id.txt"
+      if [[ $HAVE_SOCAT -eq 1 ]]; then
+        if [[ $IS_MAC -eq 1 ]]; then
+          SOCAT_OPTS="raw,echo=0,nonblock,ispeed=$baud,ospeed=$baud"
+        else
+          SOCAT_OPTS="raw,echo=0,nonblock,b$baud"
+        fi
+        if command -v ts >/dev/null 2>&1; then
+          CMD="socat \"FILE:$port,$SOCAT_OPTS\" STDOUT | ts '[%Y-%m-%d %H:%M:%S]' | tee \"$LOGS/log_$id.txt\""
+        else
+          echo "> WARN: ts not found; output will not be timestamped. (Install: brew install moreutils)"
+          CMD="socat \"FILE:$port,$SOCAT_OPTS\" STDOUT | tee \"$LOGS/log_$id.txt\""
+        fi
+      else
+        echo "> WARN: socat not found; using picocom (logs will not be timestamped)."
+        CMD="script -q \"$LOGS/log_$id.txt\" picocom -fh -b $baud -c --imap lfcrlf $port"
+      fi
     else
-      CMD="socat $port,b$baud,raw,echo=0,nonblock STDOUT | ts [%Y-%m-%d\ %H:%M:%.S]"
+      if [[ $HAVE_SOCAT -eq 1 ]]; then
+        if [[ $IS_MAC -eq 1 ]]; then
+          SOCAT_OPTS="raw,echo=0,nonblock,ispeed=$baud,ospeed=$baud"
+        else
+          SOCAT_OPTS="raw,echo=0,nonblock,b$baud"
+        fi
+        if command -v ts >/dev/null 2>&1; then
+          CMD="socat \"FILE:$port,$SOCAT_OPTS\" STDOUT | ts '[%Y-%m-%d %H:%M:%S]'"
+        else
+          echo "> WARN: ts not found; output will not be timestamped. (Install: brew install moreutils)"
+          CMD="socat \"FILE:$port,$SOCAT_OPTS\" STDOUT"
+        fi
+      else
+        CMD="picocom -fh -b $baud -c --imap lfcrlf $port"
+      fi
     fi
-    tilix -t "$x" -a session-add-down --focus-window -e "bash -c '$CMD'"
+    spawn_terminal "$CMD" "nrf-$id"
   done
   wait
 fi
@@ -253,13 +400,21 @@ function arraydiff() {
 if [ -n "${USB+x}" ]; then
   # get list of all acm ports
   acm_arr=()
-  for port in /dev/ttyACM*; do
-    acm_arr+=($port)
-  done
+  if [[ $IS_MAC -eq 1 ]]; then
+    for port in /dev/tty.usbmodem*; do
+      [[ -e "$port" ]] || continue
+      acm_arr+=($port)
+    done
+  else
+    for port in /dev/ttyACM*; do
+      [[ -e "$port" ]] || continue
+      acm_arr+=($port)
+    done
+  fi
   # get list of nrfjrpog ports
   njp_arr=()
-  while read row; do
-    njp_arr+=(${row:13:12})
+  while read -r sn port vcom; do
+    njp_arr+=($port)
   done <<< "$(nrfjprog --com)"
 
   usb_ports=($(arraydiff acm_arr[@] njp_arr[@]))
@@ -268,7 +423,7 @@ if [ -n "${USB+x}" ]; then
   echo "  - Port: $port"
     # CMD="socat $port,b$baud,raw,echo=0,nonblock STDOUT | ts [%Y-%m-%d\ %H:%M:%.S]"
     CMD="picocom -fh -b $baud -c --imap lfcrlf $port"
-    tilix -t "$x" -a session-add-down --focus-window -e "bash -c '$CMD'"
+    spawn_terminal "$CMD" "usb-$port"
   done
   wait
 fi
