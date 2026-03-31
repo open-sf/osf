@@ -57,6 +57,9 @@
 
 /*---------------------------------------------------------------------------*/
 /* STA */
+#if (OSF_PROTOCOL == OSF_PROTO_STA) && ((1 + (2 * OSF_PROTO_STA_NTA)) > OSF_SCHEDULE_LEN_MAX)
+#error "ERROR: STA schedule (S + 2*NTA rounds) exceeds OSF_SCHEDULE_LEN_MAX!"
+#endif
 #ifdef OSF_CONF_PROTO_STA_ACK_TOGGLING
 #define OSF_PROTO_STA_ACK_TOGGLING             OSF_CONF_PROTO_STA_ACK_TOGGLING
 #else
