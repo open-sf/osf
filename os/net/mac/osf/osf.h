@@ -427,7 +427,7 @@ uint8_t                  sources[OSF_BITMASK_LEN];       /* permitted sources in
 #ifdef OSF_CONF_PROTO_STA_NTA
 #define OSF_PROTO_STA_NTA OSF_CONF_PROTO_STA_NTA
 #else
-#define OSF_PROTO_STA_NTA 1 + (2 * OSF_MAX_NODES) // S round + (2 * number of nodes)
+#define OSF_PROTO_STA_NTA (1 + (2 * OSF_MAX_NODES)) // S round + (2 * number of nodes)
 #endif /* OSF_CONF_PROTO_STA_NTA */
 
 /* Maximum number of rounds in a protocol schedule */
